@@ -1,0 +1,58 @@
+{
+  "name": "pi-one-ui",
+  "version": "0.1.1",
+  "description": "A single, customizable Pi UI package combining Zentui shell chrome with Claude Code-style transcript rendering.",
+  "type": "module",
+  "license": "MIT",
+  "files": [
+    "extensions",
+    "themes",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:node && npm run test:vitest",
+    "test:node": "node --test tests/config.test.ts tests/one-ui-integration.test.ts tests/transcript-*.test.ts",
+    "format": "biome format --write extensions tests package.json tsconfig.json biome.json",
+    "format:check": "biome format extensions tests package.json tsconfig.json biome.json",
+    "lint": "biome check extensions/index.ts extensions/app/panel.ts extensions/app/presets.ts package.json tsconfig.json biome.json",
+    "test:vitest": "vitest run tests/shell-*.test.ts",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test",
+    "pack:check": "npm pack --dry-run",
+    "pi:dev": "${PI_BIN:-pi} --no-extensions -e ./extensions/index.ts",
+    "pi:install-local": "${PI_BIN:-pi} install ./ -l"
+  },
+  "dependencies": {
+    "@shikijs/cli": "^4.0.2",
+    "grok-mermaid": "^0.2.2",
+    "jiti": "^2.7.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": ">=0.84.0",
+    "@earendil-works/pi-coding-agent": ">=0.84.0",
+    "@earendil-works/pi-tui": ">=0.84.0"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/index.ts"
+    ],
+    "themes": [
+      "./themes/cc-dark.json",
+      "./themes/cc-light.json"
+    ],
+    "image": "https://raw.githubusercontent.com/minuque/pi-cc-extensions/main/assets/readme/preview.png"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
+    "@earendil-works/pi-ai": "^0.84.0",
+    "@earendil-works/pi-coding-agent": "^0.84.0",
+    "@earendil-works/pi-tui": "^0.84.0",
+    "@types/node": "^26.1.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  }
+}
