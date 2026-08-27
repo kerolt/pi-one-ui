@@ -69,12 +69,12 @@ Header → Context → WorkingLine → Editor → Footer → Features → Preset
 extensions/
   index.ts                         # 唯一插件入口，创建 TuiRuntime
   app/
-    runtime/                       # TuiRuntime、legacy adapter、state、事件和调度
+    runtime/                       # TuiRuntime、surface lifecycle、state、事件和调度
     host/                          # Pi API 的窄化 host ports
     config/                        # ConfigStore 与配置领域解析
     ownership/                     # Surface ownership
     overlay/                       # OverlayManager、InputRouter、selector
-    commands/                      # /oneui 与 legacy settings command
+    commands/                      # /oneui and settings panel previews
   surfaces/
     header/                        # Header surface
     context/                       # 原 Transcript：对话内容区
@@ -98,7 +98,7 @@ extensions/
 vendor/                           # 只读上游参考快照
 ```
 
-`TuiRuntime` 是统一 composition root。当前部分 Surface 的生命周期仍由 legacy adapter 实现，但装配入口和 ownership 已经收敛到统一 runtime。
+`TuiRuntime` 是统一 composition root。Editor、WorkingLine 和 Footer 已分别由 Surface controller 管理；`surface-lifecycle.ts` 仅保留尚未迁移的 User Message、Selector 和共享生命周期 glue，且不作为公开架构边界。
 
 ## 开发
 
@@ -122,7 +122,7 @@ npm run verify
 - `tests/editor-*`：Editor、completion、metadata、transfer 和 Accent Rail。
 - `tests/footer-*`：Footer、Footer format/layout/status。
 - `tests/services-*`：Git、runtime、project、session 和 telemetry。
-- `tests/shell-*`：剩余 Shell compatibility adapter 测试。
+- `tests/shell-*`：standalone compatibility tests for the remaining surface lifecycle glue。
 
 本地启动：
 

@@ -10,10 +10,10 @@ import registerHeaderSurface from "../../surfaces/header/index.ts";
 import { EventCoordinator } from "./event-coordinator.ts";
 import { RenderScheduler } from "./render-scheduler.ts";
 import { RuntimeStateStore } from "./runtime-state.ts";
-import registerShell, {
-  type ShellExtensionOptions,
-  type ShellRuntimeController,
-} from "./legacy-shell-adapter.ts";
+import registerSurfaceLifecycle, {
+  type SurfaceRuntimeOptions,
+  type SurfaceRuntimeController,
+} from "./surface-lifecycle.ts";
 import type { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
 import type { WorkingLineSurfaceController } from "../../surfaces/working-line/controller.ts";
 import registerContext, {
@@ -30,8 +30,8 @@ export type TuiRuntimeContext = {
 };
 
 /**
- * The single composition root for the plugin. Legacy shell/context
- * implementations are still mounted behind this seam during migration.
+ * The single composition root for the plugin. Remaining compatibility glue
+ * is mounted behind this seam while Surface ownership is finalized.
  */
 export class TuiRuntime {
   private readonly pi: ExtensionAPI;
@@ -43,7 +43,7 @@ export class TuiRuntime {
   private readonly renderScheduler: RenderScheduler;
   private activeUi: PiUiPort | undefined;
   private installed = false;
-  private shellController: ShellRuntimeController | undefined;
+  private surfaceController: SurfaceRuntimeController | undefined;
   private editorController: EditorSurfaceController | undefined;
   private workingLineController: WorkingLineSurfaceController | undefined;
   private contextController: ContextRuntimeController | undefined;
@@ -87,14 +87,14 @@ export class TuiRuntime {
       setEditorComponent: (patch, ctx) =>
         this.editorController?.setComponent(patch, ctx) ?? { applied: false },
       setUserMessagesComponent: (patch, ctx) =>
-        this.shellController?.setUserMessagesComponent(patch, ctx),
+        this.surfaceController?.setUserMessagesComponent(patch, ctx),
       setWorkingLineComponent: (patch, ctx) =>
-        this.shellController?.setWorkingLineComponent(patch, ctx) ?? {
+        this.surfaceController?.setWorkingLineComponent(patch, ctx) ?? {
           applied: false,
           reason: "WorkingLine runtime is not available",
         },
       setFooterComponent: (patch, ctx) =>
-        this.shellController?.setFooterComponent(patch, ctx),
+        this.surfaceController?.setFooterComponent(patch, ctx),
       setContextMode: (mode, ctx) => this.contextController?.setMode(mode, ctx),
       updateContextConfig: (patch, ctx) =>
         this.contextController?.updateConfig(patch, ctx),
@@ -102,20 +102,19 @@ export class TuiRuntime {
   }
 
   /**
-   * Installs the runtime once and mounts legacy adapters behind its seam.
+   * Installs the runtime once and mounts remaining surface lifecycle glue.
    */
   install(): void {
     if (this.installed) return;
     this.installed = true;
 
-    const shellOptions: ShellExtensionOptions = {
-      registerCommand: false,
+    const surfaceOptions: SurfaceRuntimeOptions = {
       manageEditorLifecycle: false,
       eventCoordinator: this.coordinator,
       ownUserMessages: false,
       ownTurnSummary: false,
       onRuntimeController: (controller) => {
-        this.shellController = controller;
+        this.surfaceController = controller;
       },
       onEditorController: (controller) => {
         this.editorController = controller;
@@ -130,9 +129,9 @@ export class TuiRuntime {
       },
     };
 
-    // These are compatibility adapters for the first migration stage. Future
-    // stages replace them with Header/Context/WorkingLine/Editor/Footer surfaces.
-    registerShell(this.pi, shellOptions);
+    // This glue remains only for User Message, Selector, and other
+    // compatibility hooks that have not yet moved to their final surfaces.
+    registerSurfaceLifecycle(this.pi, surfaceOptions);
     registerHeaderSurface(this.pi);
     registerContext(this.pi, contextOptions);
     this.coordinator.on("session_start", async (_event, ctx) => {

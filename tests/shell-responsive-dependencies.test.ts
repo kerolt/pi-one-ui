@@ -272,7 +272,8 @@ vi.mock("../extensions/services/session-state", async (importOriginal) => {
 });
 
 import { defaultConfig } from "../extensions/app/config/shell";
-import zentui from "../extensions/app/runtime/legacy-shell-adapter";
+import zentui from "../extensions/app/runtime/surface-lifecycle";
+import { registerSettingsCommand } from "./support/settings-command";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
 type Command = { handler: (args: string, ctx: unknown) => Promise<void> };
@@ -293,15 +294,18 @@ function makeTheme(): Theme {
 function loadExtension() {
   const handlers = new Map<string, Handler[]>();
   let command: Command | undefined;
-  zentui({
-    on(name: string, handler: Handler) {
-      handlers.set(name, [...(handlers.get(name) ?? []), handler]);
-    },
-    registerCommand(name: string, options: Command) {
-      if (name === "zentui") command = options;
-    },
-    getThinkingLevel: () => "off",
-  } as never);
+  zentui(
+    {
+      on(name: string, handler: Handler) {
+        handlers.set(name, [...(handlers.get(name) ?? []), handler]);
+      },
+      registerCommand(name: string, options: Command) {
+        if (name === "zentui") command = options;
+      },
+      getThinkingLevel: () => "off",
+    } as never,
+    { registerCommand: registerSettingsCommand },
+  );
   if (!command) throw new Error("zentui command was not registered");
   return { handlers, command };
 }

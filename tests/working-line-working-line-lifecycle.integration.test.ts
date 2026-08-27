@@ -41,7 +41,7 @@ vi.mock("../extensions/app/config/shell", async (importOriginal) => {
   };
 });
 
-import zentui from "../extensions/app/runtime/legacy-shell-adapter";
+import zentui from "../extensions/app/runtime/surface-lifecycle";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
 

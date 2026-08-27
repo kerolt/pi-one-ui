@@ -33,14 +33,14 @@ import { installFooter as installFooterProduction } from "../extensions/surfaces
 import { emptyGitStatus } from "../extensions/services/git-data";
 import zentui, {
   activeFooterReferences,
-} from "../extensions/app/runtime/legacy-shell-adapter";
+} from "../extensions/app/runtime/surface-lifecycle";
 import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../extensions/app/ownership/prototype-patch-registry";
 import {
   installSelectorBorderStyle as installSelectorBorderStyleProduction,
   patchSelectorBorderStyle as patchSelectorBorderStyleProduction,
 } from "../extensions/app/overlay/selector-border";
 import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
-import { registerZentuiSettingsCommand } from "../extensions/app/commands/legacy-shell-settings";
+import { registerSettingsCommand } from "./support/settings-command";
 import { createInitialState } from "../extensions/services/session-state";
 import {
   PolishedEditor as PolishedEditorProduction,
@@ -112,7 +112,7 @@ function restoreDescriptor(
 }
 const inactiveSessionLifecycle = new SessionLifecycle();
 
-type SettingsCommandDeps = Parameters<typeof registerZentuiSettingsCommand>[1];
+type SettingsCommandDeps = Parameters<typeof registerSettingsCommand>[1];
 
 const settingsCommandDefaults: SettingsCommandDeps = {
   sessionLifecycle: inactiveSessionLifecycle,
@@ -574,17 +574,20 @@ function loadExtension(
   options: { thinkingLevel?: string; commands?: Map<string, unknown> } = {},
 ) {
   const handlers = new Map<string, Handler[]>();
-  zentui({
-    on(eventName: string, handler: Handler) {
-      handlers.set(eventName, [...(handlers.get(eventName) ?? []), handler]);
-    },
-    registerCommand(name: string, command: unknown) {
-      options.commands?.set(name, command);
-    },
-    getThinkingLevel() {
-      return options.thinkingLevel ?? "off";
-    },
-  } as never);
+  zentui(
+    {
+      on(eventName: string, handler: Handler) {
+        handlers.set(eventName, [...(handlers.get(eventName) ?? []), handler]);
+      },
+      registerCommand(name: string, command: unknown) {
+        options.commands?.set(name, command);
+      },
+      getThinkingLevel() {
+        return options.thinkingLevel ?? "off";
+      },
+    } as never,
+    { registerCommand: registerSettingsCommand },
+  );
   return handlers;
 }
 
@@ -1080,7 +1083,7 @@ describe("Pi docs compliance", () => {
     const files = [
       "package.json",
       "extensions/app/config/shell.ts",
-      "extensions/app/runtime/legacy-shell-adapter.ts",
+      "extensions/app/runtime/surface-lifecycle.ts",
       "extensions/surfaces/editor/ui.ts",
     ];
     const content = files
@@ -5661,7 +5664,7 @@ describe("Pi docs compliance", () => {
     let notified = false;
     let customOpened = false;
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -5707,7 +5710,7 @@ describe("Pi docs compliance", () => {
       | undefined;
     let customOpened = false;
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -5753,7 +5756,7 @@ describe("Pi docs compliance", () => {
     const notifications: Array<{ message: string; level: string }> = [];
     let renderRequests = 0;
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -5805,7 +5808,7 @@ describe("Pi docs compliance", () => {
       | undefined;
     const featureChanges: Array<Record<string, unknown>> = [];
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -5843,7 +5846,7 @@ describe("Pi docs compliance", () => {
       | undefined;
     const notifications: Array<{ message: string; level: string }> = [];
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -5888,7 +5891,7 @@ describe("Pi docs compliance", () => {
     const featureChanges: Partial<PolishedTuiConfig["features"]>[] = [];
     const notifications: Array<{ message: string; level: string }> = [];
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -5937,7 +5940,7 @@ describe("Pi docs compliance", () => {
       | undefined;
     const notifications: Array<{ message: string; level: string }> = [];
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -5995,7 +5998,7 @@ describe("Pi docs compliance", () => {
       const sessionLifecycle = new SessionLifecycle();
       sessionLifecycle.start();
 
-      registerZentuiSettingsCommand(
+      registerSettingsCommand(
         {
           registerCommand(_name: string, options: unknown) {
             command = options as typeof command;
@@ -6068,7 +6071,7 @@ describe("Pi docs compliance", () => {
       | undefined;
     const attemptedPatches: Array<Record<string, unknown>> = [];
     const notifications: string[] = [];
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -6145,7 +6148,7 @@ describe("Pi docs compliance", () => {
       let stale = false;
       const sessionLifecycle = new SessionLifecycle();
       sessionLifecycle.start();
-      registerZentuiSettingsCommand(
+      registerSettingsCommand(
         {
           registerCommand(_name: string, options: unknown) {
             command = options as typeof command;
@@ -6221,7 +6224,7 @@ describe("Pi docs compliance", () => {
         | undefined;
       let lines: string[] = [];
 
-      registerZentuiSettingsCommand(
+      registerSettingsCommand(
         {
           registerCommand(_name: string, options: unknown) {
             command = options as typeof command;
@@ -6305,7 +6308,7 @@ describe("Pi docs compliance", () => {
       | { handler: (args: string, ctx: unknown) => Promise<void> }
       | undefined;
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -6368,7 +6371,7 @@ describe("Pi docs compliance", () => {
         Pick<PolishedTuiConfig, "responsiveFooter" | "compactFooterMaxLines">
       >
     > = [];
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -6441,7 +6444,7 @@ describe("Pi docs compliance", () => {
     let dependencyRenderRequests = 0;
     let tuiRenderRequests = 0;
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -6529,7 +6532,7 @@ describe("Pi docs compliance", () => {
       const changes: Array<PolishedTuiConfig["gitBranch"]["maxLength"]> = [];
       const config = structuredClone(defaultConfig);
       config.components.footer.styles.starship.gitBranch.maxLength = maxLength;
-      registerZentuiSettingsCommand(
+      registerSettingsCommand(
         {
           registerCommand(_name: string, options: unknown) {
             command = options as typeof command;
@@ -6600,7 +6603,7 @@ describe("Pi docs compliance", () => {
     let tuiRenderRequests = 0;
     let doneCalls = 0;
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -6675,7 +6678,7 @@ describe("Pi docs compliance", () => {
     const changes: Array<Record<string, unknown>> = [];
     let rendered = "";
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -6772,7 +6775,7 @@ describe("Pi docs compliance", () => {
       | undefined;
     let rendered = "";
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -6836,7 +6839,7 @@ describe("Pi docs compliance", () => {
       | undefined;
     let rendered = "";
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -6908,7 +6911,7 @@ describe("Pi docs compliance", () => {
       placement: ExtensionStatusPlacement;
     }> = [];
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -6981,7 +6984,7 @@ describe("Pi docs compliance", () => {
     let dependencyRenderRequests = 0;
     let tuiRenderRequests = 0;
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;
@@ -7052,7 +7055,7 @@ describe("Pi docs compliance", () => {
       | undefined;
     let rendered = "";
 
-    registerZentuiSettingsCommand(
+    registerSettingsCommand(
       {
         registerCommand(_name: string, options: unknown) {
           command = options as typeof command;

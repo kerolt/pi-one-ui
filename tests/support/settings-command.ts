@@ -53,26 +53,26 @@ import {
   type WorkingLineComponentPatch,
   type WorkingLineSpinner,
   type WorkingLineTextAnimation,
-} from "../config/shell.ts";
-import { sanitizeExtensionStatusText } from "../../surfaces/footer/extension-status.ts";
-import { isIconMode } from "../../shared/icons.ts";
-import type { SessionLifecycle } from "../runtime/session-lifecycle.ts";
+} from "../../extensions/app/config/shell.ts";
+import { sanitizeExtensionStatusText } from "../../extensions/surfaces/footer/extension-status.ts";
+import { isIconMode } from "../../extensions/shared/icons.ts";
+import type { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle.ts";
 import {
   renderEditorSettingsPreview,
   renderUserMessageSettingsPreview,
   SETTINGS_PREVIEW_MAX_WIDTH,
-} from "./settings-previews.ts";
+} from "../../extensions/app/commands/settings-previews.ts";
 import {
   EDITOR_BORDER_STYLE,
   renderChromeBorder,
   safeThemeFg,
-} from "../../shared/style.ts";
+} from "../../extensions/shared/style.ts";
 import {
   buildWorkingLinePreviewFrames,
   normalizeWorkingLineMessages,
   remapWorkingLineTextTick,
   type WorkingLineFrames,
-} from "../../surfaces/working-line/working-line.ts";
+} from "../../extensions/surfaces/working-line/working-line.ts";
 
 const colorSourceValues: ColorSource[] = ["theme", "terminal"];
 const extensionStatusPlacementValues: ExtensionStatusPlacement[] = [
@@ -193,7 +193,7 @@ type SettingsOutcome =
   | "edit-working-line-spinner-speed"
   | "edit-working-line-text-speed";
 
-type SettingsCommandDeps = {
+export type SettingsCommandDeps = {
   sessionLifecycle: SessionLifecycle;
   getConfig: () => PolishedTuiConfig;
   setEditorComponent: (
@@ -1173,7 +1173,7 @@ function withSectionFooter(
   return copy;
 }
 
-export function registerShellSettingsCommand(
+export function registerSettingsCommand(
   pi: ExtensionAPI,
   deps: SettingsCommandDeps,
 ): void {
@@ -2141,4 +2141,3 @@ export function registerShellSettingsCommand(
 }
 
 /** Compatibility export for upstream regression tests and migration tooling. */
-export const registerZentuiSettingsCommand = registerShellSettingsCommand;

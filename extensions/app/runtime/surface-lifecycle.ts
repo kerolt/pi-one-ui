@@ -72,7 +72,6 @@ import {
 } from "../overlay/selector-border.ts";
 import { SessionLifecycle } from "./session-lifecycle.ts";
 import { EventCoordinator } from "./event-coordinator.ts";
-import { registerShellSettingsCommand } from "../commands/legacy-shell-settings.ts";
 import {
   createInitialState,
   type FooterState,
@@ -102,14 +101,14 @@ function findRepositoryRoot(cwd: string): string | undefined {
 
 function isTuiContext(ctx: ExtensionContext): boolean {
   try {
-    const mode = (ctx as ExtensionContext & { mode?: string }).mode;
+    const mode = ctx.mode;
     return ctx.hasUI && (mode === undefined || mode === "tui");
   } catch {
     return false;
   }
 }
 
-export type ShellRuntimeController = {
+export type SurfaceRuntimeController = {
   setUserMessagesComponent: (
     patch: Partial<UserMessagesComponentConfig>,
     ctx: ExtensionContext,
@@ -124,23 +123,23 @@ export type ShellRuntimeController = {
   ) => void;
 };
 
-export type ShellExtensionOptions = {
+export type SurfaceRuntimeOptions = {
   /**
-   * Exposes the live shell reconciler to the unified settings panel.
+   * Exposes remaining surface configuration hooks to standalone callers.
    */
   /**
-   * Keeps legacy standalone registration disabled in the unified package.
+   * Allows standalone compatibility tests to opt into the old command.
    */
-  registerCommand?: boolean;
+  registerCommand?: (pi: ExtensionAPI, deps: never) => void;
   /**
-   * Keeps User Message patch ownership in Shell for standalone compatibility.
+   * Keeps User Message patch ownership available for standalone compatibility.
    */
   ownUserMessages?: boolean;
   /**
-   * Keeps turn-summary entry ownership in Shell for standalone compatibility.
+   * Keeps turn-summary entry ownership available for standalone compatibility.
    */
   ownTurnSummary?: boolean;
-  onRuntimeController?: (controller: ShellRuntimeController) => void;
+  onRuntimeController?: (controller: SurfaceRuntimeController) => void;
   onEditorController?: (controller: EditorSurfaceController) => void;
   onWorkingLineController?: (controller: WorkingLineSurfaceController) => void;
   /**
@@ -155,7 +154,7 @@ export type ShellExtensionOptions = {
 
 export default function (
   pi: ExtensionAPI,
-  options: ShellExtensionOptions = {},
+  options: SurfaceRuntimeOptions = {},
 ) {
   const eventCoordinator =
     options.eventCoordinator ??
@@ -606,169 +605,168 @@ export default function (
     setFooterComponent,
   });
 
-  if (options.registerCommand !== false)
-    registerShellSettingsCommand(pi, {
-      sessionLifecycle,
-      getConfig: getCurrentConfig,
-      setEditorComponent,
-      setPolished(
-        patch: Partial<PolishedEditorStyleConfig>,
-        _ctx: ExtensionContext,
-      ) {
-        currentConfig = savePolishedEditorStylePatch(patch);
-        refresh();
-      },
-      setPolishedCopyFriendly(
-        patch: Partial<PolishedCopyFriendlyEditorStyleConfig>,
-        _ctx: ExtensionContext,
-      ) {
-        currentConfig = savePolishedCopyFriendlyEditorStylePatch(patch);
-        refresh();
-      },
-      setAccentRail(
-        patch: Partial<AccentRailEditorStyleConfig>,
-        _ctx: ExtensionContext,
-      ) {
-        currentConfig = saveAccentRailEditorStylePatch(patch);
-        refresh();
-      },
-      setMinimalist(patch: Partial<MinimalistConfig>, ctx: ExtensionContext) {
-        currentConfig = saveMinimalistEditorStylePatch(patch);
-        editorController.reconcileTimers();
-        reconcileProjectRefresh(
-          ctx,
-          patch.pathDisplay !== undefined || patch.showGit !== undefined,
-        );
-        refresh();
-      },
-      setUserMessagesComponent(
-        patch: Partial<UserMessagesComponentConfig>,
-        _ctx: ExtensionContext,
-      ) {
-        currentConfig = saveUserMessagesComponentPatch(patch);
-        if (patch.enabled !== undefined || patch.style !== undefined)
-          reconcileUserMessages();
-        refresh();
-      },
-      setWorkingLineComponent(
-        patch: WorkingLineComponentPatch,
-        ctx: ExtensionContext,
-      ) {
-        currentConfig = saveWorkingLineComponentPatch(patch);
-        return workingLineController.reconcile(ctx);
-      },
-      setSelectorBordersComponent(
-        patch: Partial<SelectorBordersComponentConfig>,
-        _ctx: ExtensionContext,
-      ) {
-        currentConfig = saveSelectorBordersComponentPatch(patch);
-        if (patch.enabled !== undefined || patch.style !== undefined)
-          reconcileSelectorBorders();
-        refresh();
-      },
-      setFooterComponent(
-        patch: Partial<FooterComponentConfig>,
-        ctx: ExtensionContext,
-      ) {
-        const previousStyle = currentConfig.components.footer.style;
-        currentConfig = saveFooterComponentPatch(patch);
-        const styleChanged =
-          currentConfig.components.footer.style !== previousStyle;
-        if (patch.style !== undefined) footerController.reconcile(ctx);
-        if (patch.modelLabel !== undefined) syncFooterState(ctx);
-        reconcileProjectRefresh(ctx, styleChanged);
-        reconcileSessionTimer();
-        refresh();
-      },
-      setFooterSegments(
-        patch: Partial<FooterSegmentsConfig>,
-        ctx: ExtensionContext,
-      ) {
-        applyFooterDependencyConfigChange(ctx, () =>
-          saveStarshipFooterStylePatch({
-            segments: patch as FooterSegmentsConfig,
-          }),
-        );
-      },
-      setFooterFormat(value: string, ctx: ExtensionContext) {
-        applyFooterDependencyConfigChange(ctx, () =>
-          saveStarshipFooterStylePatch({ format: value }),
-        );
-      },
-      setResponsiveFooter(
-        patch: Partial<
-          Pick<PolishedTuiConfig, "responsiveFooter" | "compactFooterMaxLines">
-        >,
-        ctx: ExtensionContext,
-      ) {
-        applyFooterDependencyConfigChange(ctx, () =>
-          saveStarshipFooterStylePatch({
-            ...(patch.responsiveFooter === undefined
-              ? {}
-              : { responsive: patch.responsiveFooter }),
-            ...(patch.compactFooterMaxLines === undefined
-              ? {}
-              : { compactMaxLines: patch.compactFooterMaxLines }),
-          }),
-        );
-      },
-      setIconMode(mode: IconMode) {
-        currentConfig = saveIconsModePatch(mode);
-      },
-      setContextStyle(style: ContextStyle) {
-        currentConfig = saveStarshipFooterStylePatch({ contextStyle: style });
-      },
-      setSeparator(separator: SeparatorStyle) {
-        currentConfig = saveStarshipFooterStylePatch({ separator });
-      },
-      setPathDisplay(patch: Partial<PathDisplayConfig>) {
-        currentConfig = saveStarshipFooterStylePatch({
-          pathDisplay: patch as PathDisplayConfig,
-        });
-      },
-      setGitBranch(patch: Partial<GitBranchConfig>) {
-        currentConfig = saveStarshipFooterStylePatch({
-          gitBranch: patch as GitBranchConfig,
-        });
-      },
-      setGitCommit(
-        patch: Partial<Pick<GitCommitConfig, "onlyDetached" | "showTag">>,
-        ctx: ExtensionContext,
-      ) {
-        currentConfig = saveStarshipFooterStylePatch({
-          gitCommit: patch as GitCommitConfig,
-        });
-        if (patch.showTag !== undefined) reconcileProjectRefresh(ctx, true);
-      },
-      setGitMetrics(patch: Partial<GitMetricsConfig>, ctx: ExtensionContext) {
-        currentConfig = saveStarshipFooterStylePatch({
-          gitMetrics: patch as GitMetricsConfig,
-        });
-        if (patch.ignoreSubmodules !== undefined)
-          reconcileProjectRefresh(ctx, true);
-      },
-      getActiveExtensionStatuses() {
-        return footerController.getExtensionStatuses();
-      },
-      setExtensionStatusDefaultPlacement(placement: ExtensionStatusPlacement) {
-        currentConfig = saveExtensionStatusDefaultPlacement(placement);
-      },
-      setExtensionStatusPlacement(
-        key: string,
-        placement: ExtensionStatusPlacement,
-      ) {
-        currentConfig = saveExtensionStatusPlacement(key, placement);
-      },
-      setExtensionStatusColorMode(
-        key: string,
-        colorMode: ExtensionStatusColorMode,
-      ) {
-        currentConfig = saveExtensionStatusColorMode(key, colorMode);
-      },
-      requestRender() {
-        refresh();
-      },
-    });
+  options.registerCommand?.(pi, {
+    sessionLifecycle,
+    getConfig: getCurrentConfig,
+    setEditorComponent,
+    setPolished(
+      patch: Partial<PolishedEditorStyleConfig>,
+      _ctx: ExtensionContext,
+    ) {
+      currentConfig = savePolishedEditorStylePatch(patch);
+      refresh();
+    },
+    setPolishedCopyFriendly(
+      patch: Partial<PolishedCopyFriendlyEditorStyleConfig>,
+      _ctx: ExtensionContext,
+    ) {
+      currentConfig = savePolishedCopyFriendlyEditorStylePatch(patch);
+      refresh();
+    },
+    setAccentRail(
+      patch: Partial<AccentRailEditorStyleConfig>,
+      _ctx: ExtensionContext,
+    ) {
+      currentConfig = saveAccentRailEditorStylePatch(patch);
+      refresh();
+    },
+    setMinimalist(patch: Partial<MinimalistConfig>, ctx: ExtensionContext) {
+      currentConfig = saveMinimalistEditorStylePatch(patch);
+      editorController.reconcileTimers();
+      reconcileProjectRefresh(
+        ctx,
+        patch.pathDisplay !== undefined || patch.showGit !== undefined,
+      );
+      refresh();
+    },
+    setUserMessagesComponent(
+      patch: Partial<UserMessagesComponentConfig>,
+      _ctx: ExtensionContext,
+    ) {
+      currentConfig = saveUserMessagesComponentPatch(patch);
+      if (patch.enabled !== undefined || patch.style !== undefined)
+        reconcileUserMessages();
+      refresh();
+    },
+    setWorkingLineComponent(
+      patch: WorkingLineComponentPatch,
+      ctx: ExtensionContext,
+    ) {
+      currentConfig = saveWorkingLineComponentPatch(patch);
+      return workingLineController.reconcile(ctx);
+    },
+    setSelectorBordersComponent(
+      patch: Partial<SelectorBordersComponentConfig>,
+      _ctx: ExtensionContext,
+    ) {
+      currentConfig = saveSelectorBordersComponentPatch(patch);
+      if (patch.enabled !== undefined || patch.style !== undefined)
+        reconcileSelectorBorders();
+      refresh();
+    },
+    setFooterComponent(
+      patch: Partial<FooterComponentConfig>,
+      ctx: ExtensionContext,
+    ) {
+      const previousStyle = currentConfig.components.footer.style;
+      currentConfig = saveFooterComponentPatch(patch);
+      const styleChanged =
+        currentConfig.components.footer.style !== previousStyle;
+      if (patch.style !== undefined) footerController.reconcile(ctx);
+      if (patch.modelLabel !== undefined) syncFooterState(ctx);
+      reconcileProjectRefresh(ctx, styleChanged);
+      reconcileSessionTimer();
+      refresh();
+    },
+    setFooterSegments(
+      patch: Partial<FooterSegmentsConfig>,
+      ctx: ExtensionContext,
+    ) {
+      applyFooterDependencyConfigChange(ctx, () =>
+        saveStarshipFooterStylePatch({
+          segments: patch as FooterSegmentsConfig,
+        }),
+      );
+    },
+    setFooterFormat(value: string, ctx: ExtensionContext) {
+      applyFooterDependencyConfigChange(ctx, () =>
+        saveStarshipFooterStylePatch({ format: value }),
+      );
+    },
+    setResponsiveFooter(
+      patch: Partial<
+        Pick<PolishedTuiConfig, "responsiveFooter" | "compactFooterMaxLines">
+      >,
+      ctx: ExtensionContext,
+    ) {
+      applyFooterDependencyConfigChange(ctx, () =>
+        saveStarshipFooterStylePatch({
+          ...(patch.responsiveFooter === undefined
+            ? {}
+            : { responsive: patch.responsiveFooter }),
+          ...(patch.compactFooterMaxLines === undefined
+            ? {}
+            : { compactMaxLines: patch.compactFooterMaxLines }),
+        }),
+      );
+    },
+    setIconMode(mode: IconMode) {
+      currentConfig = saveIconsModePatch(mode);
+    },
+    setContextStyle(style: ContextStyle) {
+      currentConfig = saveStarshipFooterStylePatch({ contextStyle: style });
+    },
+    setSeparator(separator: SeparatorStyle) {
+      currentConfig = saveStarshipFooterStylePatch({ separator });
+    },
+    setPathDisplay(patch: Partial<PathDisplayConfig>) {
+      currentConfig = saveStarshipFooterStylePatch({
+        pathDisplay: patch as PathDisplayConfig,
+      });
+    },
+    setGitBranch(patch: Partial<GitBranchConfig>) {
+      currentConfig = saveStarshipFooterStylePatch({
+        gitBranch: patch as GitBranchConfig,
+      });
+    },
+    setGitCommit(
+      patch: Partial<Pick<GitCommitConfig, "onlyDetached" | "showTag">>,
+      ctx: ExtensionContext,
+    ) {
+      currentConfig = saveStarshipFooterStylePatch({
+        gitCommit: patch as GitCommitConfig,
+      });
+      if (patch.showTag !== undefined) reconcileProjectRefresh(ctx, true);
+    },
+    setGitMetrics(patch: Partial<GitMetricsConfig>, ctx: ExtensionContext) {
+      currentConfig = saveStarshipFooterStylePatch({
+        gitMetrics: patch as GitMetricsConfig,
+      });
+      if (patch.ignoreSubmodules !== undefined)
+        reconcileProjectRefresh(ctx, true);
+    },
+    getActiveExtensionStatuses() {
+      return footerController.getExtensionStatuses();
+    },
+    setExtensionStatusDefaultPlacement(placement: ExtensionStatusPlacement) {
+      currentConfig = saveExtensionStatusDefaultPlacement(placement);
+    },
+    setExtensionStatusPlacement(
+      key: string,
+      placement: ExtensionStatusPlacement,
+    ) {
+      currentConfig = saveExtensionStatusPlacement(key, placement);
+    },
+    setExtensionStatusColorMode(
+      key: string,
+      colorMode: ExtensionStatusColorMode,
+    ) {
+      currentConfig = saveExtensionStatusColorMode(key, colorMode);
+    },
+    requestRender() {
+      refresh();
+    },
+  } as never);
 
   eventCoordinator.on("session_shutdown", async (_event, ctx) => {
     liveContext.clear();

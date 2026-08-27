@@ -12,7 +12,7 @@ import {
   type WorkingLineComponentPatch,
 } from "../extensions/app/config/shell";
 import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
-import { registerZentuiSettingsCommand } from "../extensions/app/commands/legacy-shell-settings";
+import { registerSettingsCommand } from "./support/settings-command";
 
 type Component = {
   render(width: number): string[];
@@ -224,7 +224,7 @@ function createHarness(
     },
     ...overrides,
   };
-  registerZentuiSettingsCommand(
+  registerSettingsCommand(
     {
       registerCommand(_name: string, value: unknown) {
         command = value as Command;

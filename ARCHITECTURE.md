@@ -62,7 +62,7 @@ extensions/index.ts
     └── non-visual Features
 ```
 
-`TuiRuntime` currently mounts a few legacy adapters while individual Surface controllers are being extracted. The adapters are implementation details, not public product boundaries.
+`TuiRuntime` mounts the Surface controllers and the remaining surface lifecycle glue. The glue is an implementation detail, not a public product boundary.
 
 ### Event flow
 
@@ -80,7 +80,7 @@ RenderScheduler
 Pi TUI redraw
 ```
 
-A Surface should not independently register a second handler for every shared lifecycle event. During migration, legacy adapters may still do so; each migrated event must be removed from the adapter before it is claimed by the coordinator.
+A Surface should not independently register a second handler for every shared lifecycle event. EventCoordinator owns shared lifecycle registration; specialized renderer hooks may remain local to the renderer that owns them.
 
 ## 4. Surface ownership
 
@@ -106,12 +106,12 @@ Features contribute commands, autocomplete, data or entry effects. They do not c
 extensions/
 ├── index.ts
 ├── app/
-│   ├── runtime/                 # TuiRuntime, legacy adapter, state, event and render coordination
+│   ├── runtime/                 # TuiRuntime, surface lifecycle, state, event and render coordination
 │   ├── host/                    # Narrow Pi extension/UI ports and capabilities
 │   ├── config/                  # ConfigStore and domain projections
 │   ├── ownership/               # Surface and patch ownership
 │   ├── overlay/                 # Overlay activity, selector and input routing
-│   ├── commands/                # /oneui and legacy settings command
+│   ├── commands/                # /oneui and settings panel previews
 │   └── panel.ts                 # /oneui settings UI
 ├── surfaces/
 │   ├── header/                  # Startup Header
