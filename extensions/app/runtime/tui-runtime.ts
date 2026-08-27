@@ -61,22 +61,6 @@ export class TuiRuntime {
       on: (event, handler) =>
         this.extensions.on(event as never, handler as never),
     });
-    this.coordinator.on("session_start", async (_event, ctx) => {
-      this.state.start(ctx.mode);
-      if (ctx.mode === "tui" && ctx.hasUI) {
-        // Pi exposes redraw through concrete TUI components; surfaces will
-        // connect that callback when they migrate behind this runtime.
-        this.activeUi = createPiUiPort(ctx);
-      }
-      await this.editorController?.startSession(ctx);
-      this.editorController?.install(ctx, true);
-      this.workingLineController?.startSession(ctx);
-    });
-    this.coordinator.on("session_shutdown", (_event, ctx) => {
-      this.workingLineController?.dispose(ctx);
-      this.activeUi = undefined;
-      this.state.shutdown();
-    });
   }
 
   /**
@@ -103,6 +87,7 @@ export class TuiRuntime {
     const shellOptions: ShellExtensionOptions = {
       registerCommand: false,
       manageEditorLifecycle: false,
+      eventCoordinator: this.coordinator,
       ownUserMessages: false,
       ownTurnSummary: false,
       onRuntimeController: (controller) => {
@@ -126,6 +111,22 @@ export class TuiRuntime {
     registerShell(this.pi, shellOptions);
     registerHeaderSurface(this.pi);
     registerContext(this.pi, contextOptions);
+    this.coordinator.on("session_start", async (_event, ctx) => {
+      this.state.start(ctx.mode);
+      if (ctx.mode === "tui" && ctx.hasUI) {
+        // Pi exposes redraw through concrete TUI components; surfaces will
+        // connect that callback when they migrate behind this runtime.
+        this.activeUi = createPiUiPort(ctx);
+      }
+      await this.editorController?.startSession(ctx);
+      this.editorController?.install(ctx, true);
+      this.workingLineController?.startSession(ctx);
+    });
+    this.coordinator.on("session_shutdown", (_event, ctx) => {
+      this.workingLineController?.dispose(ctx);
+      this.activeUi = undefined;
+      this.state.shutdown();
+    });
     this.coordinator.install();
 
     this.extensions.registerCommand("oneui", {

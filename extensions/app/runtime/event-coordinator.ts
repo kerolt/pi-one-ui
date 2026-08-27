@@ -1,6 +1,22 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-export const RUNTIME_EVENTS = ["session_start", "session_shutdown"] as const;
+export const RUNTIME_EVENTS = [
+  "session_start",
+  "session_shutdown",
+  "agent_start",
+  "agent_end",
+  "agent_settled",
+  "turn_start",
+  "message_update",
+  "message_end",
+  "tool_execution_start",
+  "tool_execution_end",
+  "model_select",
+  "thinking_level_select",
+  "session_info_changed",
+  "session_compact",
+  "session_tree",
+] as const;
 
 export type RuntimeEventName = (typeof RUNTIME_EVENTS)[number];
 export type RuntimeEventHandler = (
@@ -21,6 +37,7 @@ export class EventCoordinator {
     RuntimeEventName,
     Set<RuntimeEventHandler>
   >();
+  private installed = false;
 
   /**
    * Creates a coordinator backed by the host event registrar.
@@ -47,10 +64,20 @@ export class EventCoordinator {
    * Installs one host listener per coordinated event.
    */
   install(): void {
+    if (this.installed) return;
+    this.installed = true;
     for (const event of RUNTIME_EVENTS) {
-      this.registrar.on(event, async (payload, ctx) => {
-        for (const handler of this.handlers.get(event) ?? [])
-          await handler(payload, ctx);
+      this.registrar.on(event, (payload, ctx) => {
+        let pending: Promise<void> | undefined;
+        for (const handler of this.handlers.get(event) ?? []) {
+          if (pending) {
+            pending = pending.then(() => handler(payload, ctx)).then(() => {});
+            continue;
+          }
+          const result = handler(payload, ctx);
+          if (result instanceof Promise) pending = result.then(() => {});
+        }
+        return pending;
       });
     }
   }
