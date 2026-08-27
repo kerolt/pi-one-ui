@@ -18,6 +18,8 @@ import {
 import registerSurfaceLifecycle, {
   type SurfaceRuntimeOptions,
 } from "../../extensions/app/runtime/surface-lifecycle.ts";
+import type { SelectorController } from "../../extensions/app/overlay/selector-controller.ts";
+import { removeSelectorBorderStyle } from "../../extensions/app/overlay/selector-border.ts";
 import {
   installUserMessageStyle,
   removeUserMessageStyle,
@@ -49,6 +51,7 @@ export default function (
   let cleanupUserMessageStyle: () => void = () => {};
   let userMessageStyleInstalled = false;
   let unsubscribeConfig: () => void = () => {};
+  let selectorController: SelectorController | undefined;
 
   /**
    * Reconciles the standalone User Message compatibility renderer.
@@ -105,15 +108,22 @@ export default function (
       cleanupUserMessageStyle = () => {};
       userMessageStyleInstalled = false;
       removeUserMessageStyle();
+      removeSelectorBorderStyle();
     }
   });
   registerSurfaceLifecycle(pi, {
     ...options,
+    manageSelectorLifecycle: false,
+    onSelectorController: (controller) => {
+      selectorController = controller;
+      options.onSelectorController?.(controller);
+    },
     standaloneUserMessageHandler: updateUserMessages,
   });
   pi.on("session_start", (_event, ctx) => {
     if (!isTuiContext(ctx)) return;
     activeTheme = ctx.ui.theme;
+    selectorController?.startSession(ctx);
     contextConfig = loadConfig();
     unsubscribeConfig();
     unsubscribeConfig = configStore.subscribe((record: ConfigRecord) => {
@@ -123,6 +133,7 @@ export default function (
     reconcileUserMessages();
   });
   pi.on("session_shutdown", () => {
+    selectorController?.cleanup();
     unsubscribeConfig();
     unsubscribeConfig = () => {};
     try {

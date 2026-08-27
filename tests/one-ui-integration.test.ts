@@ -19,7 +19,7 @@ test("ownership map assigns each Pi UI seam to one module", () => {
     userMessage: "context",
     footer: "shell",
     workingLine: "shell",
-    selector: "shell",
+    selector: "overlay",
     toolRenderer: "context",
     diffRenderer: "context",
     thinking: "context",

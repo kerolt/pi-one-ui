@@ -65,10 +65,7 @@ import {
 } from "../../services/project-refresh.ts";
 import { applyProjectRefreshToState } from "../../services/project-state.ts";
 import { readRuntimeInfo } from "../../services/runtime-data.ts";
-import {
-  installSelectorBorderStyle,
-  removeSelectorBorderStyle,
-} from "../overlay/selector-border.ts";
+import { SelectorController } from "../overlay/selector-controller.ts";
 import { SessionLifecycle } from "./session-lifecycle.ts";
 import { EventCoordinator } from "./event-coordinator.ts";
 import {
@@ -133,6 +130,7 @@ export type SurfaceRuntimeOptions = {
   onRuntimeController?: (controller: SurfaceRuntimeController) => void;
   onEditorController?: (controller: EditorSurfaceController) => void;
   onWorkingLineController?: (controller: WorkingLineSurfaceController) => void;
+  onSelectorController?: (controller: SelectorController) => void;
   /**
    * Keeps standalone User Message compatibility outside the production runtime.
    */
@@ -144,6 +142,10 @@ export type SurfaceRuntimeOptions = {
    * Lets the unified runtime own Editor and WorkingLine session installation.
    */
   manageEditorLifecycle?: boolean;
+  /**
+   * Lets the unified runtime own selector session installation.
+   */
+  manageSelectorLifecycle?: boolean;
   /**
    * Shared lifecycle coordinator supplied by the unified runtime.
    */
@@ -177,8 +179,6 @@ export default function (
     );
   }
   let activeTheme: Theme | undefined;
-  let cleanupSelectorBorderStyle: () => void = () => {};
-  let selectorBorderStyleInstalled = false;
   let lastProjectCwd: string | undefined;
   let requestedProjectCwd: string | undefined;
   let minimalistProjectRoot: string | undefined;
@@ -195,9 +195,6 @@ export default function (
     }
   };
 
-  const effectiveSelectorBordersEnabled = () =>
-    currentConfig.components.selectorBorders.enabled &&
-    !hasUnsupportedComponentStyle(currentConfig, "selectorBorders");
   /**
    * Requests redraws from the Editor controller and shared render seam.
    */
@@ -392,42 +389,9 @@ export default function (
     reconcileProjectRefresh(ctx, true);
   };
 
-  const installSelectorBorders = () => {
-    if (selectorBorderStyleInstalled) return;
-    let cleanup: (() => void) | undefined;
-    try {
-      cleanup = installSelectorBorderStyle(getActiveTheme, getCurrentConfig);
-      cleanupSelectorBorderStyle = cleanup;
-      selectorBorderStyleInstalled = true;
-    } catch {
-      try {
-        cleanup?.();
-      } catch {
-        // Best effort: the installer is locally transactional.
-      }
-      cleanupSelectorBorderStyle = () => {};
-      selectorBorderStyleInstalled = false;
-    }
-  };
-
-  const uninstallSelectorBorders = () => {
-    try {
-      cleanupSelectorBorderStyle();
-    } catch {
-      // Best effort cleanup.
-    } finally {
-      cleanupSelectorBorderStyle = () => {};
-      selectorBorderStyleInstalled = false;
-    }
-  };
-
-  const reconcileSelectorBorders = () => {
-    const selectors = currentConfig.components.selectorBorders;
-    if (effectiveSelectorBordersEnabled() && selectors.style === "zentui") {
-      installSelectorBorders();
-    } else uninstallSelectorBorders();
-  };
-
+  const selectorController = new SelectorController({
+    getConfig: getCurrentConfig,
+  });
   const footerController = new FooterSurfaceController({
     getConfig: getCurrentConfig,
     state,
@@ -441,7 +405,8 @@ export default function (
 
   const applyConfiguredUi = (ctx: ExtensionContext) => {
     if (!isTuiContext(ctx)) return;
-    reconcileSelectorBorders();
+    if (options.manageSelectorLifecycle !== false)
+      selectorController.reconcile();
     reconcileProjectRefresh(ctx);
     reconcileSessionTimer();
   };
@@ -458,12 +423,8 @@ export default function (
     syncFooterState(ctx);
     stopProjectRefresh();
 
-    uninstallSelectorBorders();
-    try {
-      removeSelectorBorderStyle();
-    } catch {
-      // Startup alone may supersede a stale registration from an earlier reload.
-    }
+    if (options.manageSelectorLifecycle !== false)
+      selectorController.startSession(ctx);
     footerController.install(ctx);
     if (options.manageEditorLifecycle !== false)
       editorController.install(ctx, true);
@@ -479,7 +440,7 @@ export default function (
     editorController.cleanup(ctx);
     footerController.cleanup(ctx);
     stopProjectRefresh();
-    uninstallSelectorBorders();
+    if (options.manageSelectorLifecycle !== false) selectorController.cleanup();
     activeTheme = undefined;
     activeTuiContext = undefined;
   };
@@ -547,6 +508,7 @@ export default function (
   };
   options.onEditorController?.(editorController);
   options.onWorkingLineController?.(workingLineController);
+  options.onSelectorController?.(selectorController);
   options.onRuntimeController?.({
     setUserMessagesComponent,
     setWorkingLineComponent,
@@ -601,7 +563,7 @@ export default function (
     ) {
       currentConfig = saveSelectorBordersComponentPatch(patch);
       if (patch.enabled !== undefined || patch.style !== undefined)
-        reconcileSelectorBorders();
+        selectorController.reconcile();
       refresh();
     },
     setFooterComponent(

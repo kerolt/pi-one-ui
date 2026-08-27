@@ -4,7 +4,7 @@ export const UI_OWNERSHIP = {
   userMessage: "context",
   footer: "shell",
   workingLine: "shell",
-  selector: "shell",
+  selector: "overlay",
   toolRenderer: "context",
   diffRenderer: "context",
   thinking: "context",

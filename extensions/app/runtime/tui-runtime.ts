@@ -8,6 +8,7 @@ import { createPiUiPort, type PiUiPort } from "../host/pi-ui-port.ts";
 import { SurfaceRegistry } from "../ownership/surface-registry.ts";
 import registerHeaderSurface from "../../surfaces/header/index.ts";
 import { EventCoordinator } from "./event-coordinator.ts";
+import type { SelectorController } from "../overlay/selector-controller.ts";
 import { RenderScheduler } from "./render-scheduler.ts";
 import { RuntimeStateStore } from "./runtime-state.ts";
 import registerSurfaceLifecycle, {
@@ -46,6 +47,7 @@ export class TuiRuntime {
   private surfaceController: SurfaceRuntimeController | undefined;
   private editorController: EditorSurfaceController | undefined;
   private workingLineController: WorkingLineSurfaceController | undefined;
+  private selectorController: SelectorController | undefined;
   private contextController: ContextRuntimeController | undefined;
 
   /**
@@ -110,6 +112,7 @@ export class TuiRuntime {
 
     const surfaceOptions: SurfaceRuntimeOptions = {
       manageEditorLifecycle: false,
+      manageSelectorLifecycle: false,
       eventCoordinator: this.coordinator,
       ownTurnSummary: false,
       onRuntimeController: (controller) => {
@@ -120,6 +123,9 @@ export class TuiRuntime {
       },
       onWorkingLineController: (controller) => {
         this.workingLineController = controller;
+      },
+      onSelectorController: (controller) => {
+        this.selectorController = controller;
       },
     };
     const contextOptions: ContextExtensionOptions = {
@@ -143,9 +149,11 @@ export class TuiRuntime {
       await this.editorController?.startSession(ctx);
       this.editorController?.install(ctx, true);
       this.workingLineController?.startSession(ctx);
+      this.selectorController?.startSession(ctx);
     });
     this.coordinator.on("session_shutdown", (_event, ctx) => {
       this.workingLineController?.dispose(ctx);
+      this.selectorController?.cleanup();
       this.activeUi = undefined;
       this.state.shutdown();
     });
