@@ -1,7 +1,5 @@
 import type { CompactThinkingConfig } from "../../features/compact-thinking.ts";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { configStore, type ConfigRecord } from "./store.ts";
 
 export type CompactStyleMode = "on" | "compact" | "off";
 
@@ -66,58 +64,6 @@ export type Config = {
   enableWorkingMessage: boolean;
   enableAliases: boolean;
 };
-
-const AGENT_DIR =
-  process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent");
-const CONFIG_PATH = join(AGENT_DIR, "pi-one-ui.json");
-const LEGACY_UNIFIED_CONFIG_PATH = join(AGENT_DIR, "pi-mine-ui.json");
-const LEGACY_CONFIG_PATH = join(AGENT_DIR, "claude-code-style.json");
-const LEGACY_ZENTUI_CONFIG_PATH = join(AGENT_DIR, "zentui.json");
-
-type ConfigRecord = Record<string, unknown>;
-
-function readJson(path: string): ConfigRecord | undefined {
-  try {
-    if (!existsSync(path)) return undefined;
-    const value = JSON.parse(readFileSync(path, "utf8"));
-    return value && typeof value === "object" && !Array.isArray(value)
-      ? (value as ConfigRecord)
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Keep the two upstream configuration schemas under one portable file. Zentui
- * owns the root fields; the CC renderer owns `renderer`. Existing installations
- * are imported once without deleting their legacy files.
- */
-function readUnifiedConfig(): ConfigRecord {
-  const current = readJson(CONFIG_PATH) ?? readJson(LEGACY_UNIFIED_CONFIG_PATH);
-  if (current) {
-    if (!existsSync(CONFIG_PATH)) {
-      try {
-        writeFileSync(CONFIG_PATH, JSON.stringify(current, null, 2));
-      } catch {
-        // Keep using the legacy file in memory if migration cannot be written.
-      }
-    }
-    return current;
-  }
-
-  const shell = readJson(LEGACY_ZENTUI_CONFIG_PATH) ?? {};
-  const renderer = readJson(LEGACY_CONFIG_PATH);
-  if (!renderer && Object.keys(shell).length === 0) return {};
-
-  const migrated = { ...shell, version: 1, renderer: renderer ?? {} };
-  try {
-    writeFileSync(CONFIG_PATH, JSON.stringify(migrated, null, 2));
-  } catch {
-    // A read-only agent directory still uses the migrated in-memory value.
-  }
-  return migrated;
-}
 
 function rendererConfigFrom(record: ConfigRecord): ConfigRecord {
   const renderer = record.renderer;
@@ -424,8 +370,7 @@ export const config: Config = loadConfig();
 
 function loadConfig(): Config {
   try {
-    const unified = readUnifiedConfig();
-    return normalizeConfig(rendererConfigFrom(unified));
+    return normalizeConfig(rendererConfigFrom(configStore.read()));
   } catch {
     // Ignore bad config and fall back to defaults.
   }
@@ -433,11 +378,10 @@ function loadConfig(): Config {
 }
 
 export function saveConfig() {
-  const unified = readUnifiedConfig();
-  writeFileSync(
-    CONFIG_PATH,
-    JSON.stringify({ ...unified, version: 1, renderer: config }, null, 2),
-  );
+  configStore.update((record) => {
+    record.version = 1;
+    record.renderer = config;
+  });
 }
 
 /** 运行时配置写入的唯一入口：合并 + 规范化 + 持久化。 */

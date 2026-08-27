@@ -1,20 +1,3 @@
-import { randomUUID } from "node:crypto";
-import {
-  closeSync,
-  existsSync,
-  fchmodSync,
-  fsyncSync,
-  lstatSync,
-  openSync,
-  readFileSync,
-  realpathSync,
-  renameSync,
-  statSync,
-  unlinkSync,
-  writeFileSync,
-} from "node:fs";
-import { basename, dirname, join } from "node:path";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import {
   ICON_GLYPH_KEYS,
   type IconGlyphs,
@@ -27,6 +10,12 @@ import {
 import { isSupportedColorSpec } from "../../shell/style.ts";
 import { normalizeWorkingLineMessages } from "../../shell/working-line.ts";
 import { PI_WORKING_LINE_MESSAGES } from "../../shell/working-line-messages.ts";
+import {
+  configPath as defaultConfigPath,
+  configStore,
+  mutateConfigFile,
+  type ConfigRecord,
+} from "./store.ts";
 
 export type ColorSpec = string;
 export type ColorSource = "theme" | "terminal";
@@ -429,9 +418,7 @@ export const FOOTER_FORMAT_ALIASES: Record<string, string> = {
 };
 
 /** Shared configuration file used by the pi-one-ui package. */
-export const configPath = join(getAgentDir(), "pi-one-ui.json");
-const legacyConfigPath = join(getAgentDir(), "pi-mine-ui.json");
-const legacyZentuiConfigPath = join(getAgentDir(), "zentui.json");
+export const configPath = defaultConfigPath;
 
 const defaultFooterSegments: FooterSegmentsConfig = {
   cwd: true,
@@ -596,8 +583,6 @@ export const defaultConfig: PolishedTuiConfig = {
   gitMetrics: defaultStarshipStyle.gitMetrics,
   extensionStatuses: defaultStarshipStyle.extensionStatuses,
 };
-
-type ConfigRecord = Record<string, unknown>;
 
 function isRecord(value: unknown): value is ConfigRecord {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -977,102 +962,11 @@ function validFooterSegmentEntries(
   ) as Partial<FooterSegmentsConfig>;
 }
 
-type ConfigFileState =
-  | { kind: "missing"; record: ConfigRecord; writePath: string }
-  | { kind: "valid"; record: ConfigRecord; writePath: string; mode: number }
-  | { kind: "corrupt"; error: unknown };
-
-function errorCode(error: unknown): string | undefined {
-  return typeof error === "object" && error !== null && "code" in error
-    ? String(error.code)
-    : undefined;
-}
-
-function readConfigFileState(path: string): ConfigFileState {
-  let writePath = path;
-  try {
-    const pathStat = lstatSync(path);
-    if (pathStat.isSymbolicLink()) writePath = realpathSync(path);
-    const targetStat = statSync(writePath);
-    const parsed = JSON.parse(readFileSync(writePath, "utf8"));
-    return isRecord(parsed)
-      ? {
-          kind: "valid",
-          record: parsed,
-          writePath,
-          mode: targetStat.mode & 0o7777,
-        }
-      : {
-          kind: "corrupt",
-          error: new Error("top-level value must be a JSON object"),
-        };
-  } catch (error) {
-    if (errorCode(error) === "ENOENT") {
-      try {
-        lstatSync(path);
-      } catch (pathError) {
-        if (errorCode(pathError) === "ENOENT")
-          return { kind: "missing", record: {}, writePath: path };
-      }
-    }
-    return { kind: "corrupt", error };
-  }
-}
-
-function writeConfigAtomically(
-  path: string,
-  record: ConfigRecord,
-  mode?: number,
-): void {
-  const tempPath = join(
-    dirname(path),
-    `.${basename(path)}.${process.pid}.${randomUUID()}.tmp`,
-  );
-  let file: number | undefined;
-  try {
-    file = openSync(tempPath, "wx", mode ?? 0o666);
-    if (mode !== undefined) fchmodSync(file, mode);
-    writeFileSync(file, `${JSON.stringify(record, null, 2)}\n`, "utf8");
-    fsyncSync(file);
-    closeSync(file);
-    file = undefined;
-    renameSync(tempPath, path);
-  } catch (error) {
-    if (file !== undefined) {
-      try {
-        closeSync(file);
-      } catch {}
-    }
-    try {
-      unlinkSync(tempPath);
-    } catch (cleanupError) {
-      if (errorCode(cleanupError) !== "ENOENT") {
-        // Preserve the persistence failure; the best-effort cleanup error is secondary.
-      }
-    }
-    throw error;
-  }
-}
-
 function mutateConfig(
   path: string,
   mutate: (record: ConfigRecord) => void,
 ): PolishedTuiConfig {
-  const state = readConfigFileState(path);
-  if (state.kind === "corrupt") {
-    const detail =
-      state.error instanceof Error ? ` (${state.error.message})` : "";
-    throw new Error(
-      `Refusing to save Zentui config because ${path} is corrupt or unreadable; fix or remove it first.${detail}`,
-    );
-  }
-  mutate(state.record);
-  writeConfigAtomically(
-    state.writePath,
-    state.record,
-    state.kind === "valid" ? state.mode : undefined,
-  );
-  return mergeConfig(state.record);
+  return mergeConfig(mutateConfigFile(path, mutate, "Zentui"));
 }
 
 export function ensureConfigExists(_path = configPath): void {
@@ -1809,25 +1703,7 @@ export function getExtensionStatusColorMode(
 
 export function loadConfig(): PolishedTuiConfig {
   try {
-    let raw: string | undefined;
-    if (existsSync(configPath)) {
-      raw = readFileSync(configPath, "utf8");
-    } else if (existsSync(legacyConfigPath)) {
-      raw = readFileSync(legacyConfigPath, "utf8");
-      try {
-        writeFileSync(configPath, raw);
-      } catch {
-        // Keep using the legacy file in memory if migration cannot be written.
-      }
-    } else if (existsSync(legacyZentuiConfigPath)) {
-      raw = readFileSync(legacyZentuiConfigPath, "utf8");
-      try {
-        writeFileSync(configPath, raw);
-      } catch {
-        // Keep using the legacy file in memory if migration cannot be written.
-      }
-    }
-    return mergeConfig(raw ? JSON.parse(raw) : {});
+    return mergeConfig(configStore.read());
   } catch {
     return mergeConfig({});
   }
