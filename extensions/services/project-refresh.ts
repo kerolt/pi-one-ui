@@ -88,6 +88,8 @@ export type ProjectRefreshServiceContext = {
   readonly state: FooterState;
   readonly sessionLifecycle: SessionLifecycle;
   readonly getFooterReferences: () => ReadonlySet<string>;
+  readonly needsRefresh: () => boolean;
+  readonly reconcileOwnership: (ctx: ExtensionContext) => void;
   readonly onProjectRoot: (root: string | undefined) => void;
   readonly refresh: () => void;
 };
@@ -137,24 +139,24 @@ export class ProjectRefreshService {
    * Reconciles polling ownership with the active Footer or Editor consumers.
    *
    * @param ctx Active Pi extension context.
-   * @param needed Whether any surface needs project data.
    * @param force Whether to invalidate an active in-flight schedule.
-   * @param onTick Callback used to re-check surface ownership.
    */
-  reconcile(
-    ctx: ExtensionContext,
-    needed: boolean,
-    force = false,
-    onTick: () => void,
-  ): void {
-    if (!this.context.sessionLifecycle.isCurrent() || !needed) {
+  reconcile(ctx: ExtensionContext, force = false): void {
+    if (
+      !this.context.sessionLifecycle.isCurrent() ||
+      !this.context.needsRefresh()
+    ) {
       this.stop();
       return;
     }
     const activated = this.activation.reconcile({
       needed: true,
       intervalMs: this.context.getConfig().projectRefreshIntervalMs,
-      onTick,
+      onTick: () => {
+        this.context.reconcileOwnership(ctx);
+        if (!this.context.needsRefresh()) this.stop();
+        else this.schedule(ctx);
+      },
     });
     if (force && !activated) this.scheduler.invalidate();
     if (force || activated) this.schedule(ctx, { force: true });

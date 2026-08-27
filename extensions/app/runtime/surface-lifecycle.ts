@@ -197,7 +197,7 @@ export default function (
       workingLineController.duration().subscribe(() => listener()),
     getProjectRoot: () => minimalistProjectRoot,
     onProjectRequirementChanged: () => {
-      if (activeTuiContext) reconcileProjectRefresh(activeTuiContext);
+      if (activeTuiContext) projectRefreshService.reconcile(activeTuiContext);
     },
     onModelLabelChanged: (ctx) => syncFooterState(ctx),
     recordLayoutDiagnostic: recordAccentRailLayoutPatchDiagnostic,
@@ -214,6 +214,10 @@ export default function (
     state,
     sessionLifecycle,
     getFooterReferences: () => footerController.installedFooterReferences(),
+    needsRefresh: () =>
+      footerController.needsProjectRefresh() ||
+      editorController.needsProjectRefresh(),
+    reconcileOwnership: (ctx) => editorController.reconcileOwnership(ctx),
     onProjectRoot: (root) => {
       minimalistProjectRoot = root;
     },
@@ -225,28 +229,6 @@ export default function (
   ) => projectRefreshService.schedule(ctx, options);
 
   /**
-   * Reports whether any active surface currently needs project metadata.
-   */
-  const needsProjectRefresh = () =>
-    footerController.needsProjectRefresh() ||
-    editorController.needsProjectRefresh();
-
-  /**
-   * Stops polling and invalidates pending project refresh work.
-   */
-  const stopProjectRefresh = () => projectRefreshService.stop();
-
-  /**
-   * Starts or invalidates shared project refresh work.
-   */
-  const reconcileProjectRefresh = (ctx: ExtensionContext, force = false) =>
-    projectRefreshService.reconcile(ctx, needsProjectRefresh(), force, () => {
-      editorController.reconcileOwnership(ctx);
-      if (!needsProjectRefresh()) projectRefreshService.stop();
-      else projectRefreshService.schedule(ctx);
-    });
-
-  /**
    * Synchronizes shared session state and requests a visible redraw.
    *
    * @param ctx Active Pi extension context.
@@ -256,7 +238,7 @@ export default function (
     if (!sessionLifecycle.isCurrent() || !ctx.hasUI) return;
     editorController.reconcileOwnership(ctx);
     syncFooterState(ctx);
-    if (project && needsProjectRefresh()) scheduleProjectRefresh(ctx);
+    if (project) scheduleProjectRefresh(ctx);
     refresh();
   };
 
@@ -278,7 +260,7 @@ export default function (
     const after = footerController.installedFooterReferences();
     if (sameReferences(before, after)) return;
     reconcileSessionTimer();
-    reconcileProjectRefresh(ctx, true);
+    projectRefreshService.reconcile(ctx, true);
   };
 
   const selectorController = new SelectorController({
@@ -296,7 +278,7 @@ export default function (
     scheduleProjectRefresh: (ctx) => scheduleProjectRefresh(ctx),
     getLiveContext: () => liveContext.get(),
     onProjectRequirementChanged: (ctx, force) =>
-      reconcileProjectRefresh(ctx, force),
+      projectRefreshService.reconcile(ctx, force),
     onModelLabelChanged: (ctx) => syncFooterState(ctx),
   });
 
@@ -304,7 +286,7 @@ export default function (
     if (!isTuiContext(ctx)) return;
     if (options.manageSelectorLifecycle !== false)
       selectorController.reconcile();
-    reconcileProjectRefresh(ctx);
+    projectRefreshService.reconcile(ctx);
     reconcileSessionTimer();
   };
 
@@ -318,7 +300,7 @@ export default function (
     ensureConfigExists();
     currentConfig = loadConfig();
     syncFooterState(ctx);
-    stopProjectRefresh();
+    projectRefreshService.stop();
 
     if (options.manageSelectorLifecycle !== false)
       selectorController.startSession(ctx);
@@ -336,7 +318,7 @@ export default function (
     if (!ctx || !sessionLifecycle.isCurrent()) return;
     editorController.cleanup(ctx);
     footerController.cleanup(ctx);
-    stopProjectRefresh();
+    projectRefreshService.stop();
     if (options.manageSelectorLifecycle !== false) selectorController.cleanup();
     activeTheme = undefined;
     activeTuiContext = undefined;
@@ -389,7 +371,7 @@ export default function (
     setMinimalist(patch: Partial<MinimalistConfig>, ctx: ExtensionContext) {
       currentConfig = saveMinimalistEditorStylePatch(patch);
       editorController.reconcileTimers();
-      reconcileProjectRefresh(
+      projectRefreshService.reconcile(
         ctx,
         patch.pathDisplay !== undefined || patch.showGit !== undefined,
       );
@@ -477,14 +459,15 @@ export default function (
       currentConfig = saveStarshipFooterStylePatch({
         gitCommit: patch as GitCommitConfig,
       });
-      if (patch.showTag !== undefined) reconcileProjectRefresh(ctx, true);
+      if (patch.showTag !== undefined)
+        projectRefreshService.reconcile(ctx, true);
     },
     setGitMetrics(patch: Partial<GitMetricsConfig>, ctx: ExtensionContext) {
       currentConfig = saveStarshipFooterStylePatch({
         gitMetrics: patch as GitMetricsConfig,
       });
       if (patch.ignoreSubmodules !== undefined)
-        reconcileProjectRefresh(ctx, true);
+        projectRefreshService.reconcile(ctx, true);
     },
     getActiveExtensionStatuses() {
       return footerController.getExtensionStatuses();
