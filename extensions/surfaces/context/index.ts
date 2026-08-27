@@ -9,6 +9,8 @@ import {
   hasUnsupportedComponentStyle,
   loadConfig,
   mergeConfig,
+  saveUserMessagesComponentPatch,
+  type UserMessagesComponentConfig,
   type ZentuiConfig,
 } from "../../app/config/shell.ts";
 import {
@@ -37,6 +39,10 @@ export type ContextRuntimeController = {
   setMode: (mode: "on" | "compact" | "off", ctx: ExtensionContext) => void;
   updateConfig: (
     partial: Partial<typeof config>,
+    ctx: ExtensionContext,
+  ) => void;
+  setUserMessagesComponent: (
+    patch: Partial<UserMessagesComponentConfig>,
     ctx: ExtensionContext,
   ) => void;
 };
@@ -118,6 +124,21 @@ function startContextSession(ctx: ExtensionContext): void {
 }
 
 /**
+ * Applies a User Message configuration patch owned by Context.
+ *
+ * @param patch User Message configuration changes.
+ * @param _ctx Active Pi extension context.
+ */
+function setContextUserMessages(
+  patch: Partial<UserMessagesComponentConfig>,
+  _ctx: ExtensionContext,
+): void {
+  contextConfig = saveUserMessagesComponentPatch(patch);
+  if (patch.enabled !== undefined || patch.style !== undefined)
+    reconcileContextUserMessages();
+}
+
+/**
  * Releases Context session bindings and restores the original User Message patch.
  */
 function stopContextSession(): void {
@@ -144,7 +165,11 @@ export default function (
     undefined,
     installCompactThinking(pi, getCompactThinkingConfig()),
     {
-      onRuntimeController: options.onRuntimeController,
+      onRuntimeController: (controller) =>
+        options.onRuntimeController?.({
+          ...controller,
+          setUserMessagesComponent: setContextUserMessages,
+        }),
     },
   );
 

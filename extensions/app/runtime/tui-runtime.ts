@@ -87,7 +87,7 @@ export class TuiRuntime {
       setEditorComponent: (patch, ctx) =>
         this.editorController?.setComponent(patch, ctx) ?? { applied: false },
       setUserMessagesComponent: (patch, ctx) =>
-        this.surfaceController?.setUserMessagesComponent(patch, ctx),
+        this.contextController?.setUserMessagesComponent(patch, ctx),
       setWorkingLineComponent: (patch, ctx) =>
         this.surfaceController?.setWorkingLineComponent(patch, ctx) ?? {
           applied: false,
