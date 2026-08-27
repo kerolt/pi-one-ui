@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { replaceEditorComponentWithExpandedText } from "../extensions/shell/editor-transfer";
+import { replaceEditorComponentWithExpandedText } from "../extensions/surfaces/editor/editor-transfer";
 
 type Editor = {
   getText(): string;

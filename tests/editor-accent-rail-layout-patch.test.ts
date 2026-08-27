@@ -20,7 +20,7 @@ import {
   markAccentRailLayoutEditor,
   retainAccentRailLayoutPatchInstallation,
   ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR,
-} from "../extensions/shell/accent-rail-layout-patch";
+} from "../extensions/surfaces/editor/accent-rail-layout-patch";
 import { SessionLifecycle } from "../extensions/shell/session-lifecycle";
 
 const LAYOUT_NODE = Symbol.for("@earendil-works/pi-tui/layout-node");

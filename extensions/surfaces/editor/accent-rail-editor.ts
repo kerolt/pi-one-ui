@@ -5,12 +5,12 @@ import {
   fillTerminalLine,
   renderCompletionRows,
 } from "./completion-menu.ts";
-import type { ZentuiConfig } from "../app/config/shell.ts";
+import type { ZentuiConfig } from "../../app/config/shell.ts";
 import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
 import {
   renderStyleForSourceOrFallback,
   type SourceStyleFallback,
-} from "./style.ts";
+} from "../../shell/style.ts";
 
 export const ACCENT_RAIL_CHROME_WIDTH = 2;
 

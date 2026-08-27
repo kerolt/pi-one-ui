@@ -10,7 +10,7 @@ import {
   PolishedEditor,
   renderWithAutocompleteCapture,
   WrappedPolishedEditor,
-} from "../extensions/shell/ui";
+} from "../extensions/surfaces/editor/ui";
 
 function theme(): Theme {
   return {

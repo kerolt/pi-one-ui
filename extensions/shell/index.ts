@@ -12,7 +12,7 @@ import {
   installHostAccentRailLayoutPatch,
   markAccentRailLayoutEditor,
   retainAccentRailLayoutPatchInstallation,
-} from "./accent-rail-layout-patch.ts";
+} from "../surfaces/editor/index.ts";
 import {
   type AccentRailEditorStyleConfig,
   type ContextStyle,
@@ -57,7 +57,7 @@ import {
 import {
   type EditorTransferFailureReason,
   replaceEditorComponentWithExpandedText,
-} from "./editor-transfer.ts";
+} from "../surfaces/editor/index.ts";
 import { installFooter, installHiddenFooter } from "./footer.ts";
 import {
   collectFooterFormatReferences,
@@ -97,7 +97,10 @@ import {
   syncState,
 } from "./state.ts";
 import { resolveFooterTelemetry } from "./telemetry.ts";
-import { PolishedEditor, WrappedPolishedEditor } from "./ui.ts";
+import {
+  PolishedEditor,
+  WrappedPolishedEditor,
+} from "../surfaces/editor/index.ts";
 import {
   installUserMessageStyle,
   removeUserMessageStyle,

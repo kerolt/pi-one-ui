@@ -17,7 +17,7 @@ import {
   renderAccentRailEditorFrame,
 } from "./accent-rail-editor.ts";
 import { renderCompletionPalette } from "./completion-menu.ts";
-import type { EditorStyle, ZentuiConfig } from "../app/config/shell.ts";
+import type { EditorStyle, ZentuiConfig } from "../../app/config/shell.ts";
 import { renderEditorMetadataFormat } from "./editor-metadata-format.ts";
 import {
   type MinimalistEditorMetadata,
@@ -28,7 +28,7 @@ import {
   EDITOR_BORDER_FALLBACK,
   renderStyleForSourceOrFallback,
   safeThemeFg,
-} from "./style.ts";
+} from "../../shell/style.ts";
 
 const LEGACY_SPLIT_POLISHED_FRAME = Symbol.for("pi-zentui.polished-frame");
 

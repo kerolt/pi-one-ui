@@ -22,7 +22,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import {
   discoverAccentRailLayoutPatchTargetFromEntrypoint,
   ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR,
-} from "../extensions/shell/accent-rail-layout-patch";
+} from "../extensions/surfaces/editor/accent-rail-layout-patch";
 import {
   defaultConfig,
   type ExtensionStatusPlacement,
@@ -43,7 +43,7 @@ import { createInitialState } from "../extensions/shell/state";
 import {
   PolishedEditor as PolishedEditorProduction,
   WrappedPolishedEditor as WrappedPolishedEditorProduction,
-} from "../extensions/shell/ui";
+} from "../extensions/surfaces/editor/ui";
 import { installUserMessageStyle as installUserMessageStyleProduction } from "../extensions/surfaces/context/message/user-message";
 import { sanitizeUserMessageSourceText } from "../extensions/surfaces/context/message/user-message-osc";
 
@@ -1078,7 +1078,7 @@ describe("Pi docs compliance", () => {
       "package.json",
       "extensions/app/config/shell.ts",
       "extensions/shell/index.ts",
-      "extensions/shell/ui.ts",
+      "extensions/surfaces/editor/ui.ts",
     ];
     const content = files
       .map((file) => readFileSync(join(process.cwd(), file), "utf8"))

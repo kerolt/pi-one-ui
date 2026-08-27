@@ -2,7 +2,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { SeparatorStyle, ZentuiConfig } from "../app/config/shell.ts";
 import { FOOTER_FORMAT_ALIASES } from "../app/config/shell.ts";
-import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
+import { sanitizeEditorMetadataText } from "../surfaces/editor/editor-metadata-format.ts";
 import {
   collectExtensionStatusSegments,
   type ExtensionStatusSegment,

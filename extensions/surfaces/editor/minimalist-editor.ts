@@ -1,7 +1,7 @@
 import { basename, isAbsolute, relative, sep } from "node:path";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import type { ZentuiConfig } from "../app/config/shell.ts";
+import type { ZentuiConfig } from "../../app/config/shell.ts";
 import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
 import {
   buildContextGauge,
@@ -9,9 +9,9 @@ import {
   formatCount,
   formatCwdLabel,
   formatElapsedDuration,
-} from "./format.ts";
+} from "../../shell/format.ts";
 
-export { formatElapsedDuration } from "./format.ts";
+export { formatElapsedDuration } from "../../shell/format.ts";
 
 import {
   EDITOR_ACCENT_FALLBACK,
@@ -19,7 +19,7 @@ import {
   renderStyleForSource,
   renderStyleForSourceOrFallback,
   safeThemeFg,
-} from "./style.ts";
+} from "../../shell/style.ts";
 
 const MINIMALIST_MODEL_FALLBACK = {
   theme: "syntaxKeyword",

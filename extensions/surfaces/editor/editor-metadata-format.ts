@@ -1,11 +1,14 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import type { ZentuiConfig } from "../app/config/shell.ts";
-import { type FormatToken, parseFooterFormat } from "./footer-format.ts";
+import type { ZentuiConfig } from "../../app/config/shell.ts";
+import {
+  type FormatToken,
+  parseFooterFormat,
+} from "../../shell/footer-format.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   renderStyleForSourceOrFallback,
   safeThemeFg,
-} from "./style.ts";
+} from "../../shell/style.ts";
 
 export type EditorMetadataValues = {
   model: string;

@@ -9,7 +9,7 @@ import {
   renderCompletionPalette,
   renderCompletionRows,
   replaceNativeSelectedPrefix,
-} from "../extensions/shell/completion-menu";
+} from "../extensions/surfaces/editor/completion-menu";
 
 function theme(): Theme {
   return {

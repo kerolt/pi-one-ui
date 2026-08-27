@@ -1,11 +1,11 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import { renderAccentRailEditorFrame } from "./accent-rail-editor.ts";
+import { renderAccentRailEditorFrame } from "../surfaces/editor/accent-rail-editor.ts";
 import type { PolishedTuiConfig } from "../app/config/shell.ts";
-import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
-import { renderMinimalistFrame } from "./minimalist-editor.ts";
+import { sanitizeEditorMetadataText } from "../surfaces/editor/editor-metadata-format.ts";
+import { renderMinimalistFrame } from "../surfaces/editor/minimalist-editor.ts";
 import { safeThemeFg } from "./style.ts";
-import { renderPolishedEditorFrame } from "./ui.ts";
+import { renderPolishedEditorFrame } from "../surfaces/editor/ui.ts";
 import { renderUserMessageStyle } from "../surfaces/context/message/user-message-styles.ts";
 
 export const SETTINGS_PREVIEW_MAX_WIDTH = 72;

@@ -13,9 +13,9 @@ import {
 import type { ContextRuntimeController } from "../surfaces/context/index.ts";
 import {
   type CompactStyleMode,
+  type Config as ContextConfig,
   DIFF_INDICATOR_MODES,
   DIFF_VIEW_MODES,
-  type Config as ContextConfig,
   config as rendererConfig,
   updateConfig as updateContextConfig,
 } from "./config/renderer.ts";

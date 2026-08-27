@@ -5,7 +5,7 @@ import {
   type EditorMetadataValues,
   renderEditorMetadataFormat,
   sanitizeEditorMetadataText,
-} from "../extensions/shell/editor-metadata-format";
+} from "../extensions/surfaces/editor/editor-metadata-format";
 
 function makeTheme(): Theme {
   return {

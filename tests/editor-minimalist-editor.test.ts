@@ -13,7 +13,7 @@ import {
   formatElapsedDuration,
   type MinimalistEditorMetadata,
   renderMinimalistFrame,
-} from "../extensions/shell/minimalist-editor";
+} from "../extensions/surfaces/editor/minimalist-editor";
 import { createInitialState } from "../extensions/shell/state";
 
 function theme(): Theme {
