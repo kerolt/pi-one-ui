@@ -6,8 +6,8 @@ import {
   normalizeIconMode,
   type ResolvedIcons,
   resolveConfiguredIcons,
-} from "../../shell/icons.ts";
-import { isSupportedColorSpec } from "../../shell/style.ts";
+} from "../../shared/icons.ts";
+import { isSupportedColorSpec } from "../../shared/style.ts";
 import { normalizeWorkingLineMessages } from "../../surfaces/working-line/working-line.ts";
 import { PI_WORKING_LINE_MESSAGES } from "../../surfaces/working-line/working-line-messages.ts";
 import {
@@ -19,7 +19,7 @@ import {
 
 export type ColorSpec = string;
 export type ColorSource = "theme" | "terminal";
-export type { IconMode } from "../../shell/icons.ts";
+export type { IconMode } from "../../shared/icons.ts";
 
 export type ContextStyle = "text" | "gauge" | "text+gauge";
 export type SeparatorStyle = "pipe" | "dot" | "chevron" | "none";

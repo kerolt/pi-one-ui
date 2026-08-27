@@ -62,7 +62,7 @@ import {
   renderStyle,
   renderStyleForSource,
   renderTerminalStyle,
-} from "../extensions/shell/style";
+} from "../extensions/shared/style";
 
 function configTempFiles(dir: string, filename = "zentui.json"): string[] {
   return readdirSync(dir).filter(

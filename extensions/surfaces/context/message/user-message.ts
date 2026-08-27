@@ -7,7 +7,7 @@ import type { ZentuiConfig } from "../../../app/config/shell.ts";
 import {
   installPrototypePatch,
   removePrototypePatch,
-} from "../../../shell/prototype-patch-registry.ts";
+} from "../../../app/ownership/prototype-patch-registry.ts";
 import {
   sanitizeRenderedUserMessageLines,
   sanitizeRenderedUserMessageText,

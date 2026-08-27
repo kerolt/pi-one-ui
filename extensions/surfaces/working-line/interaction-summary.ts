@@ -5,8 +5,8 @@ import type {
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import type { ColorSource, ColorSpec } from "../../app/config/shell.ts";
-import { formatCount, formatElapsedDuration } from "../../shell/format.ts";
-import { isSafeSgrStylePrefix } from "../../shell/style.ts";
+import { formatCount, formatElapsedDuration } from "../../shared/format.ts";
+import { isSafeSgrStylePrefix } from "../../shared/style.ts";
 import { renderWorkingLineHigh } from "./working-line.ts";
 
 export const TURN_SUMMARY_ENTRY_TYPE = "zentui-turn-summary";

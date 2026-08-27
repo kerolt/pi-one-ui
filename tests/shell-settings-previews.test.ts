@@ -13,7 +13,7 @@ import {
   renderUserMessageSettingsPreview,
   SETTINGS_PREVIEW_MAX_ROWS,
   SETTINGS_PREVIEW_MAX_WIDTH,
-} from "../extensions/shell/settings-previews";
+} from "../extensions/app/commands/settings-previews";
 
 function theme(offset = 0): Theme {
   return {

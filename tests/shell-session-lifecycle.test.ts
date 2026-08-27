@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SessionLifecycle } from "../extensions/shell/session-lifecycle";
+import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
 
 afterEach(() => {
   vi.useRealTimers();

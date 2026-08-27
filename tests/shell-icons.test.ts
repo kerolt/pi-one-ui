@@ -8,7 +8,7 @@ import {
   resolveConfiguredIcons,
   resolveOsIcon,
   resolveRuntimeSymbol,
-} from "../extensions/shell/icons";
+} from "../extensions/shared/icons";
 import { runtimeMetadata } from "../extensions/services/runtime-data";
 
 describe("icon tables", () => {

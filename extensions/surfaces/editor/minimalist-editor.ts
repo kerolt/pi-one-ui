@@ -9,9 +9,9 @@ import {
   formatCount,
   formatCwdLabel,
   formatElapsedDuration,
-} from "../../shell/format.ts";
+} from "../../shared/format.ts";
 
-export { formatElapsedDuration } from "../../shell/format.ts";
+export { formatElapsedDuration } from "../../shared/format.ts";
 
 import {
   EDITOR_ACCENT_FALLBACK,
@@ -19,7 +19,7 @@ import {
   renderStyleForSource,
   renderStyleForSourceOrFallback,
   safeThemeFg,
-} from "../../shell/style.ts";
+} from "../../shared/style.ts";
 
 const MINIMALIST_MODEL_FALLBACK = {
   theme: "syntaxKeyword",

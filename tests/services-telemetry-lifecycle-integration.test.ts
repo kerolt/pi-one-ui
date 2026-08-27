@@ -79,7 +79,7 @@ vi.mock("../extensions/services/package-data", () => ({
   readPackageVersionResult: async () => ({ kind: "ok" as const, result: null }),
 }));
 
-import zentui from "../extensions/shell/index";
+import zentui from "../extensions/app/runtime/legacy-shell-adapter";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
 type Footer = { render(width: number): string[]; dispose?: () => void };

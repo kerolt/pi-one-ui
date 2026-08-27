@@ -5,12 +5,11 @@ import {
   SettingsList,
   truncateToWidth,
 } from "@earendil-works/pi-tui";
-import type { ShellRuntimeController } from "../shell/index.ts";
+import type { ContextRuntimeController } from "../surfaces/context/index.ts";
 import {
   renderEditorSettingsPreview,
   renderUserMessageSettingsPreview,
-} from "../shell/settings-previews.ts";
-import type { ContextRuntimeController } from "../surfaces/context/index.ts";
+} from "./commands/settings-previews.ts";
 import {
   type CompactStyleMode,
   type Config as ContextConfig,
@@ -33,6 +32,7 @@ import {
 import { overlayManager } from "./overlay/overlay-manager.ts";
 import { ownerFor } from "./ownership.ts";
 import { applyPreset, PRESET_VALUES, type Preset } from "./presets.ts";
+import type { ShellRuntimeController } from "./runtime/legacy-shell-adapter.ts";
 
 const EDITOR_STYLES: EditorStyle[] = [
   "opencode",

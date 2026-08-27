@@ -10,7 +10,7 @@ import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
 import {
   renderStyleForSourceOrFallback,
   type SourceStyleFallback,
-} from "../../shell/style.ts";
+} from "../../shared/style.ts";
 
 export const ACCENT_RAIL_CHROME_WIDTH = 2;
 

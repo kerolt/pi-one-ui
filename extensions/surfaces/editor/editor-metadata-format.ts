@@ -8,7 +8,7 @@ import {
   EDITOR_ACCENT_FALLBACK,
   renderStyleForSourceOrFallback,
   safeThemeFg,
-} from "../../shell/style.ts";
+} from "../../shared/style.ts";
 
 export type EditorMetadataValues = {
   model: string;

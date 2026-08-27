@@ -69,11 +69,12 @@ Header → Context → WorkingLine → Editor → Footer → Features → Preset
 extensions/
   index.ts                         # 唯一插件入口，创建 TuiRuntime
   app/
-    runtime/                       # runtime state、事件协调、渲染调度
+    runtime/                       # TuiRuntime、legacy adapter、state、事件和调度
     host/                          # Pi API 的窄化 host ports
     config/                        # ConfigStore 与配置领域解析
     ownership/                     # Surface ownership
-    overlay/                       # OverlayManager 与 InputRouter
+    overlay/                       # OverlayManager、InputRouter、selector
+    commands/                      # /oneui 与 legacy settings command
   surfaces/
     header/                        # Header surface
     context/                       # 原 Transcript：对话内容区
@@ -91,9 +92,10 @@ extensions/
     legacy/                        # standalone compatibility implementation
     session-reference/
     subagent-autocomplete.ts
-  services/                        # Git、runtime、package、project、session 数据
-  tools/                          # 仍在迁移中的底层兼容工具
-vendor/                            # 只读上游参考快照
+  services/                       # Git、runtime、package、project、session 数据
+  shared/                         # ANSI、format、style、icons 等共享实现
+  tools/                          # 底层组件树、patch 和 terminal helpers
+vendor/                           # 只读上游参考快照
 ```
 
 `TuiRuntime` 是统一 composition root。当前部分 Surface 的生命周期仍由 legacy adapter 实现，但装配入口和 ownership 已经收敛到统一 runtime。

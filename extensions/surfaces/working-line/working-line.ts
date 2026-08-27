@@ -7,14 +7,14 @@ import type {
   WorkingLineTextAnimation,
   ZentuiConfig,
 } from "../../app/config/shell.ts";
-import { formatCount } from "../../shell/format.ts";
+import { formatCount } from "../../shared/format.ts";
 import {
   isSafeSgrStylePrefix,
   isSupportedColorSpec,
   renderStyleForSourceOrFallback,
   type SourceStyleFallback,
   type ThemeLike,
-} from "../../shell/style.ts";
+} from "../../shared/style.ts";
 import { PI_WORKING_LINE_MESSAGES } from "./working-line-messages.ts";
 import { WORKING_LINE_SPINNERS } from "./working-line-spinners.ts";
 

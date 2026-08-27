@@ -5,7 +5,7 @@ import {
   LiveContextController,
   liveContextFromMessage,
 } from "../extensions/services/live-context";
-import { SessionLifecycle } from "../extensions/shell/session-lifecycle";
+import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
 
 function usage(patch: Partial<Usage> = {}): Usage {
   return {

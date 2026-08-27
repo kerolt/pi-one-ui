@@ -53,10 +53,10 @@ import {
   type WorkingLineComponentPatch,
   type WorkingLineSpinner,
   type WorkingLineTextAnimation,
-} from "../app/config/shell.ts";
-import { sanitizeExtensionStatusText } from "../surfaces/footer/extension-status.ts";
-import { isIconMode } from "./icons.ts";
-import type { SessionLifecycle } from "./session-lifecycle.ts";
+} from "../config/shell.ts";
+import { sanitizeExtensionStatusText } from "../../surfaces/footer/extension-status.ts";
+import { isIconMode } from "../../shared/icons.ts";
+import type { SessionLifecycle } from "../runtime/session-lifecycle.ts";
 import {
   renderEditorSettingsPreview,
   renderUserMessageSettingsPreview,
@@ -66,13 +66,13 @@ import {
   EDITOR_BORDER_STYLE,
   renderChromeBorder,
   safeThemeFg,
-} from "./style.ts";
+} from "../../shared/style.ts";
 import {
   buildWorkingLinePreviewFrames,
   normalizeWorkingLineMessages,
   remapWorkingLineTextTick,
   type WorkingLineFrames,
-} from "../surfaces/working-line/working-line.ts";
+} from "../../surfaces/working-line/working-line.ts";
 
 const colorSourceValues: ColorSource[] = ["theme", "terminal"];
 const extensionStatusPlacementValues: ExtensionStatusPlacement[] = [
@@ -168,7 +168,7 @@ const settingsSections = [
 
 type FeatureState = "enabled" | "disabled";
 type SettingsSection = (typeof settingsSections)[number];
-type FooterSegmentSettingId = keyof FooterSegmentsConfig;
+type FooterSegmentSettingId = keyof FooterSegmentsConfig & string;
 type EditorPatch = Partial<
   Pick<
     EditorComponentConfig,

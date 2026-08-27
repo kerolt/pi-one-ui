@@ -35,14 +35,14 @@ import {
   formatRuntimeSegment,
   formatTimeLabel,
   formatUsernameHostLabel,
-} from "../../shell/format.ts";
-import { resolveRuntimeSymbol } from "../../shell/icons.ts";
+} from "../../shared/format.ts";
+import { resolveRuntimeSymbol } from "../../shared/icons.ts";
 import type { LiveContextOverride } from "../../services/live-context.ts";
 import {
   type FooterState,
   modelLabelFor,
 } from "../../services/session-state.ts";
-import { renderStyleForSource } from "../../shell/style.ts";
+import { renderStyleForSource } from "../../shared/style.ts";
 
 const separatorText: Record<SeparatorStyle, string> = {
   pipe: " | ",

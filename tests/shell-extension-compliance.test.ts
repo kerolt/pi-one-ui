@@ -31,14 +31,16 @@ import {
 } from "../extensions/app/config/shell";
 import { installFooter as installFooterProduction } from "../extensions/surfaces/footer/footer";
 import { emptyGitStatus } from "../extensions/services/git-data";
-import zentui, { activeFooterReferences } from "../extensions/shell/index";
-import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../extensions/shell/prototype-patch-registry";
+import zentui, {
+  activeFooterReferences,
+} from "../extensions/app/runtime/legacy-shell-adapter";
+import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../extensions/app/ownership/prototype-patch-registry";
 import {
   installSelectorBorderStyle as installSelectorBorderStyleProduction,
   patchSelectorBorderStyle as patchSelectorBorderStyleProduction,
-} from "../extensions/shell/selector-border";
-import { SessionLifecycle } from "../extensions/shell/session-lifecycle";
-import { registerZentuiSettingsCommand } from "../extensions/shell/settings-command";
+} from "../extensions/app/overlay/selector-border";
+import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
+import { registerZentuiSettingsCommand } from "../extensions/app/commands/legacy-shell-settings";
 import { createInitialState } from "../extensions/services/session-state";
 import {
   PolishedEditor as PolishedEditorProduction,
@@ -739,8 +741,9 @@ describe("fixed-editor retirement contract", () => {
       "tui.mode",
       "tuiMode",
     ];
-    const production = collectFiles(join(root, "extensions", "shell"), (path) =>
-      path.endsWith(".ts"),
+    const production = collectFiles(
+      join(root, "extensions", "surfaces", "editor"),
+      (path) => path.endsWith(".ts"),
     );
     for (const path of production) {
       const source = readFileSync(path, "utf8");
@@ -1077,7 +1080,7 @@ describe("Pi docs compliance", () => {
     const files = [
       "package.json",
       "extensions/app/config/shell.ts",
-      "extensions/shell/index.ts",
+      "extensions/app/runtime/legacy-shell-adapter.ts",
       "extensions/surfaces/editor/ui.ts",
     ];
     const content = files

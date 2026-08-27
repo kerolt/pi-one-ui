@@ -20,13 +20,13 @@ import {
   formatPackageVersionSegment,
   getUsageTotals,
   invalidateUsageTotalsCache,
-} from "../extensions/shell/format";
+} from "../extensions/shared/format";
 import {
   ASCII_DEFAULT_ICONS,
   NERD_DEFAULT_ICONS,
   OS_PLATFORM_ICONS_ASCII,
   OS_PLATFORM_ICONS_NERD,
-} from "../extensions/shell/icons";
+} from "../extensions/shared/icons";
 
 const cacheHitIcon = "󰆼";
 

@@ -106,11 +106,12 @@ Features contribute commands, autocomplete, data or entry effects. They do not c
 extensions/
 ├── index.ts
 ├── app/
-│   ├── runtime/                 # TuiRuntime, state, event and render coordination
+│   ├── runtime/                 # TuiRuntime, legacy adapter, state, event and render coordination
 │   ├── host/                    # Narrow Pi extension/UI ports and capabilities
 │   ├── config/                  # ConfigStore and domain projections
 │   ├── ownership/               # Surface and patch ownership
-│   ├── overlay/                 # Overlay activity and input routing
+│   ├── overlay/                 # Overlay activity, selector and input routing
+│   ├── commands/                # /oneui and legacy settings command
 │   └── panel.ts                 # /oneui settings UI
 ├── surfaces/
 │   ├── header/                  # Startup Header
@@ -130,8 +131,8 @@ extensions/
 │   ├── session-reference/
 │   └── subagent-autocomplete.ts
 ├── services/                    # Project, Git, runtime, package and session data
-├── shell/                       # Remaining legacy adapter and shared compatibility code
-└── tools/                       # Low-level compatibility helpers still being classified
+├── shared/                      # Format, style and icon implementations
+└── tools/                       # Low-level compatibility helpers
 ```
 
 ## 6. Configuration

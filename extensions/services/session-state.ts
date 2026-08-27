@@ -8,7 +8,7 @@ import {
   buildTokenLabel,
   formatProviderLabel,
   getUsageTotals,
-} from "../shell/format.ts";
+} from "../shared/format.ts";
 import type { GitStatusSummary } from "./git-data.ts";
 import type { PackageVersionResult } from "./package-data.ts";
 import type { RuntimeInfo } from "./runtime-data.ts";

@@ -272,7 +272,7 @@ vi.mock("../extensions/services/session-state", async (importOriginal) => {
 });
 
 import { defaultConfig } from "../extensions/app/config/shell";
-import zentui from "../extensions/shell/index";
+import zentui from "../extensions/app/runtime/legacy-shell-adapter";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
 type Command = { handler: (args: string, ctx: unknown) => Promise<void> };

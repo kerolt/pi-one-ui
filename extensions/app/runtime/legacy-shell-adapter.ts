@@ -12,7 +12,7 @@ import {
   installHostAccentRailLayoutPatch,
   markAccentRailLayoutEditor,
   retainAccentRailLayoutPatchInstallation,
-} from "../surfaces/editor/index.ts";
+} from "../../surfaces/editor/index.ts";
 import {
   type AccentRailEditorStyleConfig,
   type ContextStyle,
@@ -53,66 +53,66 @@ import {
   type UserMessagesComponentConfig,
   type WorkingLineComponentPatch,
   type ZentuiConfig,
-} from "../app/config/shell.ts";
+} from "../config/shell.ts";
 import {
   type EditorTransferFailureReason,
   replaceEditorComponentWithExpandedText,
-} from "../surfaces/editor/index.ts";
+} from "../../surfaces/editor/index.ts";
 import {
   installFooter,
   installHiddenFooter,
-} from "../surfaces/footer/index.ts";
+} from "../../surfaces/footer/index.ts";
 import {
   collectFooterFormatReferences,
   parseFooterFormat,
-} from "../surfaces/footer/index.ts";
+} from "../../surfaces/footer/index.ts";
 import {
   buildSessionDurationLabel,
   invalidateUsageTotalsCache,
-} from "./format.ts";
-import { emptyGitStatus, readGitStatus } from "../services/git-data.ts";
+} from "../../shared/format.ts";
+import { emptyGitStatus, readGitStatus } from "../../services/git-data.ts";
 import {
   InteractionMetricsTracker,
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
-} from "../surfaces/working-line/interaction-summary.ts";
-import { LiveContextController } from "../services/live-context.ts";
-import { readPackageVersionResult } from "../services/package-data.ts";
+} from "../../surfaces/working-line/interaction-summary.ts";
+import { LiveContextController } from "../../services/live-context.ts";
+import { readPackageVersionResult } from "../../services/package-data.ts";
 import {
   createProjectRefreshScheduler,
   type ProjectRefreshRun,
   type ScheduleProjectRefreshOptions,
   type StopProjectRefreshInterval,
   startProjectRefreshInterval,
-} from "../services/project-refresh.ts";
-import { applyProjectRefreshToState } from "../services/project-state.ts";
-import { readRuntimeInfo } from "../services/runtime-data.ts";
+} from "../../services/project-refresh.ts";
+import { applyProjectRefreshToState } from "../../services/project-state.ts";
+import { readRuntimeInfo } from "../../services/runtime-data.ts";
 import {
   installSelectorBorderStyle,
   removeSelectorBorderStyle,
-} from "./selector-border.ts";
+} from "../overlay/selector-border.ts";
 import { SessionLifecycle } from "./session-lifecycle.ts";
-import { registerShellSettingsCommand } from "./settings-command.ts";
+import { registerShellSettingsCommand } from "../commands/legacy-shell-settings.ts";
 import {
   createInitialState,
   type FooterState,
   modelLabelFor,
   syncState,
-} from "../surfaces/footer/index.ts";
-import { resolveFooterTelemetry } from "../services/telemetry.ts";
+} from "../../surfaces/footer/index.ts";
+import { resolveFooterTelemetry } from "../../services/telemetry.ts";
 import {
   PolishedEditor,
   WrappedPolishedEditor,
-} from "../surfaces/editor/index.ts";
+} from "../../surfaces/editor/index.ts";
 import {
   installUserMessageStyle,
   removeUserMessageStyle,
-} from "../surfaces/context/message/user-message.ts";
+} from "../../surfaces/context/message/user-message.ts";
 import {
   AgentDurationClock,
   snapshotWorkingLineHighStyle,
   WorkingLineController,
-} from "../surfaces/working-line/working-line.ts";
+} from "../../surfaces/working-line/working-line.ts";
 
 const ZENTUI_EDITOR_FACTORY = Symbol.for("pi-zentui.editor-factory");
 const ZENTUI_EDITOR_BASE_FACTORY = Symbol.for("pi-zentui.editor-base-factory");

@@ -28,7 +28,7 @@ import {
   EDITOR_BORDER_FALLBACK,
   renderStyleForSourceOrFallback,
   safeThemeFg,
-} from "../../shell/style.ts";
+} from "../../shared/style.ts";
 
 const LEGACY_SPLIT_POLISHED_FRAME = Symbol.for("pi-zentui.polished-frame");
 

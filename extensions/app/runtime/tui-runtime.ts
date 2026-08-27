@@ -13,7 +13,7 @@ import { RuntimeStateStore } from "./runtime-state.ts";
 import registerShell, {
   type ShellExtensionOptions,
   type ShellRuntimeController,
-} from "../../shell/index.ts";
+} from "./legacy-shell-adapter.ts";
 import registerContext, {
   type ContextExtensionOptions,
   type ContextRuntimeController,

@@ -11,8 +11,8 @@ import {
   type UserMessagesComponentConfig,
   type WorkingLineComponentPatch,
 } from "../extensions/app/config/shell";
-import { SessionLifecycle } from "../extensions/shell/session-lifecycle";
-import { registerZentuiSettingsCommand } from "../extensions/shell/settings-command";
+import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
+import { registerZentuiSettingsCommand } from "../extensions/app/commands/legacy-shell-settings";
 
 type Component = {
   render(width: number): string[];

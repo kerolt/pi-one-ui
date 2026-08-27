@@ -10,7 +10,7 @@ import {
   EDITOR_ACCENT_FALLBACK,
   EDITOR_BORDER_FALLBACK,
   renderStyleForSourceOrFallbackStrict,
-} from "../../../shell/style.ts";
+} from "../../../shared/style.ts";
 import { sanitizeUserMessageSourceText } from "./user-message-osc.ts";
 
 export type UserMessageStyleRenderInput = {

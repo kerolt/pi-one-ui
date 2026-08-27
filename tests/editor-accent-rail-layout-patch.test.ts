@@ -21,7 +21,7 @@ import {
   retainAccentRailLayoutPatchInstallation,
   ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR,
 } from "../extensions/surfaces/editor/accent-rail-layout-patch";
-import { SessionLifecycle } from "../extensions/shell/session-lifecycle";
+import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
 
 const LAYOUT_NODE = Symbol.for("@earendil-works/pi-tui/layout-node");
 const localPiTuiEntry = createRequire(import.meta.url).resolve(
