@@ -6,6 +6,7 @@ import {
 } from "../host/pi-extension-port.ts";
 import { createPiUiPort, type PiUiPort } from "../host/pi-ui-port.ts";
 import { SurfaceRegistry } from "../ownership/surface-registry.ts";
+import registerHeaderSurface from "../../surfaces/header/index.ts";
 import { EventCoordinator } from "./event-coordinator.ts";
 import { RenderScheduler } from "./render-scheduler.ts";
 import { RuntimeStateStore } from "./runtime-state.ts";
@@ -106,6 +107,7 @@ export class TuiRuntime {
     // These are compatibility adapters for the first migration stage. Future
     // stages replace them with Header/Context/WorkingLine/Editor/Footer surfaces.
     registerShell(this.pi, shellOptions);
+    registerHeaderSurface(this.pi);
     registerContext(this.pi, contextOptions);
     this.coordinator.install();
 

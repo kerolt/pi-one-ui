@@ -13,47 +13,59 @@ const ANSI_RESET = "\x1b[0m";
 const ANSI_PATTERN =
   /[\u001B\u009B][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[a-zA-Z\d]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))/g;
 
-// 官方 install.sh 静态 logo（4 行原样，短行补尾随空格统一到 8 列）+ 底部空行补到 5 行，
-// 与右侧 tips 行数等高；着色保持现状（accent 渐变）
+// Official install.sh static logo. Short rows are padded to eight cells,
+// and one empty row keeps the logo as tall as the tips column.
 const LOGO_LINES = ["██████  ", "██  ██  ", "████  ██", "██    ██", "        "];
 
-// hero 文案（单行，替换原生 header 的 "Pi can explain..." 默认位置）
+// Single-line hero copy replacing Pi's default startup sentence.
 const HERO_PREFIX = "There are many agent harnesses, but this one is ";
 const HERO_HIGHLIGHT = "yours";
 const HERO_SUFFIX = ".";
 
-// 左右双栏布局：左侧 logo(5 行)，右侧原生提示(5 行)
+// Two-column layout: five logo rows on the left and five tips rows on the right.
 const TWO_COL_GAP = 2;
-// 窄于该宽度回退为垂直堆叠（logo + hero）
+// Narrower viewports fall back to a vertical logo and hero layout.
 const TWO_COL_MIN_WIDTH = 48;
 
 const FALLBACK_ACCENT_RGB: Rgb = [80, 160, 255];
 const LOGO_BLOCK_WIDTH = Math.max(
   ...LOGO_LINES.map((line) => [...line].length),
 );
-// 左栏宽度 = logo 宽，右侧栏从该宽度后开始
+// The tips column starts after the fixed logo width and gap.
 const LEFT_COLUMN_WIDTH = LOGO_BLOCK_WIDTH;
 
 const PALETTE_STEPS = 24;
 const PALETTE_MAX_DARKEN = 0.18;
 const PALETTE_MAX_LIGHTEN = 0.18;
-// 行内渐变波长：1/4 全波长（暗→亮单调，避免小字符数行内来回跳变）
+// The row gradient uses a monotonic quarter-wave to avoid oscillation on short rows.
 const PALETTE_SPAN = 0.25;
-// 行间相位偏移：小步累加 → 整体左上暗→右下亮的对角渐变
+// A small phase offset between rows creates a diagonal top-left to bottom-right gradient.
 const LOGO_ROW_PHASE_STEP = 0.08;
 
+/**
+ * Removes terminal styling sequences before measuring visible text.
+ */
 function stripAnsi(text: string): string {
   return text.replace(ANSI_PATTERN, "");
 }
 
+/**
+ * Returns the number of visible cells in a terminal string.
+ */
 function getVisibleLength(text: string): number {
   return [...stripAnsi(text)].length;
 }
 
+/**
+ * Clamps a color channel to the byte range accepted by truecolor ANSI.
+ */
 function clampByte(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
 }
 
+/**
+ * Interpolates one color channel between two byte values.
+ */
 function interpolateChannel(
   start: number,
   end: number,
@@ -62,6 +74,9 @@ function interpolateChannel(
   return Math.round(start + (end - start) * factor);
 }
 
+/**
+ * Interpolates all channels between two RGB colors.
+ */
 function interpolateRgb(start: Rgb, end: Rgb, factor: number): Rgb {
   return [
     interpolateChannel(start[0], end[0], factor),
@@ -70,6 +85,9 @@ function interpolateRgb(start: Rgb, end: Rgb, factor: number): Rgb {
   ];
 }
 
+/**
+ * Darkens an RGB color by a normalized amount.
+ */
 function darkenRgb(rgb: Rgb, amount: number): Rgb {
   return [
     clampByte(rgb[0] * (1 - amount)),
@@ -78,6 +96,9 @@ function darkenRgb(rgb: Rgb, amount: number): Rgb {
   ];
 }
 
+/**
+ * Lightens an RGB color by a normalized amount.
+ */
 function lightenRgb(rgb: Rgb, amount: number): Rgb {
   return [
     clampByte(rgb[0] + (255 - rgb[0]) * amount),
@@ -86,11 +107,17 @@ function lightenRgb(rgb: Rgb, amount: number): Rgb {
   ];
 }
 
+/**
+ * Wraps text in a truecolor foreground sequence and a reset.
+ */
 function applyTruecolor(rgb: Rgb, text: string): string {
   const [red, green, blue] = rgb;
   return `\x1b[38;2;${red};${green};${blue}m${text}${ANSI_RESET}`;
 }
 
+/**
+ * Parses a truecolor foreground from an ANSI sequence.
+ */
 function parseTruecolorAnsi(ansi: string): Rgb | undefined {
   const match = ansi.match(/38;2;(\d+);(\d+);(\d+)/);
   if (!match) return undefined;
@@ -98,6 +125,9 @@ function parseTruecolorAnsi(ansi: string): Rgb | undefined {
   return [Number(match[1]), Number(match[2]), Number(match[3])];
 }
 
+/**
+ * Parses an ANSI 256-color foreground and converts it to RGB.
+ */
 function parseAnsi256Foreground(ansi: string): Rgb | undefined {
   const match = ansi.match(/38;5;(\d+)/);
   if (!match) return undefined;
@@ -105,6 +135,9 @@ function parseAnsi256Foreground(ansi: string): Rgb | undefined {
   return ansi256ToRgb(Number(match[1]));
 }
 
+/**
+ * Parses a standard or bright ANSI foreground and converts it to RGB.
+ */
 function parseAnsi16Foreground(ansi: string): Rgb | undefined {
   const normalMatch = ansi.match(/(?:\[|;)(3[0-7])(?:;|m)/);
   if (normalMatch) {
@@ -119,6 +152,9 @@ function parseAnsi16Foreground(ansi: string): Rgb | undefined {
   return undefined;
 }
 
+/**
+ * Resolves the first supported foreground color found in an ANSI sequence.
+ */
 function parseForegroundRgbFromAnsi(ansi: string): Rgb | undefined {
   return (
     parseTruecolorAnsi(ansi) ??
@@ -127,12 +163,18 @@ function parseForegroundRgbFromAnsi(ansi: string): Rgb | undefined {
   );
 }
 
+/**
+ * Resolves the theme accent color, falling back to a stable blue.
+ */
 function resolveAccentRgb(theme: { getFgAnsi(name: string): string }): Rgb {
   return (
     parseForegroundRgbFromAnsi(theme.getFgAnsi("accent")) ?? FALLBACK_ACCENT_RGB
   );
 }
 
+/**
+ * Builds the cyclic dark-to-light palette used by the logo gradient.
+ */
 function buildAccentPalette(accent: Rgb): Rgb[] {
   return Array.from({ length: PALETTE_STEPS }, (_, index) => {
     const progress = index / PALETTE_STEPS;
@@ -146,6 +188,9 @@ function buildAccentPalette(accent: Rgb): Rgb[] {
   });
 }
 
+/**
+ * Samples one wrapped position from an RGB palette.
+ */
 function sampleGradientColor(palette: Rgb[], position: number): Rgb {
   const wrappedPosition = ((position % 1) + 1) % 1;
   const scaledPosition = wrappedPosition * palette.length;
@@ -156,6 +201,9 @@ function sampleGradientColor(palette: Rgb[], position: number): Rgb {
   return interpolateRgb(palette[baseIndex]!, palette[nextIndex]!, factor);
 }
 
+/**
+ * Applies a diagonal accent gradient to non-space characters.
+ */
 function renderGradientText(
   text: string,
   palette: Rgb[],
@@ -167,7 +215,7 @@ function renderGradientText(
   return characters
     .map((character, index) => {
       if (character === " ") return character;
-      // 行内单调暗→亮（1/4 波长），行间相位偏移 → 对角渐变
+      // Use a monotonic quarter-wave within each row and phase-shift rows.
       const color = sampleGradientColor(
         palette,
         (index / span) * PALETTE_SPAN + phase,
@@ -177,6 +225,9 @@ function renderGradientText(
     .join("");
 }
 
+/**
+ * Centers a fixed-width block within the available viewport.
+ */
 function createCenteredBlockLine(
   text: string,
   width: number,
@@ -186,6 +237,9 @@ function createCenteredBlockLine(
   return `${" ".repeat(leftPadding)}${text}`;
 }
 
+/**
+ * Centers styled parts while measuring their unstyled representation.
+ */
 function createCenteredStyledLine(parts: StyledPart[], width: number): string {
   const rawText = parts.map((part) => part.raw).join("");
   const leftPadding = Math.max(
@@ -196,6 +250,9 @@ function createCenteredStyledLine(parts: StyledPart[], width: number): string {
   return `${" ".repeat(leftPadding)}${styledText}`;
 }
 
+/**
+ * Truncates a rendered line without allowing ANSI escapes to affect width.
+ */
 function fitLineToWidth(line: string, width: number): string {
   if (getVisibleLength(line) <= width) {
     return line;
@@ -204,6 +261,9 @@ function fitLineToWidth(line: string, width: number): string {
   return stripAnsi(line).slice(0, width);
 }
 
+/**
+ * Renders all logo rows at the requested width and gradient phase.
+ */
 function renderLogoLines(width: number, palette: Rgb[]): string[] {
   return LOGO_LINES.map((line, rowIndex) => {
     const phasedLine = renderGradientText(
@@ -215,15 +275,21 @@ function renderLogoLines(width: number, palette: Rgb[]): string[] {
   });
 }
 
-// ---- 右侧：原生默认 header 文本（对齐 pi 内置 startup header，按键文本随用户 keybindings 动态渲染） ----
+// The right column mirrors Pi's startup hints and reads active keybindings.
 
+/**
+ * Normalizes one keybinding part for the current operating system.
+ */
 function formatKeyPart(part: string): string {
-  // 与 pi 内置 keybinding-hints 一致：macOS 上 alt 显示为 option
+  // Match Pi's keybinding hints: macOS displays alt as option.
   return process.platform === "darwin" && part.toLowerCase() === "alt"
     ? "option"
     : part;
 }
 
+/**
+ * Formats a slash- or plus-separated keybinding for display.
+ */
 function formatKeyText(key: string): string {
   return key
     .split("/")
@@ -231,16 +297,22 @@ function formatKeyText(key: string): string {
     .join("/");
 }
 
+/**
+ * Resolves the configured display text for one application keybinding.
+ */
 function keyText(keybinding: AppKeybinding): string {
   const keys = getKeybindings().getKeys(keybinding);
   return keys.length === 0 ? "" : formatKeyText(keys.join("/"));
 }
 
+/**
+ * Renders the native startup hints shown beside the logo.
+ */
 function renderNativeLines(theme: {
   fg(name: string, text: string): string;
   bold(text: string): string;
 }): string[] {
-  // 颜色方案照抄 pi 内置 header：按键 dim、描述 muted、分隔符 muted、版本 dim
+  // Match Pi's header palette: dim keys, muted descriptions and separators.
   const hint = (keybinding: AppKeybinding, description: string) =>
     theme.fg("dim", keyText(keybinding)) + theme.fg("muted", ` ${description}`);
   const rawHint = (key: string, description: string) =>
@@ -264,13 +336,16 @@ function renderNativeLines(theme: {
       `Press ${keyText("app.tools.expand")} to show full startup help and loaded resources.`,
     ),
     "",
-    // hero 文案替换原生 "Pi can explain..." 行位置
+    // Replace the native "Pi can explain..." row with the hero sentence.
     renderHeroParts(theme)
       .map((part) => part.styled)
       .join(""),
   ];
 }
 
+/**
+ * Builds the styled hero sentence and its raw-width counterparts.
+ */
 function renderHeroParts(theme: {
   fg(name: string, text: string): string;
   bold(text: string): string;
@@ -285,6 +360,13 @@ function renderHeroParts(theme: {
   ];
 }
 
+/**
+ * Renders the responsive startup header for one viewport width.
+ *
+ * @param width Available terminal width in cells.
+ * @param theme Theme functions used for styling and accent discovery.
+ * @returns Header rows that fit the requested layout.
+ */
 export function renderHeaderLines(
   width: number,
   theme: {
@@ -297,7 +379,7 @@ export function renderHeaderLines(
   const palette = buildAccentPalette(accentRgb);
 
   if (width < TWO_COL_MIN_WIDTH) {
-    // 窄屏回退：logo + hero 单行垂直堆叠居中
+    // Narrow fallback: vertically stack the centered logo and hero.
     const logoLines = renderLogoLines(width, palette);
     const heroLine = createCenteredStyledLine(renderHeroParts(theme), width);
     return ["", ...logoLines, "", heroLine, ""].map((line) =>
@@ -305,7 +387,7 @@ export function renderHeaderLines(
     );
   }
 
-  // 双栏：左官方 logo(5 行) 右原生提示(5 行)，同高并排，gap 分隔不交叉
+  // Wide layout: place the equal-height logo and native tips columns side by side.
   const leftLines = renderLogoLines(LEFT_COLUMN_WIDTH, palette);
   const rightLines = renderNativeLines(theme);
   const rightWidth = width - LEFT_COLUMN_WIDTH - TWO_COL_GAP;
@@ -326,13 +408,14 @@ export function renderHeaderLines(
 }
 
 /**
- * 按配置应用启动头：on → 自定义 header；off → 恢复官方默认 header。
- * 导出供 /ccstyle 面板在切换开关时实时重应用。
+ * Applies the configured startup header or restores Pi's native header.
+ *
+ * @param ctx Active extension context supplied by Pi.
  */
 export function applyStartupHeader(ctx: any): void {
   if (!ctx?.hasUI || typeof ctx.ui?.setHeader !== "function") return;
   if (!config.showStartupHeader) {
-    // 恢复官方内置 header（logo + 快捷键提示 + onboarding）。
+    // Restore Pi's built-in logo, key hints and onboarding content.
     ctx.ui.setHeader(undefined);
     return;
   }
@@ -344,7 +427,10 @@ export function applyStartupHeader(ctx: any): void {
   }));
 }
 
-export default function piStartupHeader(pi: ExtensionAPI) {
+/**
+ * Registers the Header surface lifecycle with the Pi extension host.
+ */
+export default function registerHeaderSurface(pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     applyStartupHeader(ctx);
   });

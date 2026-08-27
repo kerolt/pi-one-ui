@@ -7,7 +7,6 @@ import { config } from "../app/config/renderer.ts";
 // shell
 import piAliases from "../features/shell/aliases.ts";
 import { installFlushDockedBash } from "../features/shell/flush-docked-bash.ts";
-import piStartupHeader from "../features/shell/startup-header.ts";
 import workingMessage from "../features/shell/working-message.ts";
 
 // feature
@@ -32,7 +31,9 @@ export type TranscriptRuntimeController = {
 };
 
 export type TranscriptExtensionOptions = {
-  /** Expose live transcript refresh to the unified settings panel. */
+  /**
+   * Exposes live context refresh to the unified settings panel.
+   */
   onRuntimeController?: (controller: TranscriptRuntimeController) => void;
 };
 
@@ -43,10 +44,9 @@ export default function (
   // shell chrome
   if (config.enableAliases) piAliases(pi);
   installFlushDockedBash();
-  piStartupHeader(pi);
   if (config.enableWorkingMessage) workingMessage(pi);
 
-  // render stack：thinking controller 直接交给 style 作 query
+  // The thinking controller is queried directly by the context render stack.
   markdownEnhance(pi);
   registerTranscriptRenderer(
     pi,
