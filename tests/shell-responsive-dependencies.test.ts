@@ -272,7 +272,7 @@ vi.mock("../extensions/services/session-state", async (importOriginal) => {
 });
 
 import { defaultConfig } from "../extensions/app/config/shell";
-import zentui from "../extensions/app/runtime/surface-lifecycle";
+import zentui from "./support/surface-lifecycle";
 import { registerSettingsCommand } from "./support/settings-command";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;

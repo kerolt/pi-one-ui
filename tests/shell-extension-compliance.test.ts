@@ -31,9 +31,7 @@ import {
 } from "../extensions/app/config/shell";
 import { installFooter as installFooterProduction } from "../extensions/surfaces/footer/footer";
 import { emptyGitStatus } from "../extensions/services/git-data";
-import zentui, {
-  activeFooterReferences,
-} from "../extensions/app/runtime/surface-lifecycle";
+import zentui, { activeFooterReferences } from "./support/surface-lifecycle";
 import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../extensions/app/ownership/prototype-patch-registry";
 import {
   installSelectorBorderStyle as installSelectorBorderStyleProduction,

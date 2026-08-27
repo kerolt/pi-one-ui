@@ -41,7 +41,6 @@ import {
   savePolishedEditorStylePatch,
   saveSelectorBordersComponentPatch,
   saveStarshipFooterStylePatch,
-  saveUserMessagesComponentPatch,
   saveWorkingLineComponentPatch,
   type UserMessagesComponentConfig,
   type WorkingLineComponentPatch,
@@ -79,10 +78,6 @@ import {
   syncState,
 } from "../../surfaces/footer/index.ts";
 import { resolveFooterTelemetry } from "../../services/telemetry.ts";
-import {
-  installUserMessageStyle,
-  removeUserMessageStyle,
-} from "../../surfaces/context/message/user-message.ts";
 import {
   WorkingLineSurfaceController,
   type WorkingLineMessage,
@@ -132,16 +127,19 @@ export type SurfaceRuntimeOptions = {
    */
   registerCommand?: (pi: ExtensionAPI, deps: never) => void;
   /**
-   * Keeps User Message patch ownership available for standalone compatibility.
-   */
-  ownUserMessages?: boolean;
-  /**
    * Keeps turn-summary entry ownership available for standalone compatibility.
    */
   ownTurnSummary?: boolean;
   onRuntimeController?: (controller: SurfaceRuntimeController) => void;
   onEditorController?: (controller: EditorSurfaceController) => void;
   onWorkingLineController?: (controller: WorkingLineSurfaceController) => void;
+  /**
+   * Keeps standalone User Message compatibility outside the production runtime.
+   */
+  standaloneUserMessageHandler?: (
+    patch: Partial<UserMessagesComponentConfig>,
+    ctx: ExtensionContext,
+  ) => void;
   /**
    * Lets the unified runtime own Editor and WorkingLine session installation.
    */
@@ -179,8 +177,6 @@ export default function (
     );
   }
   let activeTheme: Theme | undefined;
-  let cleanupUserMessageStyle: () => void = () => {};
-  let userMessageStyleInstalled = false;
   let cleanupSelectorBorderStyle: () => void = () => {};
   let selectorBorderStyleInstalled = false;
   let lastProjectCwd: string | undefined;
@@ -199,10 +195,6 @@ export default function (
     }
   };
 
-  const effectiveUserMessagesEnabled = () =>
-    options.ownUserMessages !== false &&
-    currentConfig.components.userMessages.enabled &&
-    !hasUnsupportedComponentStyle(currentConfig, "userMessages");
   const effectiveSelectorBordersEnabled = () =>
     currentConfig.components.selectorBorders.enabled &&
     !hasUnsupportedComponentStyle(currentConfig, "selectorBorders");
@@ -400,40 +392,6 @@ export default function (
     reconcileProjectRefresh(ctx, true);
   };
 
-  const installUserMessages = () => {
-    if (userMessageStyleInstalled) return;
-    let cleanup: (() => void) | undefined;
-    try {
-      cleanup = installUserMessageStyle(getActiveTheme, getCurrentConfig);
-      cleanupUserMessageStyle = cleanup ?? (() => {});
-      userMessageStyleInstalled = true;
-    } catch {
-      try {
-        cleanup?.();
-      } catch {
-        // Best effort: the installer is locally transactional.
-      }
-      cleanupUserMessageStyle = () => {};
-      userMessageStyleInstalled = false;
-    }
-  };
-
-  const uninstallUserMessages = () => {
-    try {
-      cleanupUserMessageStyle();
-    } catch {
-      // Best effort cleanup.
-    } finally {
-      cleanupUserMessageStyle = () => {};
-      userMessageStyleInstalled = false;
-    }
-  };
-
-  const reconcileUserMessages = () => {
-    if (effectiveUserMessagesEnabled()) installUserMessages();
-    else uninstallUserMessages();
-  };
-
   const installSelectorBorders = () => {
     if (selectorBorderStyleInstalled) return;
     let cleanup: (() => void) | undefined;
@@ -483,7 +441,6 @@ export default function (
 
   const applyConfiguredUi = (ctx: ExtensionContext) => {
     if (!isTuiContext(ctx)) return;
-    reconcileUserMessages();
     reconcileSelectorBorders();
     reconcileProjectRefresh(ctx);
     reconcileSessionTimer();
@@ -501,13 +458,7 @@ export default function (
     syncFooterState(ctx);
     stopProjectRefresh();
 
-    uninstallUserMessages();
     uninstallSelectorBorders();
-    try {
-      removeUserMessageStyle();
-    } catch {
-      // Startup alone may supersede a stale registration from an earlier reload.
-    }
     try {
       removeSelectorBorderStyle();
     } catch {
@@ -528,7 +479,6 @@ export default function (
     editorController.cleanup(ctx);
     footerController.cleanup(ctx);
     stopProjectRefresh();
-    uninstallUserMessages();
     uninstallSelectorBorders();
     activeTheme = undefined;
     activeTuiContext = undefined;
@@ -569,11 +519,9 @@ export default function (
   ) => editorController.setComponent(patch, ctx);
   const setUserMessagesComponent = (
     patch: Partial<UserMessagesComponentConfig>,
-    _ctx: ExtensionContext,
+    ctx: ExtensionContext,
   ) => {
-    currentConfig = saveUserMessagesComponentPatch(patch);
-    if (patch.enabled !== undefined || patch.style !== undefined)
-      reconcileUserMessages();
+    options.standaloneUserMessageHandler?.(patch, ctx);
     refresh();
   };
   const setWorkingLineComponent = (
@@ -639,15 +587,7 @@ export default function (
       );
       refresh();
     },
-    setUserMessagesComponent(
-      patch: Partial<UserMessagesComponentConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      currentConfig = saveUserMessagesComponentPatch(patch);
-      if (patch.enabled !== undefined || patch.style !== undefined)
-        reconcileUserMessages();
-      refresh();
-    },
+    setUserMessagesComponent,
     setWorkingLineComponent(
       patch: WorkingLineComponentPatch,
       ctx: ExtensionContext,

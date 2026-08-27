@@ -56,7 +56,7 @@ vi.mock("../extensions/services/package-data", async (importOriginal) => {
   };
 });
 
-import zentui from "../extensions/app/runtime/surface-lifecycle";
+import zentui from "./support/surface-lifecycle";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
 type Footer = { render(width: number): string[]; dispose?: () => void };

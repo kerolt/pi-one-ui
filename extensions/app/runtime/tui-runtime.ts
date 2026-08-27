@@ -111,7 +111,6 @@ export class TuiRuntime {
     const surfaceOptions: SurfaceRuntimeOptions = {
       manageEditorLifecycle: false,
       eventCoordinator: this.coordinator,
-      ownUserMessages: false,
       ownTurnSummary: false,
       onRuntimeController: (controller) => {
         this.surfaceController = controller;
