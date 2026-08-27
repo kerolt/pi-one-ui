@@ -5,46 +5,16 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { AccentRailLayoutPatchDiagnostic } from "../../surfaces/editor/accent-rail-layout-patch.ts";
 import {
-  type AccentRailEditorStyleConfig,
-  type ContextStyle,
-  type EditorComponentConfig,
-  type ExtensionStatusColorMode,
-  type ExtensionStatusPlacement,
   ensureConfigExists,
-  FOOTER_FORMAT_ALIASES,
-  type FooterComponentConfig,
-  type FooterSegmentsConfig,
-  type GitBranchConfig,
-  type GitCommitConfig,
-  type GitMetricsConfig,
   hasUnsupportedComponentStyle,
-  type IconMode,
   loadConfig,
-  type MinimalistConfig,
-  type PathDisplayConfig,
-  type PolishedCopyFriendlyEditorStyleConfig,
-  type PolishedEditorStyleConfig,
-  type PolishedTuiConfig,
-  type SelectorBordersComponentConfig,
-  type SeparatorStyle,
-  saveAccentRailEditorStylePatch,
   saveEditorComponentPatch,
-  saveExtensionStatusColorMode,
-  saveExtensionStatusDefaultPlacement,
-  saveExtensionStatusPlacement,
   saveFooterComponentPatch,
-  saveIconsModePatch,
-  saveMinimalistEditorStylePatch,
-  savePolishedCopyFriendlyEditorStylePatch,
-  savePolishedEditorStylePatch,
-  saveSelectorBordersComponentPatch,
-  saveStarshipFooterStylePatch,
-  saveUserMessagesComponentPatch,
   saveWorkingLineComponentPatch,
-  type UserMessagesComponentConfig,
-  type WorkingLineComponentPatch,
-  type ZentuiConfig,
+  type PolishedTuiConfig,
+  mergeConfig,
 } from "../config/shell.ts";
+import { configStore, type ConfigRecord } from "../config/store.ts";
 import { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
 import { FooterSurfaceController } from "../../surfaces/footer/controller.ts";
 export { activeFooterReferences } from "../../surfaces/footer/data.ts";
@@ -110,6 +80,9 @@ export default function (
     });
   const sessionLifecycle = new SessionLifecycle();
   let currentConfig: PolishedTuiConfig = loadConfig();
+  configStore.subscribe((record: ConfigRecord) => {
+    currentConfig = mergeConfig(record);
+  });
   const sessionState = new SessionStateService({
     getCacheHitIcon: () => currentConfig.icons.cacheHit,
     resolveTelemetry: resolveFooterTelemetry,
@@ -155,6 +128,16 @@ export default function (
   const liveContext = new LiveContextController(sessionLifecycle, refresh);
   const getActiveTheme = () => activeTheme;
   const getCurrentConfig = () => currentConfig;
+
+  /**
+   * Reloads the canonical configuration after an external test-support write.
+   *
+   * @returns The refreshed normalized configuration snapshot.
+   */
+  const reloadConfig = (): PolishedTuiConfig => {
+    currentConfig = loadConfig();
+    return currentConfig;
+  };
   const workingLineController = new WorkingLineSurfaceController({
     pi,
     getConfig: getCurrentConfig,
@@ -330,164 +313,6 @@ export default function (
   };
 
   /**
-   * Provides standalone settings support without registering a compatibility command.
-   *
-   * The production runtime consumes Surface controllers directly; tests may use
-   * these bindings to exercise the historical settings command in isolation.
-   */
-  const settings = {
-    sessionLifecycle,
-    getConfig: getCurrentConfig,
-    setEditorComponent: (
-      patch: Partial<EditorComponentConfig>,
-      ctx: ExtensionContext,
-    ) => editorController.setComponent(patch, ctx),
-    setPolished(
-      patch: Partial<PolishedEditorStyleConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      currentConfig = savePolishedEditorStylePatch(patch);
-      refresh();
-    },
-    setPolishedCopyFriendly(
-      patch: Partial<PolishedCopyFriendlyEditorStyleConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      currentConfig = savePolishedCopyFriendlyEditorStylePatch(patch);
-      refresh();
-    },
-    setAccentRail(
-      patch: Partial<AccentRailEditorStyleConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      currentConfig = saveAccentRailEditorStylePatch(patch);
-      refresh();
-    },
-    setMinimalist(patch: Partial<MinimalistConfig>, ctx: ExtensionContext) {
-      currentConfig = saveMinimalistEditorStylePatch(patch);
-      editorController.reconcileTimers();
-      projectRefreshService.reconcile(
-        ctx,
-        patch.pathDisplay !== undefined || patch.showGit !== undefined,
-      );
-      refresh();
-    },
-    setUserMessagesComponent(
-      patch: Partial<UserMessagesComponentConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      currentConfig = saveUserMessagesComponentPatch(patch);
-      refresh();
-    },
-    setWorkingLineComponent: (
-      patch: WorkingLineComponentPatch,
-      ctx: ExtensionContext,
-    ) => workingLineController.setComponent(patch, ctx),
-    setSelectorBordersComponent(
-      patch: Partial<SelectorBordersComponentConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      currentConfig = saveSelectorBordersComponentPatch(patch);
-      if (patch.enabled !== undefined || patch.style !== undefined)
-        selectorController.reconcile();
-      refresh();
-    },
-    setFooterComponent: (
-      patch: Partial<FooterComponentConfig>,
-      ctx: ExtensionContext,
-    ) => footerController.setComponent(patch, ctx),
-    setFooterSegments(
-      patch: Partial<FooterSegmentsConfig>,
-      ctx: ExtensionContext,
-    ) {
-      applyFooterDependencyConfigChange(ctx, () =>
-        saveStarshipFooterStylePatch({
-          segments: patch as FooterSegmentsConfig,
-        }),
-      );
-    },
-    setFooterFormat(value: string, ctx: ExtensionContext) {
-      applyFooterDependencyConfigChange(ctx, () =>
-        saveStarshipFooterStylePatch({ format: value }),
-      );
-    },
-    setResponsiveFooter(
-      patch: Partial<
-        Pick<PolishedTuiConfig, "responsiveFooter" | "compactFooterMaxLines">
-      >,
-      ctx: ExtensionContext,
-    ) {
-      applyFooterDependencyConfigChange(ctx, () =>
-        saveStarshipFooterStylePatch({
-          ...(patch.responsiveFooter === undefined
-            ? {}
-            : { responsive: patch.responsiveFooter }),
-          ...(patch.compactFooterMaxLines === undefined
-            ? {}
-            : { compactMaxLines: patch.compactFooterMaxLines }),
-        }),
-      );
-    },
-    setIconMode(mode: IconMode) {
-      currentConfig = saveIconsModePatch(mode);
-    },
-    setContextStyle(style: ContextStyle) {
-      currentConfig = saveStarshipFooterStylePatch({ contextStyle: style });
-    },
-    setSeparator(separator: SeparatorStyle) {
-      currentConfig = saveStarshipFooterStylePatch({ separator });
-    },
-    setPathDisplay(patch: Partial<PathDisplayConfig>) {
-      currentConfig = saveStarshipFooterStylePatch({
-        pathDisplay: patch as PathDisplayConfig,
-      });
-    },
-    setGitBranch(patch: Partial<GitBranchConfig>) {
-      currentConfig = saveStarshipFooterStylePatch({
-        gitBranch: patch as GitBranchConfig,
-      });
-    },
-    setGitCommit(
-      patch: Partial<Pick<GitCommitConfig, "onlyDetached" | "showTag">>,
-      ctx: ExtensionContext,
-    ) {
-      currentConfig = saveStarshipFooterStylePatch({
-        gitCommit: patch as GitCommitConfig,
-      });
-      if (patch.showTag !== undefined)
-        projectRefreshService.reconcile(ctx, true);
-    },
-    setGitMetrics(patch: Partial<GitMetricsConfig>, ctx: ExtensionContext) {
-      currentConfig = saveStarshipFooterStylePatch({
-        gitMetrics: patch as GitMetricsConfig,
-      });
-      if (patch.ignoreSubmodules !== undefined)
-        projectRefreshService.reconcile(ctx, true);
-    },
-    getActiveExtensionStatuses() {
-      return footerController.getExtensionStatuses();
-    },
-    setExtensionStatusDefaultPlacement(placement: ExtensionStatusPlacement) {
-      currentConfig = saveExtensionStatusDefaultPlacement(placement);
-    },
-    setExtensionStatusPlacement(
-      key: string,
-      placement: ExtensionStatusPlacement,
-    ) {
-      currentConfig = saveExtensionStatusPlacement(key, placement);
-    },
-    setExtensionStatusColorMode(
-      key: string,
-      colorMode: ExtensionStatusColorMode,
-    ) {
-      currentConfig = saveExtensionStatusColorMode(key, colorMode);
-    },
-    requestRender() {
-      refresh();
-    },
-  } as const;
-
-  /**
    * Registers session and runtime effects with the supplied event coordinator.
    *
    * @param coordinator Shared lifecycle event coordinator.
@@ -612,7 +437,8 @@ export default function (
     footerController,
     workingLineController,
     selectorController,
-    settings,
+    projectRefreshService,
+    reloadConfig,
     installEventHandlers,
   };
 }
