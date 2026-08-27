@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { showOneUiPanel } from "../panel.ts";
+import { showOneUiPanel, type TuiPanelRuntime } from "../panel.ts";
 import {
   createPiExtensionPort,
   type PiExtensionPort,
@@ -78,6 +78,30 @@ export class TuiRuntime {
   }
 
   /**
+   * Exposes the narrow runtime contract consumed by the settings panel.
+   *
+   * @returns Surface-independent panel operations.
+   */
+  private panelRuntime(): TuiPanelRuntime {
+    return {
+      setEditorComponent: (patch, ctx) =>
+        this.editorController?.setComponent(patch, ctx) ?? { applied: false },
+      setUserMessagesComponent: (patch, ctx) =>
+        this.shellController?.setUserMessagesComponent(patch, ctx),
+      setWorkingLineComponent: (patch, ctx) =>
+        this.shellController?.setWorkingLineComponent(patch, ctx) ?? {
+          applied: false,
+          reason: "WorkingLine runtime is not available",
+        },
+      setFooterComponent: (patch, ctx) =>
+        this.shellController?.setFooterComponent(patch, ctx),
+      setContextMode: (mode, ctx) => this.contextController?.setMode(mode, ctx),
+      updateContextConfig: (patch, ctx) =>
+        this.contextController?.updateConfig(patch, ctx),
+    };
+  }
+
+  /**
    * Installs the runtime once and mounts legacy adapters behind its seam.
    */
   install(): void {
@@ -132,11 +156,7 @@ export class TuiRuntime {
     this.extensions.registerCommand("oneui", {
       description: "Open pi-one-ui settings",
       handler: async (_args, ctx) => {
-        await showOneUiPanel(ctx, {
-          shell: this.shellController,
-          editor: this.editorController,
-          context: this.contextController,
-        });
+        await showOneUiPanel(ctx, { runtime: this.panelRuntime() });
       },
     });
   }

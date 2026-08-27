@@ -1,12 +1,13 @@
-import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
+import {
+  type ExtensionContext,
+  getSettingsListTheme,
+} from "@earendil-works/pi-coding-agent";
 import {
   matchesKey,
   type SettingItem,
   SettingsList,
   truncateToWidth,
 } from "@earendil-works/pi-tui";
-import type { ContextRuntimeController } from "../surfaces/context/index.ts";
-import type { EditorSurfaceController } from "../surfaces/editor/controller.ts";
 import {
   renderEditorSettingsPreview,
   renderUserMessageSettingsPreview,
@@ -20,7 +21,9 @@ import {
   updateConfig as updateContextConfig,
 } from "./config/renderer.ts";
 import {
+  type EditorComponentConfig,
   type EditorStyle,
+  type FooterComponentConfig,
   type FooterStyle,
   loadConfig as loadShellConfig,
   saveEditorComponentPatch,
@@ -28,12 +31,13 @@ import {
   saveUserMessagesComponentPatch,
   saveWorkingLineComponentPatch,
   type UserMessageStyle,
+  type UserMessagesComponentConfig,
+  type WorkingLineComponentPatch,
   type WorkingLineSpinner,
 } from "./config/shell.ts";
 import { overlayManager } from "./overlay/overlay-manager.ts";
 import { ownerFor } from "./ownership.ts";
 import { applyPreset, PRESET_VALUES, type Preset } from "./presets.ts";
-import type { ShellRuntimeController } from "./runtime/legacy-shell-adapter.ts";
 
 const EDITOR_STYLES: EditorStyle[] = [
   "opencode",
@@ -323,10 +327,32 @@ function isOn(value: string): boolean {
   return value === "on";
 }
 
+export type TuiPanelRuntime = {
+  setEditorComponent: (
+    patch: Partial<EditorComponentConfig>,
+    ctx: ExtensionContext,
+  ) => { applied: boolean; reason?: string };
+  setUserMessagesComponent: (
+    patch: Partial<UserMessagesComponentConfig>,
+    ctx: ExtensionContext,
+  ) => void;
+  setWorkingLineComponent: (
+    patch: WorkingLineComponentPatch,
+    ctx: ExtensionContext,
+  ) => { applied: boolean; reason?: string };
+  setFooterComponent: (
+    patch: Partial<FooterComponentConfig>,
+    ctx: ExtensionContext,
+  ) => void;
+  setContextMode: (mode: CompactStyleMode, ctx: ExtensionContext) => void;
+  updateContextConfig: (
+    patch: Partial<ContextConfig>,
+    ctx: ExtensionContext,
+  ) => void;
+};
+
 type UnifiedPanelDeps = {
-  shell?: ShellRuntimeController;
-  editor?: EditorSurfaceController;
-  context?: ContextRuntimeController;
+  runtime?: TuiPanelRuntime;
 };
 
 /**
@@ -381,21 +407,22 @@ function updateSetting(
   deps: UnifiedPanelDeps,
 ): void {
   if (id === "editorEnabled") {
-    if (deps.editor) deps.editor.setComponent({ enabled: isOn(value) }, ctx);
+    if (deps.runtime)
+      deps.runtime.setEditorComponent({ enabled: isOn(value) }, ctx);
     else saveEditorComponentPatch({ enabled: isOn(value) });
     saveNotice(ctx, "Editor", value);
     return;
   }
   if (id === "editorStyle" && EDITOR_STYLES.includes(value as EditorStyle)) {
-    if (deps.editor)
-      deps.editor.setComponent({ style: value as EditorStyle }, ctx);
+    if (deps.runtime)
+      deps.runtime.setEditorComponent({ style: value as EditorStyle }, ctx);
     else saveEditorComponentPatch({ style: value as EditorStyle });
     saveNotice(ctx, "Editor style", value);
     return;
   }
   if (id === "userMessagesEnabled") {
-    if (deps.shell)
-      deps.shell.setUserMessagesComponent({ enabled: isOn(value) }, ctx);
+    if (deps.runtime)
+      deps.runtime.setUserMessagesComponent({ enabled: isOn(value) }, ctx);
     else saveUserMessagesComponentPatch({ enabled: isOn(value) });
     saveNotice(ctx, "User messages", value);
     return;
@@ -404,8 +431,8 @@ function updateSetting(
     id === "userMessagesStyle" &&
     MESSAGE_STYLES.includes(value as UserMessageStyle)
   ) {
-    if (deps.shell)
-      deps.shell.setUserMessagesComponent(
+    if (deps.runtime)
+      deps.runtime.setUserMessagesComponent(
         { style: value as UserMessageStyle },
         ctx,
       );
@@ -414,8 +441,8 @@ function updateSetting(
     return;
   }
   if (id === "workingLineEnabled") {
-    if (deps.shell)
-      deps.shell.setWorkingLineComponent({ enabled: isOn(value) }, ctx);
+    if (deps.runtime)
+      deps.runtime.setWorkingLineComponent({ enabled: isOn(value) }, ctx);
     else saveWorkingLineComponentPatch({ enabled: isOn(value) });
     saveNotice(ctx, "Working line", value);
     return;
@@ -424,8 +451,8 @@ function updateSetting(
     id === "workingLineSpinner" &&
     WORKING_SPINNERS.includes(value as WorkingLineSpinner)
   ) {
-    if (deps.shell)
-      deps.shell.setWorkingLineComponent(
+    if (deps.runtime)
+      deps.runtime.setWorkingLineComponent(
         { spinner: value as WorkingLineSpinner },
         ctx,
       );
@@ -435,21 +462,22 @@ function updateSetting(
     return;
   }
   if (id === "footerStyle" && FOOTER_STYLES.includes(value as FooterStyle)) {
-    if (deps.shell)
-      deps.shell.setFooterComponent({ style: value as FooterStyle }, ctx);
+    if (deps.runtime)
+      deps.runtime.setFooterComponent({ style: value as FooterStyle }, ctx);
     else saveFooterComponentPatch({ style: value as FooterStyle });
     saveNotice(ctx, "Footer", value);
     return;
   }
   if (id === "contextMode") {
-    if (deps.context) deps.context.setMode(value as CompactStyleMode, ctx);
+    if (deps.runtime)
+      deps.runtime.setContextMode(value as CompactStyleMode, ctx);
     else updateContextConfig({ mode: value as CompactStyleMode });
     saveNotice(ctx, "Tool style", value);
     return;
   }
   if (id === "diffViewMode" && DIFF_VIEW_MODES.includes(value as never)) {
     const patch = { diffViewMode: value as ContextConfig["diffViewMode"] };
-    if (deps.context) deps.context.updateConfig(patch, ctx);
+    if (deps.runtime) deps.runtime.updateContextConfig(patch, ctx);
     else updateContextConfig(patch);
     saveNotice(ctx, "Diff layout", value);
     return;
@@ -461,28 +489,28 @@ function updateSetting(
     const patch = {
       diffIndicatorMode: value as ContextConfig["diffIndicatorMode"],
     };
-    if (deps.context) deps.context.updateConfig(patch, ctx);
+    if (deps.runtime) deps.runtime.updateContextConfig(patch, ctx);
     else updateContextConfig(patch);
     saveNotice(ctx, "Diff indicator", value);
     return;
   }
   if (id === "diffWordWrap") {
     const patch = { diffWordWrap: isOn(value) };
-    if (deps.context) deps.context.updateConfig(patch, ctx);
+    if (deps.runtime) deps.runtime.updateContextConfig(patch, ctx);
     else updateContextConfig(patch);
     saveNotice(ctx, "Diff word wrap", value);
     return;
   }
   if (id === "thinkingPreviewLines") {
     const patch = { previewLines: Number(value) };
-    if (deps.context) deps.context.updateConfig(patch, ctx);
+    if (deps.runtime) deps.runtime.updateContextConfig(patch, ctx);
     else updateContextConfig(patch);
     saveNotice(ctx, "Thinking preview", value);
     return;
   }
   if (id === "dimThinkingText") {
     const patch = { dimThinkingText: isOn(value) };
-    if (deps.context) deps.context.updateConfig(patch, ctx);
+    if (deps.runtime) deps.runtime.updateContextConfig(patch, ctx);
     else updateContextConfig(patch);
     saveNotice(ctx, "Thinking text", value);
     return;
@@ -496,7 +524,7 @@ function updateSetting(
     id === "showStartupHeader"
   ) {
     const patch = { [id]: isOn(value) } as Partial<ContextConfig>;
-    if (deps.context) deps.context.updateConfig(patch, ctx);
+    if (deps.runtime) deps.runtime.updateContextConfig(patch, ctx);
     else updateContextConfig(patch);
     saveNotice(ctx, id, value);
     return;
@@ -505,8 +533,8 @@ function updateSetting(
     const preset = id.slice("preset:".length);
     if (PRESET_VALUES.includes(preset as Preset)) {
       applyPreset(preset as Preset);
-      if (deps.context) {
-        deps.context.setMode(
+      if (deps.runtime) {
+        deps.runtime.setContextMode(
           preset === "compact" ? "compact" : preset === "native" ? "off" : "on",
           ctx,
         );
