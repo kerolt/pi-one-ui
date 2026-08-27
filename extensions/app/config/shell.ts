@@ -969,7 +969,11 @@ function mutateConfig(
   path: string,
   mutate: (record: ConfigRecord) => void,
 ): PolishedTuiConfig {
-  return mergeConfig(mutateConfigFile(path, mutate, "Zentui"));
+  const record =
+    path === configPath
+      ? configStore.update(mutate)
+      : mutateConfigFile(path, mutate, "Zentui");
+  return mergeConfig(record);
 }
 
 export function ensureConfigExists(_path = configPath): void {

@@ -44,8 +44,8 @@ import {
   PolishedEditor as PolishedEditorProduction,
   WrappedPolishedEditor as WrappedPolishedEditorProduction,
 } from "../extensions/shell/ui";
-import { installUserMessageStyle as installUserMessageStyleProduction } from "../extensions/shell/user-message";
-import { sanitizeUserMessageSourceText } from "../extensions/shell/user-message-osc";
+import { installUserMessageStyle as installUserMessageStyleProduction } from "../extensions/surfaces/context/message/user-message";
+import { sanitizeUserMessageSourceText } from "../extensions/surfaces/context/message/user-message-osc";
 
 const localPiTuiEntry = createRequire(import.meta.url).resolve(
   "@earendil-works/pi-tui",

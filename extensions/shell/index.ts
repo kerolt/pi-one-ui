@@ -101,7 +101,7 @@ import { PolishedEditor, WrappedPolishedEditor } from "./ui.ts";
 import {
   installUserMessageStyle,
   removeUserMessageStyle,
-} from "./user-message.ts";
+} from "../surfaces/context/message/user-message.ts";
 import {
   AgentDurationClock,
   snapshotWorkingLineHighStyle,
@@ -232,9 +232,17 @@ export type ShellRuntimeController = {
 };
 
 export type ShellExtensionOptions = {
-  /** Expose the live shell reconciler to the unified settings panel. */
-  /** Keep legacy standalone registration disabled in the unified package. */
+  /**
+   * Exposes the live shell reconciler to the unified settings panel.
+   */
+  /**
+   * Keeps legacy standalone registration disabled in the unified package.
+   */
   registerCommand?: boolean;
+  /**
+   * Keeps User Message patch ownership in Shell for standalone compatibility.
+   */
+  ownUserMessages?: boolean;
   onRuntimeController?: (controller: ShellRuntimeController) => void;
 };
 
@@ -312,6 +320,7 @@ export default function (
     currentConfig.components.editor.enabled &&
     !hasUnsupportedComponentStyle(currentConfig, "editor");
   const effectiveUserMessagesEnabled = () =>
+    options.ownUserMessages !== false &&
     currentConfig.components.userMessages.enabled &&
     !hasUnsupportedComponentStyle(currentConfig, "userMessages");
   const effectiveSelectorBordersEnabled = () =>
@@ -639,7 +648,7 @@ export default function (
     let cleanup: (() => void) | undefined;
     try {
       cleanup = installUserMessageStyle(getActiveTheme, getCurrentConfig);
-      cleanupUserMessageStyle = cleanup;
+      cleanupUserMessageStyle = cleanup ?? (() => {});
       userMessageStyleInstalled = true;
     } catch {
       try {

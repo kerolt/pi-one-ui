@@ -15,9 +15,9 @@ import registerShell, {
   type ShellRuntimeController,
 } from "../../shell/index.ts";
 import registerContext, {
-  type TranscriptExtensionOptions,
-  type TranscriptRuntimeController,
-} from "../../transcript/index.ts";
+  type ContextExtensionOptions,
+  type ContextRuntimeController,
+} from "../../surfaces/context/index.ts";
 
 export type TuiRuntimeContext = {
   readonly extensions: PiExtensionPort;
@@ -28,7 +28,7 @@ export type TuiRuntimeContext = {
 };
 
 /**
- * The single composition root for the plugin. Legacy Shell/Transcript
+ * The single composition root for the plugin. Legacy shell/context
  * implementations are still mounted behind this seam during migration.
  */
 export class TuiRuntime {
@@ -42,7 +42,7 @@ export class TuiRuntime {
   private activeUi: PiUiPort | undefined;
   private installed = false;
   private shellController: ShellRuntimeController | undefined;
-  private contextController: TranscriptRuntimeController | undefined;
+  private contextController: ContextRuntimeController | undefined;
 
   /**
    * Creates the runtime services and coordinates session lifecycle ownership.
@@ -94,11 +94,12 @@ export class TuiRuntime {
 
     const shellOptions: ShellExtensionOptions = {
       registerCommand: false,
+      ownUserMessages: false,
       onRuntimeController: (controller) => {
         this.shellController = controller;
       },
     };
-    const contextOptions: TranscriptExtensionOptions = {
+    const contextOptions: ContextExtensionOptions = {
       onRuntimeController: (controller) => {
         this.contextController = controller;
       },
@@ -116,7 +117,7 @@ export class TuiRuntime {
       handler: async (_args, ctx) => {
         await showOneUiPanel(ctx, {
           shell: this.shellController,
-          renderer: this.contextController,
+          context: this.contextController,
         });
       },
     });

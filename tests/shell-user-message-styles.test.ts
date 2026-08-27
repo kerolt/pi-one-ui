@@ -10,11 +10,11 @@ import {
 import {
   sanitizeRenderedUserMessageText,
   sanitizeUserMessageSourceText,
-} from "../extensions/shell/user-message-osc";
+} from "../extensions/surfaces/context/message/user-message-osc";
 import {
   renderUserMessageStyle,
   userMessageStyleCacheKey,
-} from "../extensions/shell/user-message-styles";
+} from "../extensions/surfaces/context/message/user-message-styles";
 
 const userMessageStyles = [
   "framed",

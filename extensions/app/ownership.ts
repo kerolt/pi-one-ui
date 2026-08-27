@@ -1,14 +1,14 @@
 // Legacy slot map retained for existing tests and callers during migration.
 export const UI_OWNERSHIP = {
   editor: "shell",
-  userMessage: "shell",
+  userMessage: "context",
   footer: "shell",
   workingLine: "shell",
   selector: "shell",
-  toolRenderer: "transcript",
-  diffRenderer: "transcript",
-  thinking: "transcript",
-  agentSummary: "features",
+  toolRenderer: "context",
+  diffRenderer: "context",
+  thinking: "context",
+  agentSummary: "context",
 } as const;
 
 export type UiSlot = keyof typeof UI_OWNERSHIP;

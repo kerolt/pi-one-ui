@@ -11,19 +11,19 @@ test("ownership map assigns each Pi UI seam to one module", () => {
   assert.equal(ownerFor("editor"), "shell");
   assert.equal(ownerFor("footer"), "shell");
   assert.equal(ownerFor("workingLine"), "shell");
-  assert.equal(ownerFor("toolRenderer"), "transcript");
-  assert.equal(ownerFor("diffRenderer"), "transcript");
-  assert.equal(ownerFor("thinking"), "transcript");
+  assert.equal(ownerFor("toolRenderer"), "context");
+  assert.equal(ownerFor("diffRenderer"), "context");
+  assert.equal(ownerFor("thinking"), "context");
   assert.deepEqual(UI_OWNERSHIP, {
     editor: "shell",
-    userMessage: "shell",
+    userMessage: "context",
     footer: "shell",
     workingLine: "shell",
     selector: "shell",
-    toolRenderer: "transcript",
-    diffRenderer: "transcript",
-    thinking: "transcript",
-    agentSummary: "features",
+    toolRenderer: "context",
+    diffRenderer: "context",
+    thinking: "context",
+    agentSummary: "context",
   });
 });
 

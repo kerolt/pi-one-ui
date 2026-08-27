@@ -4,7 +4,7 @@ import {
   sanitizeRenderedUserMessageLines,
   sanitizeRenderedUserMessageText,
   sanitizeUserMessageSourceText,
-} from "../extensions/shell/user-message-osc";
+} from "../extensions/surfaces/context/message/user-message-osc";
 
 const safeTerminators = ["\x07", "\x1b\\"];
 

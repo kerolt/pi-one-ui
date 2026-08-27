@@ -10,14 +10,14 @@ import {
   renderEditorSettingsPreview,
   renderUserMessageSettingsPreview,
 } from "../shell/settings-previews.ts";
-import type { TranscriptRuntimeController } from "../transcript/index.ts";
+import type { ContextRuntimeController } from "../surfaces/context/index.ts";
 import {
   type CompactStyleMode,
   DIFF_INDICATOR_MODES,
   DIFF_VIEW_MODES,
-  type Config as RendererConfig,
+  type Config as ContextConfig,
   config as rendererConfig,
-  updateConfig as updateRendererConfig,
+  updateConfig as updateContextConfig,
 } from "./config/renderer.ts";
 import {
   type EditorStyle,
@@ -57,7 +57,7 @@ const PREVIEW_LINES = ["0", "1", "3", "5", "10"];
 
 const SECTIONS = [
   { id: "shell", label: "Shell" },
-  { id: "renderer", label: "Renderer" },
+  { id: "context", label: "Context" },
   { id: "features", label: "Features" },
   { id: "presets", label: "Presets" },
 ] as const;
@@ -79,8 +79,8 @@ function sectionDescription(section: SectionId): string {
   switch (section) {
     case "shell":
       return `${ownerFor("editor")} owns the editor, user messages, working line, and footer.`;
-    case "renderer":
-      return `${ownerFor("toolRenderer")} owns tool cards, rich diffs, thinking, and transcript layout.`;
+    case "context":
+      return `${ownerFor("toolRenderer")} owns tool cards, rich diffs, thinking, and context layout.`;
     case "features":
       return "Feature switches are saved immediately and applied after /reload.";
     case "presets":
@@ -143,10 +143,10 @@ function shellItems(): SettingItem[] {
   ];
 }
 
-function rendererItems(config: RendererConfig): SettingItem[] {
+function contextItems(config: ContextConfig): SettingItem[] {
   return [
     {
-      id: "rendererMode",
+      id: "contextMode",
       label: "Tool style",
       description:
         "on = rich cards, compact = one summary per assistant message, off = native.",
@@ -191,7 +191,7 @@ function rendererItems(config: RendererConfig): SettingItem[] {
   ];
 }
 
-function featureItems(config: RendererConfig): SettingItem[] {
+function featureItems(config: ContextConfig): SettingItem[] {
   return [
     {
       id: "enableSessionReference",
@@ -244,10 +244,10 @@ function presetItems(): SettingItem[] {
     label: preset,
     description:
       preset === "balanced"
-        ? "Zentui shell + rich CC Style tool renderer."
+        ? "Zentui shell + rich CC Style context renderer."
         : preset === "compact"
-          ? "Zentui shell + compact CC Style transcript."
-          : "Disable custom shell and transcript rendering.",
+          ? "Zentui shell + compact CC Style context."
+          : "Disable custom shell and context rendering.",
     currentValue: "apply",
     values: ["apply"],
   }));
@@ -257,8 +257,8 @@ function itemsFor(section: SectionId): SettingItem[] {
   switch (section) {
     case "shell":
       return shellItems();
-    case "renderer":
-      return rendererItems(rendererConfig);
+    case "context":
+      return contextItems(rendererConfig);
     case "features":
       return featureItems(rendererConfig);
     case "presets":
@@ -272,7 +272,7 @@ function isOn(value: string): boolean {
 
 type UnifiedPanelDeps = {
   shell?: ShellRuntimeController;
-  renderer?: TranscriptRuntimeController;
+  context?: ContextRuntimeController;
 };
 
 function renderShellPreview(theme: any, width: number): string[] {
@@ -367,16 +367,16 @@ function updateSetting(
     saveNotice(ctx, "Footer", value);
     return;
   }
-  if (id === "rendererMode") {
-    if (deps.renderer) deps.renderer.setMode(value as CompactStyleMode, ctx);
-    else updateRendererConfig({ mode: value as CompactStyleMode });
+  if (id === "contextMode") {
+    if (deps.context) deps.context.setMode(value as CompactStyleMode, ctx);
+    else updateContextConfig({ mode: value as CompactStyleMode });
     saveNotice(ctx, "Tool style", value);
     return;
   }
   if (id === "diffViewMode" && DIFF_VIEW_MODES.includes(value as never)) {
-    const patch = { diffViewMode: value as RendererConfig["diffViewMode"] };
-    if (deps.renderer) deps.renderer.updateConfig(patch, ctx);
-    else updateRendererConfig(patch);
+    const patch = { diffViewMode: value as ContextConfig["diffViewMode"] };
+    if (deps.context) deps.context.updateConfig(patch, ctx);
+    else updateContextConfig(patch);
     saveNotice(ctx, "Diff layout", value);
     return;
   }
@@ -385,31 +385,31 @@ function updateSetting(
     DIFF_INDICATOR_MODES.includes(value as never)
   ) {
     const patch = {
-      diffIndicatorMode: value as RendererConfig["diffIndicatorMode"],
+      diffIndicatorMode: value as ContextConfig["diffIndicatorMode"],
     };
-    if (deps.renderer) deps.renderer.updateConfig(patch, ctx);
-    else updateRendererConfig(patch);
+    if (deps.context) deps.context.updateConfig(patch, ctx);
+    else updateContextConfig(patch);
     saveNotice(ctx, "Diff indicator", value);
     return;
   }
   if (id === "diffWordWrap") {
     const patch = { diffWordWrap: isOn(value) };
-    if (deps.renderer) deps.renderer.updateConfig(patch, ctx);
-    else updateRendererConfig(patch);
+    if (deps.context) deps.context.updateConfig(patch, ctx);
+    else updateContextConfig(patch);
     saveNotice(ctx, "Diff word wrap", value);
     return;
   }
   if (id === "thinkingPreviewLines") {
     const patch = { previewLines: Number(value) };
-    if (deps.renderer) deps.renderer.updateConfig(patch, ctx);
-    else updateRendererConfig(patch);
+    if (deps.context) deps.context.updateConfig(patch, ctx);
+    else updateContextConfig(patch);
     saveNotice(ctx, "Thinking preview", value);
     return;
   }
   if (id === "dimThinkingText") {
     const patch = { dimThinkingText: isOn(value) };
-    if (deps.renderer) deps.renderer.updateConfig(patch, ctx);
-    else updateRendererConfig(patch);
+    if (deps.context) deps.context.updateConfig(patch, ctx);
+    else updateContextConfig(patch);
     saveNotice(ctx, "Thinking text", value);
     return;
   }
@@ -421,9 +421,9 @@ function updateSetting(
     id === "enableAliases" ||
     id === "showStartupHeader"
   ) {
-    const patch = { [id]: isOn(value) } as Partial<RendererConfig>;
-    if (deps.renderer) deps.renderer.updateConfig(patch, ctx);
-    else updateRendererConfig(patch);
+    const patch = { [id]: isOn(value) } as Partial<ContextConfig>;
+    if (deps.context) deps.context.updateConfig(patch, ctx);
+    else updateContextConfig(patch);
     saveNotice(ctx, id, value);
     return;
   }
@@ -431,8 +431,8 @@ function updateSetting(
     const preset = id.slice("preset:".length);
     if (PRESET_VALUES.includes(preset as Preset)) {
       applyPreset(preset as Preset);
-      if (deps.renderer) {
-        deps.renderer.setMode(
+      if (deps.context) {
+        deps.context.setMode(
           preset === "compact" ? "compact" : preset === "native" ? "off" : "on",
           ctx,
         );

@@ -6,7 +6,7 @@ import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
 import { renderMinimalistFrame } from "./minimalist-editor.ts";
 import { safeThemeFg } from "./style.ts";
 import { renderPolishedEditorFrame } from "./ui.ts";
-import { renderUserMessageStyle } from "./user-message-styles.ts";
+import { renderUserMessageStyle } from "../surfaces/context/message/user-message-styles.ts";
 
 export const SETTINGS_PREVIEW_MAX_WIDTH = 72;
 export const SETTINGS_PREVIEW_MAX_ROWS = 10;
