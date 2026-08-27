@@ -1,193 +1,49 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { showOneUiPanel, type TuiPanelRuntime } from "../panel.ts";
-import {
-  createPiExtensionPort,
-  type PiExtensionPort,
-} from "../host/pi-extension-port.ts";
-import { createPiUiPort, type PiUiPort } from "../host/pi-ui-port.ts";
-import { SurfaceRegistry } from "../ownership/surface-registry.ts";
-import registerHeaderSurface from "../../surfaces/header/index.ts";
-import { EventCoordinator } from "./event-coordinator.ts";
-import { RenderScheduler } from "./render-scheduler.ts";
-import { RuntimeStateStore } from "./runtime-state.ts";
-import { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
-import { FooterSurfaceController } from "../../surfaces/footer/controller.ts";
-import {
-  WorkingLineSurfaceController,
-  type WorkingLineMessage,
-  type WorkingLineMessageEnd,
-} from "../../surfaces/working-line/controller.ts";
-import registerContext, {
-  type ContextExtensionOptions,
-  type ContextRuntimeController,
-} from "../../surfaces/context/index.ts";
-import type { ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
-import type { AccentRailLayoutPatchDiagnostic } from "../../surfaces/editor/accent-rail-layout-patch.ts";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  Theme,
+} from "@earendil-works/pi-coding-agent";
+import type { AccentRailLayoutPatchDiagnostic } from "../../extensions/surfaces/editor/accent-rail-layout-patch.ts";
 import {
   ensureConfigExists,
   hasUnsupportedComponentStyle,
   loadConfig,
-  mergeConfig,
   saveEditorComponentPatch,
   saveFooterComponentPatch,
   saveWorkingLineComponentPatch,
   type PolishedTuiConfig,
-} from "../config/shell.ts";
-import { configStore, type ConfigRecord } from "../config/store.ts";
+  mergeConfig,
+} from "../../extensions/app/config/shell.ts";
+import {
+  configStore,
+  type ConfigRecord,
+} from "../../extensions/app/config/store.ts";
+import { EditorSurfaceController } from "../../extensions/surfaces/editor/controller.ts";
+import { FooterSurfaceController } from "../../extensions/surfaces/footer/controller.ts";
+export { activeFooterReferences } from "../../extensions/surfaces/footer/data.ts";
 import {
   SessionStateService,
   syncState,
-} from "../../services/session-state.ts";
+} from "../../extensions/services/session-state.ts";
 import {
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
-} from "../../surfaces/working-line/interaction-summary.ts";
-import { LiveContextController } from "../../services/live-context.ts";
+} from "../../extensions/surfaces/working-line/interaction-summary.ts";
+import { LiveContextController } from "../../extensions/services/live-context.ts";
 import {
   ProjectRefreshService,
   type ScheduleProjectRefreshOptions,
-} from "../../services/project-refresh.ts";
-import { SelectorController } from "../overlay/selector-controller.ts";
-import { SessionLifecycle } from "./session-lifecycle.ts";
-import { resolveFooterTelemetry } from "../../services/telemetry.ts";
+} from "../../extensions/services/project-refresh.ts";
+import { SelectorController } from "../../extensions/app/overlay/selector-controller.ts";
+import { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle.ts";
+import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
+import { resolveFooterTelemetry } from "../../extensions/services/telemetry.ts";
+import {
+  WorkingLineSurfaceController,
+  type WorkingLineMessage,
+  type WorkingLineMessageEnd,
+} from "../../extensions/surfaces/working-line/controller.ts";
 
-export type TuiRuntimeContext = {
-  readonly extensions: PiExtensionPort;
-  readonly state: RuntimeStateStore;
-  readonly render: RenderScheduler;
-  readonly surfaces: SurfaceRegistry;
-  readonly ui: () => PiUiPort | undefined;
-};
-
-/**
- * The single composition root for the plugin. Remaining compatibility glue
- * is mounted behind this seam while Surface ownership is finalized.
- */
-export class TuiRuntime {
-  private readonly pi: ExtensionAPI;
-  readonly extensions: PiExtensionPort;
-  readonly state = new RuntimeStateStore();
-  readonly surfaces = new SurfaceRegistry();
-
-  private readonly coordinator: EventCoordinator;
-  private readonly renderScheduler: RenderScheduler;
-  private activeUi: PiUiPort | undefined;
-  private installed = false;
-  private editorController: EditorSurfaceController | undefined;
-  private footerController: FooterSurfaceController | undefined;
-  private workingLineController: WorkingLineSurfaceController | undefined;
-  private contextController: ContextRuntimeController | undefined;
-
-  /**
-   * Creates the runtime services and coordinates session lifecycle ownership.
-   */
-  constructor(pi: ExtensionAPI) {
-    this.pi = pi;
-    this.extensions = createPiExtensionPort(pi);
-    this.renderScheduler = new RenderScheduler((force) =>
-      this.activeUi?.requestRender(force),
-    );
-    this.coordinator = new EventCoordinator({
-      on: (event, handler) =>
-        this.extensions.on(event as never, handler as never),
-    });
-  }
-
-  /**
-   * Returns the shared render scheduler used by installed surfaces.
-   */
-  get render(): RenderScheduler {
-    return this.renderScheduler;
-  }
-
-  /**
-   * Returns the active session UI port, when a TUI session is mounted.
-   */
-  ui(): PiUiPort | undefined {
-    return this.activeUi;
-  }
-
-  /**
-   * Exposes the narrow runtime contract consumed by the settings panel.
-   *
-   * @returns Surface-independent panel operations.
-   */
-  private panelRuntime(): TuiPanelRuntime {
-    return {
-      setEditorComponent: (patch, ctx) =>
-        this.editorController?.setComponent(patch, ctx) ?? { applied: false },
-      setUserMessagesComponent: (patch, ctx) =>
-        this.contextController?.setUserMessagesComponent(patch, ctx),
-      setWorkingLineComponent: (patch, ctx) =>
-        this.workingLineController?.setComponent(patch, ctx) ?? {
-          applied: false,
-          reason: "WorkingLine runtime is not available",
-        },
-      setFooterComponent: (patch, ctx) =>
-        this.footerController?.setComponent(patch, ctx),
-      setContextMode: (mode, ctx) => this.contextController?.setMode(mode, ctx),
-      updateContextConfig: (patch, ctx) =>
-        this.contextController?.updateConfig(patch, ctx),
-    };
-  }
-
-  /**
-   * Installs the runtime once and mounts remaining surface lifecycle glue.
-   */
-  install(): void {
-    if (this.installed) return;
-    this.installed = true;
-
-    const contextOptions: ContextExtensionOptions = {
-      onRuntimeController: (controller) => {
-        this.contextController = controller;
-      },
-    };
-
-    const surfaceBindings = createSurfaceRuntime(this.pi, this.coordinator);
-    surfaceBindings.workingLineController.setSummaryWriterEnabled(false);
-    this.editorController = surfaceBindings.editorController;
-    this.footerController = surfaceBindings.footerController;
-    this.workingLineController = surfaceBindings.workingLineController;
-    surfaceBindings.installEventHandlers(this.coordinator);
-    registerHeaderSurface(this.pi);
-    registerContext(this.pi, contextOptions);
-    this.coordinator.on("session_start", async (_event, ctx) => {
-      this.state.start(ctx.mode);
-      if (ctx.mode === "tui" && ctx.hasUI) {
-        // Pi exposes redraw through concrete TUI components; surfaces will
-        // connect that callback when they migrate behind this runtime.
-        this.activeUi = createPiUiPort(ctx);
-      }
-    });
-    this.coordinator.on("session_shutdown", (_event, ctx) => {
-      this.activeUi = undefined;
-      this.state.shutdown();
-    });
-    this.coordinator.install();
-
-    this.extensions.registerCommand("oneui", {
-      description: "Open pi-one-ui settings",
-      handler: async (_args, ctx) => {
-        await showOneUiPanel(ctx, { runtime: this.panelRuntime() });
-      },
-    });
-  }
-}
-
-/**
- * Creates a single TUI runtime for the plugin composition root.
- */
-export function createTuiRuntime(pi: ExtensionAPI): TuiRuntime {
-  return new TuiRuntime(pi);
-}
-
-/**
- * Reports whether a context exposes the interactive TUI surface.
- *
- * @param ctx Candidate Pi extension context.
- * @returns Whether the context can install TUI-owned surfaces.
- */
 function isTuiContext(ctx: ExtensionContext): boolean {
   try {
     const mode = ctx.mode;
@@ -197,17 +53,7 @@ function isTuiContext(ctx: ExtensionContext): boolean {
   }
 }
 
-/**
- * Creates the surface controllers and shared services used by TuiRuntime.
- *
- * @param pi Pi extension API.
- * @param eventCoordinator Shared lifecycle event coordinator.
- * @returns Surface controllers and lifecycle registration bindings.
- */
-function createSurfaceRuntime(
-  pi: ExtensionAPI,
-  eventCoordinator: EventCoordinator,
-) {
+export default function (pi: ExtensionAPI, eventCoordinator: EventCoordinator) {
   const sessionLifecycle = new SessionLifecycle();
   let currentConfig: PolishedTuiConfig = loadConfig();
   configStore.subscribe((record: ConfigRecord) => {

@@ -69,7 +69,7 @@ Header → Context → WorkingLine → Editor → Footer → Features → Preset
 extensions/
   index.ts                         # 唯一插件入口，创建 TuiRuntime
   app/
-    runtime/                       # TuiRuntime、surface lifecycle、state、事件和调度
+    runtime/                       # TuiRuntime、state、事件和调度
     host/                          # Pi API 的窄化 host ports
     config/                        # ConfigStore 与配置领域解析
     ownership/                     # Surface ownership
@@ -98,7 +98,7 @@ extensions/
 vendor/                           # 只读上游参考快照
 ```
 
-`TuiRuntime` 是统一 composition root。Editor、WorkingLine 和 Footer 已分别由 Surface controller 管理；`surface-lifecycle.ts` 仅保留尚未迁移的 User Message、Selector 和共享生命周期 glue，且不作为公开架构边界。
+`TuiRuntime` 是唯一 composition root，并直接装配 Surface controllers、services 和 shared lifecycle effects。standalone compatibility harness 只位于 `tests/support/`，不进入安装包。
 
 ## 开发
 

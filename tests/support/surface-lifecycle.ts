@@ -47,7 +47,7 @@ import {
   type WorkingLineComponentPatch,
   type ZentuiConfig,
 } from "../../extensions/app/config/shell.ts";
-import registerSurfaceLifecycle from "../../extensions/app/runtime/surface-lifecycle.ts";
+import registerSurfaceLifecycle from "./standalone-surface-runtime.ts";
 import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
 import { registerSettingsCommand } from "./settings-command.ts";
 import { removeSelectorBorderStyle } from "../../extensions/app/overlay/selector-border.ts";

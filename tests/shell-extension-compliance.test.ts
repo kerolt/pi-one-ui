@@ -1078,7 +1078,7 @@ describe("Pi docs compliance", () => {
     const files = [
       "package.json",
       "extensions/app/config/shell.ts",
-      "extensions/app/runtime/surface-lifecycle.ts",
+      "extensions/app/runtime/tui-runtime.ts",
       "extensions/surfaces/editor/ui.ts",
     ];
     const content = files

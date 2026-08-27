@@ -62,7 +62,7 @@ extensions/index.ts
     └── non-visual Features
 ```
 
-`TuiRuntime` mounts the Surface controllers and the remaining surface lifecycle glue. The glue is an implementation detail, not a public product boundary.
+`TuiRuntime` mounts the Surface controllers, services, and shared lifecycle effects directly. Standalone compatibility wiring is test-only and is not part of the product runtime.
 
 ### Event flow
 
@@ -106,7 +106,7 @@ Features contribute commands, autocomplete, data or entry effects. They do not c
 extensions/
 ├── index.ts
 ├── app/
-│   ├── runtime/                 # TuiRuntime, surface lifecycle, state, event and render coordination
+│   ├── runtime/                 # TuiRuntime, state, event and render coordination
 │   ├── host/                    # Narrow Pi extension/UI ports and capabilities
 │   ├── config/                  # ConfigStore and domain projections
 │   ├── ownership/               # Surface and patch ownership
