@@ -220,27 +220,6 @@ export default function (
     refresh();
   };
 
-  /**
-   * Reconciles Footer timer dependencies after configuration updates.
-   */
-  const reconcileSessionTimer = () => footerController.reconcileSessionTimer();
-
-  const sameReferences = (left: Set<string>, right: Set<string>) =>
-    left.size === right.size && [...left].every((name) => right.has(name));
-
-  const applyFooterDependencyConfigChange = (
-    ctx: ExtensionContext,
-    save: () => PolishedTuiConfig,
-  ) => {
-    const before = footerController.installedFooterReferences();
-    const nextConfig = save();
-    currentConfig = nextConfig;
-    const after = footerController.installedFooterReferences();
-    if (sameReferences(before, after)) return;
-    reconcileSessionTimer();
-    projectRefreshService.reconcile(ctx, true);
-  };
-
   const selectorController = new SelectorController({
     getConfig: getCurrentConfig,
   });
@@ -265,7 +244,7 @@ export default function (
     if (options.manageSelectorLifecycle !== false)
       selectorController.reconcile();
     projectRefreshService.reconcile(ctx);
-    reconcileSessionTimer();
+    footerController.reconcileSessionTimer();
   };
 
   /**
