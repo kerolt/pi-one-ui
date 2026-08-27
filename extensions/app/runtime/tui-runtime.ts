@@ -15,6 +15,7 @@ import registerShell, {
   type ShellRuntimeController,
 } from "./legacy-shell-adapter.ts";
 import type { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
+import type { WorkingLineSurfaceController } from "../../surfaces/working-line/controller.ts";
 import registerContext, {
   type ContextExtensionOptions,
   type ContextRuntimeController,
@@ -44,6 +45,7 @@ export class TuiRuntime {
   private installed = false;
   private shellController: ShellRuntimeController | undefined;
   private editorController: EditorSurfaceController | undefined;
+  private workingLineController: WorkingLineSurfaceController | undefined;
   private contextController: ContextRuntimeController | undefined;
 
   /**
@@ -68,8 +70,10 @@ export class TuiRuntime {
       }
       await this.editorController?.startSession(ctx);
       this.editorController?.install(ctx, true);
+      this.workingLineController?.startSession(ctx);
     });
-    this.coordinator.on("session_shutdown", () => {
+    this.coordinator.on("session_shutdown", (_event, ctx) => {
+      this.workingLineController?.dispose(ctx);
       this.activeUi = undefined;
       this.state.shutdown();
     });
@@ -106,6 +110,9 @@ export class TuiRuntime {
       },
       onEditorController: (controller) => {
         this.editorController = controller;
+      },
+      onWorkingLineController: (controller) => {
+        this.workingLineController = controller;
       },
     };
     const contextOptions: ContextExtensionOptions = {

@@ -53,7 +53,6 @@ export { activeFooterReferences } from "../../surfaces/footer/data.ts";
 import { invalidateUsageTotalsCache } from "../../shared/format.ts";
 import { emptyGitStatus, readGitStatus } from "../../services/git-data.ts";
 import {
-  InteractionMetricsTracker,
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
 } from "../../surfaces/working-line/interaction-summary.ts";
@@ -84,11 +83,7 @@ import {
   installUserMessageStyle,
   removeUserMessageStyle,
 } from "../../surfaces/context/message/user-message.ts";
-import {
-  AgentDurationClock,
-  snapshotWorkingLineHighStyle,
-  WorkingLineController,
-} from "../../surfaces/working-line/working-line.ts";
+import { WorkingLineSurfaceController } from "../../surfaces/working-line/controller.ts";
 
 function findRepositoryRoot(cwd: string): string | undefined {
   let current = resolve(cwd);
@@ -142,8 +137,9 @@ export type ShellExtensionOptions = {
   ownTurnSummary?: boolean;
   onRuntimeController?: (controller: ShellRuntimeController) => void;
   onEditorController?: (controller: EditorSurfaceController) => void;
+  onWorkingLineController?: (controller: WorkingLineSurfaceController) => void;
   /**
-   * Lets the unified runtime own Editor session installation.
+   * Lets the unified runtime own Editor and WorkingLine session installation.
    */
   manageEditorLifecycle?: boolean;
 };
@@ -176,9 +172,6 @@ export default function (
   let selectorBorderStyleInstalled = false;
   let lastProjectCwd: string | undefined;
   let requestedProjectCwd: string | undefined;
-  const agentDurationClock = new AgentDurationClock();
-  const interactionMetrics = new InteractionMetricsTracker();
-  let agentRunActive = false;
   let minimalistProjectRoot: string | undefined;
   let activeTuiContext: ExtensionContext | undefined;
 
@@ -210,14 +203,16 @@ export default function (
   const liveContext = new LiveContextController(sessionLifecycle, refresh);
   const getActiveTheme = () => activeTheme;
   const getCurrentConfig = () => currentConfig;
-  const workingLine = new WorkingLineController(
-    getCurrentConfig,
-    () => activeTheme as Theme,
-    agentDurationClock,
-    Math.random,
-    Date.now,
-    () => interactionMetrics.currentThought(),
-  );
+  const workingLineController = new WorkingLineSurfaceController({
+    pi,
+    getConfig: getCurrentConfig,
+    getTheme: () => activeTheme as Theme,
+    sessionLifecycle,
+    refresh,
+    onAgentActiveChanged: (active) => {
+      editorController.setAgentRunActive(active);
+    },
+  });
   const getThinkingLevel = () =>
     sessionLifecycle.isCurrent() ? pi.getThinkingLevel() : ("off" as const);
   const editorController = new EditorSurfaceController({
@@ -240,11 +235,11 @@ export default function (
         ? (live.tokens / contextWindow) * 100
         : (usage?.percent ?? undefined);
     },
-    getAgentDurationMs: () => agentDurationClock.elapsedMs() ?? 0,
-    isAgentActive: () => agentRunActive,
-    isAgentDurationActive: () => agentDurationClock.isActive(),
+    getAgentDurationMs: () => workingLineController.duration().elapsedMs() ?? 0,
+    isAgentActive: () => workingLineController.isAgentActive(),
+    isAgentDurationActive: () => workingLineController.duration().isActive(),
     subscribeAgentDuration: (listener) =>
-      agentDurationClock.subscribe(listener),
+      workingLineController.duration().subscribe(() => listener()),
     getProjectRoot: () => minimalistProjectRoot,
     onProjectRequirementChanged: () => {
       if (activeTuiContext) reconcileProjectRefresh(activeTuiContext);
@@ -375,42 +370,6 @@ export default function (
   };
 
   const reconcileSessionTimer = () => footerController.reconcileSessionTimer();
-
-  const startAgentTurn = (interactionStarted: boolean) => {
-    agentRunActive = true;
-    if (interactionStarted) agentDurationClock.start();
-    editorController.setAgentRunActive(true);
-    refresh();
-  };
-
-  /**
-   * Pauses agent timing and notifies the Editor controller.
-   */
-  const pauseAgentRun = () => {
-    agentRunActive = false;
-    editorController.setAgentRunActive(false);
-    refresh();
-  };
-
-  /**
-   * Settles or rolls forward agent timing after an idle check.
-   */
-  const settleAgentTurn = (nextStartedAt?: number) => {
-    agentRunActive = nextStartedAt !== undefined;
-    if (nextStartedAt === undefined) agentDurationClock.finish();
-    else agentDurationClock.start(nextStartedAt);
-    editorController.setAgentRunActive(agentRunActive);
-    refresh();
-  };
-
-  /**
-   * Resets agent timing for the next session generation.
-   */
-  const resetAgentTimer = () => {
-    agentRunActive = false;
-    agentDurationClock.reset();
-    editorController.resetAgentTimer();
-  };
 
   const sameReferences = (left: Set<string>, right: Set<string>) =>
     left.size === right.size && [...left].every((name) => right.has(name));
@@ -578,15 +537,14 @@ export default function (
       await editorController.startSession(ctx);
     if (!sessionLifecycle.isCurrent()) return;
     liveContext.clear();
-    interactionMetrics.shutdown();
     state.sessionStartEpoch = Date.now();
     invalidateUsageTotalsCache();
-    resetAgentTimer();
     lastProjectCwd = undefined;
     requestedProjectCwd = undefined;
     minimalistProjectRoot = undefined;
     installUi(ctx);
-    workingLine.startSession(ctx);
+    if (options.manageEditorLifecycle !== false)
+      workingLineController.startSession(ctx);
   });
 
   /**
@@ -610,7 +568,7 @@ export default function (
     ctx: ExtensionContext,
   ) => {
     currentConfig = saveWorkingLineComponentPatch(patch);
-    return workingLine.reconcile(ctx);
+    return workingLineController.reconcile(ctx);
   };
   const setFooterComponent = (
     patch: Partial<FooterComponentConfig>,
@@ -627,6 +585,7 @@ export default function (
     refresh();
   };
   options.onEditorController?.(editorController);
+  options.onWorkingLineController?.(workingLineController);
   options.onRuntimeController?.({
     setUserMessagesComponent,
     setWorkingLineComponent,
@@ -682,7 +641,7 @@ export default function (
         ctx: ExtensionContext,
       ) {
         currentConfig = saveWorkingLineComponentPatch(patch);
-        return workingLine.reconcile(ctx);
+        return workingLineController.reconcile(ctx);
       },
       setSelectorBordersComponent(
         patch: Partial<SelectorBordersComponentConfig>,
@@ -799,8 +758,8 @@ export default function (
 
   pi.on("session_shutdown", async (_event, ctx) => {
     liveContext.clear();
-    interactionMetrics.shutdown();
-    workingLine.dispose(ctx);
+    if (options.manageEditorLifecycle !== false)
+      workingLineController.dispose(ctx);
     cleanupUi(ctx);
   });
 
@@ -814,26 +773,15 @@ export default function (
 
   pi.on("agent_start", (event, ctx) => {
     liveContext.clear();
-    const { interactionStarted } = interactionMetrics.agentStart();
-    startAgentTurn(interactionStarted);
-    workingLine.startAgent(ctx);
+    workingLineController.agentStart(ctx);
     syncInteractiveState(event, ctx);
   });
   pi.on("turn_start", (_event, ctx) => {
-    interactionMetrics.turnStart();
-    workingLine.startTurn(ctx);
+    workingLineController.turnStart(ctx);
   });
   pi.on("agent_end", (event, ctx) => {
     liveContext.clear();
-    const displayTokens = interactionMetrics.currentDisplayTokens();
-    interactionMetrics.agentEnd();
-    pauseAgentRun();
-    workingLine.finishAgent(ctx);
-    workingLine.updateMetrics(
-      displayTokens,
-      interactionMetrics.currentThought(),
-      ctx,
-    );
+    workingLineController.agentEnd(ctx);
     // Reconcile once more after Pi has persisted the assistant message.
     syncInteractiveAndProjectStateWithUsage(event, ctx);
   });
@@ -845,29 +793,16 @@ export default function (
   pi.on("session_info_changed", syncInteractiveState);
   pi.on("message_update", (event, ctx) => {
     liveContext.update(event.message);
-    const metrics = interactionMetrics.messageUpdate(
+    workingLineController.messageUpdate(
       event.message,
       "assistantMessageEvent" in event
         ? event.assistantMessageEvent
         : undefined,
+      ctx,
     );
-    if (metrics.usageChanged || metrics.thoughtChanged) {
-      workingLine.updateMetrics(
-        metrics.displayTokens,
-        interactionMetrics.currentThought(),
-        ctx,
-      );
-    }
   });
   pi.on("message_end", (event, ctx) => {
-    const result = interactionMetrics.messageEnd(event.message);
-    if (result.status === "accepted") {
-      workingLine.updateMetrics(
-        result.displayTokens,
-        interactionMetrics.currentThought(),
-        ctx,
-      );
-    }
+    const result = workingLineController.messageEnd(event.message, ctx);
     // Pi notifies extensions before persisting a successful message, so retain its live
     // context until agent_end; accepted failed messages clear immediately instead of showing
     // stale usage. Rejected and duplicate finals are not authoritative.
@@ -882,38 +817,15 @@ export default function (
     syncInteractiveAndProjectStateWithUsage(event, ctx);
   });
   pi.on("agent_settled", (_event, ctx) => {
-    const settled = interactionMetrics.settle(ctx.isIdle());
-    if (!settled) return;
-    settleAgentTurn(settled.nextStartedAt);
-    workingLine.settle(settled.nextTokens, settled.nextThought, ctx);
-    const config = currentConfig.components.workingLine;
-    if (
-      options.ownTurnSummary !== false &&
-      config.enabled &&
-      config.turnSummary
-    ) {
-      try {
-        pi.appendEntry(TURN_SUMMARY_ENTRY_TYPE, {
-          version: 3,
-          ...settled.summary,
-          stylePrefix: snapshotWorkingLineHighStyle(
-            ctx.ui.theme,
-            config,
-            currentConfig.colors,
-          ),
-        });
-      } catch {
-        // A transcript persistence failure must not break settlement cleanup.
-      }
-    }
+    workingLineController.agentSettled(ctx, options.ownTurnSummary !== false);
   });
   pi.on("tool_execution_start", (event, ctx) => {
     liveContext.clear();
-    workingLine.startTool(event.toolCallId, event.toolName, ctx);
+    workingLineController.toolStart(event.toolCallId, event.toolName, ctx);
     syncInteractiveState(event, ctx);
   });
   pi.on("tool_execution_end", (event, ctx) => {
-    workingLine.finishTool(event.toolCallId, ctx);
+    workingLineController.toolEnd(event.toolCallId, ctx);
     syncInteractiveAndProjectState(event, ctx);
   });
   pi.on("session_compact", (event, ctx) => {
