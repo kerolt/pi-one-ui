@@ -1,3 +1,8 @@
+export {
+  FooterSurfaceController,
+  type FooterControllerContext,
+} from "./controller.ts";
+export { activeFooterReferences } from "./data.ts";
 export { installFooter, installHiddenFooter } from "./footer.ts";
 export {
   collectExtensionStatusSegments,

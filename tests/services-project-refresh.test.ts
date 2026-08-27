@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createProjectRefreshScheduler,
+  ProjectRefreshActivation,
   startProjectRefreshInterval,
 } from "../extensions/services/project-refresh";
 
@@ -43,6 +44,31 @@ describe("startProjectRefreshInterval", () => {
     vi.advanceTimersByTime(120_000);
     expect(refresh).not.toHaveBeenCalled();
     expect(() => stop()).not.toThrow();
+  });
+});
+
+describe("ProjectRefreshActivation", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("activates once, remains active, and stops when no consumer needs it", () => {
+    vi.useFakeTimers();
+    const refresh = vi.fn();
+    const activation = new ProjectRefreshActivation();
+
+    expect(
+      activation.reconcile({ needed: true, intervalMs: 10, onTick: refresh }),
+    ).toBe(true);
+    expect(
+      activation.reconcile({ needed: true, intervalMs: 20, onTick: refresh }),
+    ).toBe(false);
+    vi.advanceTimersByTime(10);
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    activation.reconcile({ needed: false, intervalMs: 20, onTick: refresh });
+    vi.advanceTimersByTime(20);
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 });
 

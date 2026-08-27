@@ -16,6 +16,49 @@ export type ProjectRefreshScheduler<T> = {
 
 export const PROJECT_REFRESH_THROTTLE_MS = 5_000;
 
+export type ProjectRefreshActivationOptions = {
+  needed: boolean;
+  intervalMs: number;
+  onTick: () => void;
+};
+
+/**
+ * Owns the optional wall-clock interval used by project refresh consumers.
+ */
+export class ProjectRefreshActivation {
+  private stopInterval: StopProjectRefreshInterval = () => {};
+  private active = false;
+
+  /**
+   * Reconciles interval ownership with the current consumer requirements.
+   *
+   * @param options Current requirement, interval, and refresh callback.
+   * @returns Whether the interval was newly activated.
+   */
+  reconcile(options: ProjectRefreshActivationOptions): boolean {
+    if (!options.needed) {
+      this.stop();
+      return false;
+    }
+    if (this.active) return false;
+    this.stopInterval = startProjectRefreshInterval(
+      options.intervalMs,
+      options.onTick,
+    );
+    this.active = true;
+    return true;
+  }
+
+  /**
+   * Stops the active interval and clears its ownership state.
+   */
+  stop(): void {
+    this.stopInterval();
+    this.stopInterval = () => {};
+    this.active = false;
+  }
+}
+
 export function startProjectRefreshInterval(
   intervalMs: number,
   refresh: () => void,
