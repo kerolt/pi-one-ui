@@ -4,6 +4,7 @@ import { emptyGitStatus } from "../extensions/services/git-data";
 import {
   createInitialState,
   modelLabelFor,
+  SessionStateService,
   syncState,
 } from "../extensions/services/session-state";
 
@@ -88,5 +89,21 @@ describe("syncState model label", () => {
       subscription: false,
       autoCompaction: false,
     });
+  });
+
+  it("owns session reset and synchronization through the service", () => {
+    const service = new SessionStateService({
+      getCacheHitIcon: () => "",
+      resolveTelemetry: () => ({ subscription: true }),
+      syncState,
+    });
+    const before = service.state.sessionStartEpoch;
+
+    service.startSession();
+    service.sync(makeCtx(model));
+
+    expect(service.state.sessionStartEpoch).toBeGreaterThanOrEqual(before ?? 0);
+    expect(service.state.modelId).toBe("gpt-5.6-terra");
+    expect(service.state.subscription).toBe(true);
   });
 });

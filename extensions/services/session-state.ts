@@ -8,7 +8,9 @@ import {
   buildTokenLabel,
   formatProviderLabel,
   getUsageTotals,
+  invalidateUsageTotalsCache,
 } from "../shared/format.ts";
+import { emptyGitStatus } from "./git-data.ts";
 import type { GitStatusSummary } from "./git-data.ts";
 import type { PackageVersionResult } from "./package-data.ts";
 import type { RuntimeInfo } from "./runtime-data.ts";
@@ -60,6 +62,74 @@ export function modelLabelFor(
     : state.modelId || "no-model";
 }
 
+export type SessionStateSynchronizer = (
+  state: FooterState,
+  ctx: ExtensionContext,
+  cacheHitIcon: string,
+  telemetry: FooterTelemetry,
+) => void;
+
+export type SessionStateServiceContext = {
+  readonly getCacheHitIcon: () => string;
+  readonly resolveTelemetry: (ctx: ExtensionContext) => FooterTelemetry;
+  readonly syncState: SessionStateSynchronizer;
+};
+
+/**
+ * Owns the shared Footer state lifecycle used by the runtime and surfaces.
+ */
+export class SessionStateService {
+  readonly state: FooterState;
+  private readonly context: SessionStateServiceContext;
+
+  /**
+   * Creates a session state service with neutral Git defaults.
+   *
+   * @param context Runtime selectors for icons and optional telemetry.
+   */
+  constructor(context: SessionStateServiceContext) {
+    this.context = context;
+    this.state = createInitialState(emptyGitStatus());
+  }
+
+  /**
+   * Resets session-scoped state and invalidates cached usage totals.
+   */
+  startSession(): void {
+    this.state.sessionStartEpoch = Date.now();
+    invalidateUsageTotalsCache();
+  }
+
+  /**
+   * Invalidates cached usage totals before a fresh state synchronization.
+   */
+  invalidateUsageCache(): void {
+    invalidateUsageTotalsCache();
+  }
+
+  /**
+   * Synchronizes model, context, usage, cost, and telemetry fields.
+   *
+   * @param ctx Active Pi extension context.
+   */
+  sync(ctx: ExtensionContext): void {
+    this.context.syncState(
+      this.state,
+      ctx,
+      this.context.getCacheHitIcon(),
+      this.context.resolveTelemetry(ctx),
+    );
+  }
+}
+
+/**
+ * Synchronizes a Footer state snapshot with the active Pi context.
+ *
+ * @param state Mutable Footer state snapshot.
+ * @param ctx Active Pi extension context.
+ * @param cacheHitIcon Cache-hit icon used by the token formatter.
+ * @param telemetry Optional telemetry values.
+ */
 export function syncState(
   state: FooterState,
   ctx: ExtensionContext,

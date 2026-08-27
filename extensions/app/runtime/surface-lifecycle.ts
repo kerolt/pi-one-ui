@@ -48,8 +48,10 @@ import {
 import { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
 import { FooterSurfaceController } from "../../surfaces/footer/controller.ts";
 export { activeFooterReferences } from "../../surfaces/footer/data.ts";
-import { invalidateUsageTotalsCache } from "../../shared/format.ts";
-import { emptyGitStatus } from "../../services/git-data.ts";
+import {
+  SessionStateService,
+  syncState,
+} from "../../services/session-state.ts";
 import {
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
@@ -62,12 +64,6 @@ import {
 import { SelectorController } from "../overlay/selector-controller.ts";
 import { SessionLifecycle } from "./session-lifecycle.ts";
 import { EventCoordinator } from "./event-coordinator.ts";
-import {
-  createInitialState,
-  type FooterState,
-  modelLabelFor,
-  syncState,
-} from "../../surfaces/footer/index.ts";
 import { resolveFooterTelemetry } from "../../services/telemetry.ts";
 import {
   WorkingLineSurfaceController,
@@ -112,9 +108,14 @@ export default function (
     new EventCoordinator({
       on: (event, handler) => pi.on(event as never, handler as never),
     });
-  const state: FooterState = createInitialState(emptyGitStatus());
   const sessionLifecycle = new SessionLifecycle();
   let currentConfig: PolishedTuiConfig = loadConfig();
+  const sessionState = new SessionStateService({
+    getCacheHitIcon: () => currentConfig.icons.cacheHit,
+    resolveTelemetry: resolveFooterTelemetry,
+    syncState,
+  });
+  const state = sessionState.state;
   // Keep the capability guard defensive for hosts with incomplete extension APIs.
   if (typeof pi.registerEntryRenderer === "function") {
     pi.registerEntryRenderer(TURN_SUMMARY_ENTRY_TYPE, (entry, options, theme) =>
@@ -202,13 +203,7 @@ export default function (
     onModelLabelChanged: (ctx) => syncFooterState(ctx),
     recordLayoutDiagnostic: recordAccentRailLayoutPatchDiagnostic,
   });
-  const syncFooterState = (ctx: ExtensionContext) =>
-    syncState(
-      state,
-      ctx,
-      currentConfig.icons.cacheHit,
-      resolveFooterTelemetry(ctx),
-    );
+  const syncFooterState = (ctx: ExtensionContext) => sessionState.sync(ctx);
   const projectRefreshService = new ProjectRefreshService({
     getConfig: getCurrentConfig,
     state,
@@ -504,8 +499,7 @@ export default function (
         await editorController.startSession(ctx);
       if (!sessionLifecycle.isCurrent()) return;
       liveContext.clear();
-      state.sessionStartEpoch = Date.now();
-      invalidateUsageTotalsCache();
+      sessionState.startSession();
       minimalistProjectRoot = undefined;
       installUi(ctx);
       if (options.manageEditorLifecycle !== false)
@@ -523,7 +517,7 @@ export default function (
       _event: unknown,
       ctx: ExtensionContext,
     ) => {
-      invalidateUsageTotalsCache();
+      sessionState.invalidateUsageCache();
       refreshInteractiveState(ctx, true);
     };
 
