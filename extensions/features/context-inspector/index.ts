@@ -15,6 +15,7 @@ import {
 } from "@earendil-works/pi-tui";
 import { mouseBaseButton, parseSgrMousePacket } from "../../tools/sgr-mouse.ts";
 import { padLine } from "../../tools/format.ts";
+import { overlayManager } from "../../app/overlay/overlay-manager.ts";
 
 export type ContextPart = {
   label: string;
@@ -53,7 +54,9 @@ function normalizePreviewText(text: string): string {
 
 export type DialogBounds = { left: number; top: number; width: number };
 
-/** 1-based terminal hitbox of the [esc] close button on the dialog title row (row 2 of the box). */
+/**
+ * Returns the 1-based terminal hitbox of the dialog title's [esc] button.
+ */
 export function escCloseHitbox(bounds: DialogBounds): {
   row: number;
   startCol: number;
@@ -66,28 +69,38 @@ export function escCloseHitbox(bounds: DialogBounds): {
   };
 }
 
-let activeContextOverlays = 0;
-
-/** fullscreen 输入包装用于把鼠标事件继续传给当前 context 主弹框或文本预览 overlay。 */
+/**
+ * Reports whether a plugin-owned overlay is currently active.
+ *
+ * The legacy name is retained because the mouse implementation imports it.
+ */
 export function hasActiveTextPreview(): boolean {
-  return activeContextOverlays > 0;
+  return overlayManager.hasActive();
 }
 
-/** 官方 fullscreen 打开 overlay 时会退回 1002；重新启用 1003 才能收到无按键 hover。 */
+/**
+ * Re-enables fullscreen mouse motion after Pi opens an overlay.
+ */
 function ensureFullscreenMouseMotion(tui: any): void {
   if (tui.mode === "fullscreen")
     tui.terminal?.write?.("\x1b[?1003h\x1b[?1006h");
 }
 
+/**
+ * Opens a scrollable overlay for one context preview document.
+ *
+ * @param ctx Extension command context that provides the custom UI host.
+ * @param title Preview title shown in the overlay header.
+ * @param rawContent Markdown source displayed in the preview.
+ */
 export async function showTextPreview(
   ctx: Pick<ExtensionCommandContext, "ui">,
   title: string,
   rawContent: string,
 ): Promise<void> {
   const content = normalizePreviewText(rawContent);
-  activeContextOverlays++;
-  try {
-    await ctx.ui.custom(
+  await overlayManager.run(() =>
+    ctx.ui.custom(
       (tui, theme, _keybindings, done) => {
         ensureFullscreenMouseMotion(tui);
         let scrollOffset = 0;
@@ -311,10 +324,8 @@ export async function showTextPreview(
           margin: 2,
         },
       },
-    );
-  } finally {
-    activeContextOverlays--;
-  }
+    ),
+  );
 }
 
 const tokenEstimate = (value: unknown): number => {
@@ -621,11 +632,9 @@ export default function contextUsageExtension(pi: ExtensionAPI) {
       let selectedPreviewIndex = 0;
 
       while (true) {
-        // 主弹框也计入活动 overlay，fullscreen 下官方输入链才会把鼠标包放行给行点击。
-        activeContextOverlays++;
         let action;
-        try {
-          action = await ctx.ui.custom(
+        action = await overlayManager.run(() =>
+          ctx.ui.custom(
             (tui, theme, _keybindings, done) => {
               ensureFullscreenMouseMotion(tui);
               let previewHitboxes: Array<{
@@ -841,10 +850,8 @@ export default function contextUsageExtension(pi: ExtensionAPI) {
                 margin: 1,
               },
             },
-          );
-        } finally {
-          activeContextOverlays--;
-        }
+          ),
+        );
 
         if (!action) break;
         const preview = previewByKey.get(action as PreviewKey);

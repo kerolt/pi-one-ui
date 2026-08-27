@@ -30,6 +30,7 @@ import {
   type UserMessageStyle,
   type WorkingLineSpinner,
 } from "./config/shell.ts";
+import { overlayManager } from "./overlay/overlay-manager.ts";
 import { ownerFor } from "./ownership.ts";
 import { applyPreset, PRESET_VALUES, type Preset } from "./presets.ts";
 
@@ -445,6 +446,12 @@ function updateSetting(
 
 let unifiedPanelOpen = false;
 
+/**
+ * Opens the unified settings panel as a managed overlay.
+ *
+ * @param ctx Active TUI extension context.
+ * @param deps Runtime controllers used for live updates.
+ */
 export async function showOneUiPanel(
   ctx: any,
   deps: UnifiedPanelDeps = {},
@@ -464,68 +471,79 @@ export async function showOneUiPanel(
 
   unifiedPanelOpen = true;
   try {
-    await ctx.ui.custom(
-      (tui: any, theme: any, _keybindings: any, done: () => void) => {
-        let activeIndex = 0;
-        let list: SettingsList;
-        const createList = () => {
-          list = new SettingsList(
-            itemsFor(SECTIONS[activeIndex].id),
-            10,
-            getSettingsListTheme(),
-            (id, value) => {
-              updateSetting(id, value, ctx, deps);
-              list.updateValue(id, value);
-              tui.requestRender();
-            },
-            done,
-          );
-        };
-        createList();
-
-        const switchSection = (delta: number) => {
-          activeIndex =
-            (activeIndex + delta + SECTIONS.length) % SECTIONS.length;
+    await overlayManager.run(() =>
+      ctx.ui.custom(
+        (tui: any, theme: any, _keybindings: any, done: () => void) => {
+          let activeIndex = 0;
+          let list: SettingsList;
+          const createList = () => {
+            list = new SettingsList(
+              itemsFor(SECTIONS[activeIndex].id),
+              10,
+              getSettingsListTheme(),
+              (id, value) => {
+                updateSetting(id, value, ctx, deps);
+                list.updateValue(id, value);
+                tui.requestRender();
+              },
+              done,
+            );
+          };
           createList();
-          tui.requestRender();
-        };
 
-        return {
-          render: (width: number) => [
-            renderTabs(theme, activeIndex, width),
-            theme.fg("dim", "─".repeat(Math.max(0, width))),
-            theme.fg(
-              "muted",
-              `  ${sectionDescription(SECTIONS[activeIndex].id)}`,
-            ),
-            "",
-            ...list.render(width),
-            ...(SECTIONS[activeIndex].id === "shell"
-              ? renderShellPreview(theme, width)
-              : []),
-            "",
-            truncateToWidth(
+          const switchSection = (delta: number) => {
+            activeIndex =
+              (activeIndex + delta + SECTIONS.length) % SECTIONS.length;
+            createList();
+            tui.requestRender();
+          };
+
+          return {
+            render: (width: number) => [
+              renderTabs(theme, activeIndex, width),
+              theme.fg("dim", "─".repeat(Math.max(0, width))),
               theme.fg(
-                "dim",
-                "  Tab/Shift+Tab switch sections · Enter/Space change · Esc close",
+                "muted",
+                `  ${sectionDescription(SECTIONS[activeIndex].id)}`,
               ),
-              width,
-            ),
-          ],
-          invalidate: () => list.invalidate(),
-          handleInput: (data: string) => {
-            if (data === "\x1b[Z" || matchesKey(data, "shift+tab")) {
-              switchSection(-1);
-              return;
-            }
-            if (matchesKey(data, "tab")) {
-              switchSection(1);
-              return;
-            }
-            list.handleInput(data);
+              "",
+              ...list.render(width),
+              ...(SECTIONS[activeIndex].id === "shell"
+                ? renderShellPreview(theme, width)
+                : []),
+              "",
+              truncateToWidth(
+                theme.fg(
+                  "dim",
+                  "  Tab/Shift+Tab switch sections · Enter/Space change · Esc close",
+                ),
+                width,
+              ),
+            ],
+            invalidate: () => list.invalidate(),
+            handleInput: (data: string) => {
+              if (data === "\x1b[Z" || matchesKey(data, "shift+tab")) {
+                switchSection(-1);
+                return;
+              }
+              if (matchesKey(data, "tab")) {
+                switchSection(1);
+                return;
+              }
+              list.handleInput(data);
+            },
+          };
+        },
+        {
+          overlay: true,
+          overlayOptions: {
+            anchor: "center",
+            width: "85%",
+            maxHeight: "90%",
+            margin: 1,
           },
-        };
-      },
+        },
+      ),
     );
   } finally {
     unifiedPanelOpen = false;

@@ -3,6 +3,8 @@ import {
   showTextPreview,
 } from "../../../../features/context-inspector/index.ts";
 import { ThinkingPreviewBlock } from "../../thinking/compact-thinking.ts";
+import { inputRouter } from "../../../../app/overlay/input-router.ts";
+import { overlayManager } from "../../../../app/overlay/overlay-manager.ts";
 import {
   patchRegistry,
   TOOL_MOUSE_OWNER_KEY,
@@ -934,6 +936,12 @@ export function resetToolHoverState(): void {
   releaseFullscreenToolMouseMotion(getToolMouseTui());
 }
 
+/**
+ * Installs the Context mouse route through the shared input router.
+ *
+ * @param ctx Active TUI extension context.
+ * @param owner Ownership token used to make teardown safe across reloads.
+ */
 export function installToolMouseInteraction(
   ctx: any,
   owner: object = DEFAULT_TOOL_MOUSE_OWNER,
@@ -979,7 +987,18 @@ export function installToolMouseInteraction(
     setScrollButtonWidget(widget);
     return widget;
   });
-  toolMouseInputUnsubscribe = ctx.ui.onTerminalInput(handleToolMouseInput);
+  const removeMouseRoute = inputRouter.register(
+    (data) =>
+      overlayManager.hasActive() ? undefined : handleToolMouseInput(data),
+    100,
+  );
+  const removeHostInput = ctx.ui.onTerminalInput((data: string) =>
+    inputRouter.dispatch(data),
+  );
+  toolMouseInputUnsubscribe = () => {
+    removeHostInput();
+    removeMouseRoute();
+  };
 }
 
 function refreshToolRendererComponents(tui: any): void {
