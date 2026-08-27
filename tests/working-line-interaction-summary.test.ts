@@ -9,7 +9,7 @@ import {
   renderTurnSummaryEntry,
   subtractThoughtIntervalsWithinCap,
   TURN_SUMMARY_ENTRY_TYPE,
-} from "../extensions/surfaces/working-line/interaction-summary";
+} from "../extensions/layouts/working-line/interaction-summary";
 
 const stripTerminalSequences = stripVTControlCharacters;
 

@@ -3,13 +3,13 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
 import {
-  applyOwnedSurfaceBackground,
+  applyOwnedLayoutBackground,
   isNativeCompletionCountRow,
   omitTrailingNativeCompletionCountRow,
   renderCompletionPalette,
   renderCompletionRows,
   replaceNativeSelectedPrefix,
-} from "../extensions/surfaces/editor/completion-menu";
+} from "../extensions/layouts/editor/completion-menu";
 
 function theme(): Theme {
   return {
@@ -26,7 +26,7 @@ function terminalWidth(value: string): number {
   return visibleWidth(value.replace(/\u009b([0-?]*[ -/]*[@-~])/g, "\x1b[$1"));
 }
 
-describe("completion menu surfaces", () => {
+describe("completion menu layouts", () => {
   it("renders a transparent full-width palette shell without a results header or native count row", () => {
     const rows = renderCompletionPalette({
       lines: [
@@ -144,7 +144,7 @@ describe("completion menu surfaces", () => {
     "respects ordered background semantics for %s",
     (_name, sequence, restores) => {
       const background = "\x1b[48;5;234m";
-      const primary = applyOwnedSurfaceBackground(
+      const primary = applyOwnedLayoutBackground(
         theme(),
         `before${sequence}tail   `,
       );
@@ -158,7 +158,7 @@ describe("completion menu surfaces", () => {
           throw new Error("unavailable");
         },
       } as unknown as Theme;
-      const fallback = applyOwnedSurfaceBackground(
+      const fallback = applyOwnedLayoutBackground(
         fallbackTheme,
         `before${sequence}tail   `,
       );
@@ -177,10 +177,7 @@ describe("completion menu surfaces", () => {
           throw new Error("unavailable");
         },
       } as unknown as Theme;
-      const row = applyOwnedSurfaceBackground(
-        fallbackTheme,
-        `item${reset}█   `,
-      );
+      const row = applyOwnedLayoutBackground(fallbackTheme, `item${reset}█   `);
       expect(row).toContain(`${reset}\x1b[48;5;234m█   \x1b[49m`);
     },
   );
@@ -188,7 +185,7 @@ describe("completion menu surfaces", () => {
   it.each(["\u009b0m", "\u009bm", "\u009b49m"])(
     "reapplies getBgAnsi background after direct C1 reset %j",
     (reset) => {
-      const row = applyOwnedSurfaceBackground(theme(), `item${reset}tail`);
+      const row = applyOwnedLayoutBackground(theme(), `item${reset}tail`);
       expect(row).toContain(`${reset}\x1b[48;5;234mtail`);
     },
   );
@@ -290,7 +287,7 @@ describe("completion menu surfaces", () => {
         throw new Error("unavailable");
       },
     } as unknown as Theme;
-    expect(applyOwnedSurfaceBackground(unavailable, "safe\x1b[0m text")).toBe(
+    expect(applyOwnedLayoutBackground(unavailable, "safe\x1b[0m text")).toBe(
       "safe\x1b[0m text",
     );
   });

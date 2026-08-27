@@ -47,14 +47,14 @@ import {
   type WorkingLineComponentPatch,
   type ZentuiConfig,
 } from "../../extensions/app/config/shell.ts";
-import registerSurfaceLifecycle from "./standalone-surface-runtime.ts";
+import registerLayoutLifecycle from "./standalone-layout-runtime.ts";
 import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
 import { registerSettingsCommand } from "./settings-command.ts";
 import { removeSelectorBorderStyle } from "../../extensions/app/overlay/selector-border.ts";
 import {
   installUserMessageStyle,
   removeUserMessageStyle,
-} from "../../extensions/surfaces/context/message/user-message.ts";
+} from "../../extensions/layouts/context/message/user-message.ts";
 
 /**
  * Reports whether a context can install standalone User Message compatibility.
@@ -67,20 +67,20 @@ function isTuiContext(ctx: ExtensionContext): boolean {
   return ctx.hasUI && (mode === undefined || mode === "tui");
 }
 
-type SurfaceBindings = ReturnType<typeof registerSurfaceLifecycle>;
-type TestSurfaceOptions = {
+type LayoutBindings = ReturnType<typeof registerLayoutLifecycle>;
+type TestLayoutOptions = {
   ownTurnSummary?: boolean;
 };
 
 /**
  * Builds the test-only settings dependencies without shipping a settings hook.
  *
- * @param bindings Surface controllers and services from the lifecycle harness.
+ * @param bindings Layout controllers and services from the lifecycle harness.
  * @param setUserMessagesComponent Standalone User Message compatibility setter.
  * @returns Dependencies consumed by the historical settings command tests.
  */
 function createSettingsDeps(
-  bindings: SurfaceBindings,
+  bindings: LayoutBindings,
   setUserMessagesComponent: (
     patch: Partial<UserMessagesComponentConfig>,
     ctx: ExtensionContext,
@@ -260,14 +260,14 @@ function createSettingsDeps(
 }
 
 /**
- * Registers production surface lifecycle and test-only User Message ownership.
+ * Registers production layout lifecycle and test-only User Message ownership.
  *
  * @param pi Pi extension API.
  * @param options Test-only compatibility options.
  */
 export default function (
   pi: ExtensionAPI,
-  options: TestSurfaceOptions = {},
+  options: TestLayoutOptions = {},
 ): void {
   let contextConfig: ZentuiConfig = loadConfig();
   let activeTheme: Theme | undefined;
@@ -336,7 +336,7 @@ export default function (
   const coordinator = new EventCoordinator({
     on: (event, handler) => pi.on(event as never, handler as never),
   });
-  const bindings = registerSurfaceLifecycle(pi, coordinator);
+  const bindings = registerLayoutLifecycle(pi, coordinator);
   bindings.workingLineController.setSummaryWriterEnabled(
     options.ownTurnSummary !== false,
   );
@@ -372,4 +372,4 @@ export default function (
   });
 }
 
-export { activeFooterReferences } from "../../extensions/surfaces/footer/data.ts";
+export { activeFooterReferences } from "../../extensions/layouts/footer/data.ts";

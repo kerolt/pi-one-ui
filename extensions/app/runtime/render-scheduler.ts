@@ -2,7 +2,7 @@ export type RenderRequest = (force: boolean) => void;
 export type RenderSchedule = (run: () => void) => void;
 
 /**
- * Coalesces render requests emitted by multiple surfaces in one turn.
+ * Coalesces render requests emitted by multiple layouts in one turn.
  */
 export class RenderScheduler {
   private readonly requestRender: RenderRequest;

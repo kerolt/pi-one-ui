@@ -22,16 +22,16 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import {
   discoverAccentRailLayoutPatchTargetFromEntrypoint,
   ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR,
-} from "../extensions/surfaces/editor/accent-rail-layout-patch";
+} from "../extensions/layouts/editor/accent-rail-layout-patch";
 import {
   defaultConfig,
   type ExtensionStatusPlacement,
   type PolishedTuiConfig,
   type SeparatorStyle,
 } from "../extensions/app/config/shell";
-import { installFooter as installFooterProduction } from "../extensions/surfaces/footer/footer";
+import { installFooter as installFooterProduction } from "../extensions/layouts/footer/footer";
 import { emptyGitStatus } from "../extensions/services/git-data";
-import zentui, { activeFooterReferences } from "./support/surface-lifecycle";
+import zentui, { activeFooterReferences } from "./support/layout-lifecycle";
 import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../extensions/app/ownership/prototype-patch-registry";
 import {
   installSelectorBorderStyle as installSelectorBorderStyleProduction,
@@ -43,9 +43,9 @@ import { createInitialState } from "../extensions/services/session-state";
 import {
   PolishedEditor as PolishedEditorProduction,
   WrappedPolishedEditor as WrappedPolishedEditorProduction,
-} from "../extensions/surfaces/editor/ui";
-import { installUserMessageStyle as installUserMessageStyleProduction } from "../extensions/surfaces/context/message/user-message";
-import { sanitizeUserMessageSourceText } from "../extensions/surfaces/context/message/user-message-osc";
+} from "../extensions/layouts/editor/ui";
+import { installUserMessageStyle as installUserMessageStyleProduction } from "../extensions/layouts/context/message/user-message";
+import { sanitizeUserMessageSourceText } from "../extensions/layouts/context/message/user-message-osc";
 
 const localPiTuiEntry = createRequire(import.meta.url).resolve(
   "@earendil-works/pi-tui",
@@ -740,7 +740,7 @@ describe("fixed-editor retirement contract", () => {
       "tuiMode",
     ];
     const production = collectFiles(
-      join(root, "extensions", "surfaces", "editor"),
+      join(root, "extensions", "layouts", "editor"),
       (path) => path.endsWith(".ts"),
     );
     for (const path of production) {
@@ -906,7 +906,7 @@ describe("Pi docs compliance", () => {
     await emit(handlers, "session_shutdown", ctx);
   });
 
-  it("installs only the editor and footer when message and selector surfaces are disabled", async () => {
+  it("installs only the editor and footer when message and selector layouts are disabled", async () => {
     writeFileSync(
       join(isolatedAgentDir.path, "zentui.json"),
       JSON.stringify({
@@ -1079,7 +1079,7 @@ describe("Pi docs compliance", () => {
       "package.json",
       "extensions/app/config/shell.ts",
       "extensions/app/runtime/tui-runtime.ts",
-      "extensions/surfaces/editor/ui.ts",
+      "extensions/layouts/editor/ui.ts",
     ];
     const content = files
       .map((file) => readFileSync(join(process.cwd(), file), "utf8"))
@@ -1912,7 +1912,7 @@ describe("Pi docs compliance", () => {
     await emit(secondHandlers, "session_shutdown", ctx);
   });
 
-  it("cleans every stale owned surface on an enabled-to-disabled extension reload", async () => {
+  it("cleans every stale owned layout on an enabled-to-disabled extension reload", async () => {
     const firstHandlers = loadExtension();
     const existingFactory = () => ({
       render: () => ["native"],

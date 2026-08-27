@@ -76,7 +76,7 @@ export type SessionStateServiceContext = {
 };
 
 /**
- * Owns the shared Footer state lifecycle used by the runtime and surfaces.
+ * Owns the shared Footer state lifecycle used by the runtime and layouts.
  */
 export class SessionStateService {
   readonly state: FooterState;
@@ -140,7 +140,7 @@ export function syncState(
   const m = ctx.model;
   state.modelId = m?.id ?? "";
   state.modelName = m?.name ?? "";
-  // Retained as a compatibility snapshot only; production surfaces format from raw fields.
+  // Retained as a compatibility snapshot only; production layouts format from raw fields.
   state.modelLabel = modelLabelFor(state, "id");
   state.providerLabel = formatProviderLabel(ctx.model?.provider);
   state.contextLabel = buildContextLabel(ctx);

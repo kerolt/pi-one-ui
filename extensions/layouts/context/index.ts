@@ -149,7 +149,7 @@ function stopContextSession(): void {
 }
 
 /**
- * Registers the Context surface, its renderer stack and its feature hooks.
+ * Registers the Context layout, its renderer stack and its feature hooks.
  */
 export default function (
   pi: ExtensionAPI,

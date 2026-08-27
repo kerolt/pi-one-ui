@@ -15,8 +15,8 @@ import { config } from "../extensions/app/config/renderer.ts";
 import {
   installCompactMode,
   refreshCompactModeComponents,
-} from "../extensions/surfaces/context/renderer/compact-mode.ts";
-import { WriteExecutionMetadataStore } from "../extensions/surfaces/context/renderer/tool/diff/write-execution.ts";
+} from "../extensions/layouts/context/renderer/compact-mode.ts";
+import { WriteExecutionMetadataStore } from "../extensions/layouts/context/renderer/tool/diff/write-execution.ts";
 
 initTheme("dark");
 

@@ -19,11 +19,11 @@ import claudeCodeStyleExtension, {
   ExpandedToolIoView,
   installToolMouseInteraction,
   SHOW_MORE_LABEL,
-} from "../extensions/surfaces/context/renderer/index.ts";
+} from "../extensions/layouts/context/renderer/index.ts";
 import {
   installToolGrouping,
   ToolGroupComponent,
-} from "../extensions/surfaces/context/renderer/tool/grouping.ts";
+} from "../extensions/layouts/context/renderer/tool/grouping.ts";
 
 initTheme("dark");
 

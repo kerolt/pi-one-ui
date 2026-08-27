@@ -54,7 +54,7 @@ import {
   type WorkingLineSpinner,
   type WorkingLineTextAnimation,
 } from "../../extensions/app/config/shell.ts";
-import { sanitizeExtensionStatusText } from "../../extensions/surfaces/footer/extension-status.ts";
+import { sanitizeExtensionStatusText } from "../../extensions/layouts/footer/extension-status.ts";
 import { isIconMode } from "../../extensions/shared/icons.ts";
 import type { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle.ts";
 import {
@@ -72,7 +72,7 @@ import {
   normalizeWorkingLineMessages,
   remapWorkingLineTextTick,
   type WorkingLineFrames,
-} from "../../extensions/surfaces/working-line/working-line.ts";
+} from "../../extensions/layouts/working-line/working-line.ts";
 
 const colorSourceValues: ColorSource[] = ["theme", "terminal"];
 const extensionStatusPlacementValues: ExtensionStatusPlacement[] = [
@@ -118,7 +118,7 @@ const footerStyleLabels: Record<FooterStyle, string> = {
 };
 const footerStyleValues = Object.values(footerStyleLabels);
 const completionMenuValues: CompletionMenuStyle[] = ["palette", "native"];
-const accentRailSurfaceValues = ["filled", "transparent"];
+const accentRailLayoutValues = ["filled", "transparent"];
 const minimalistPathDisplayValues = ["compact", "project", "full"];
 const minimalistContextFormatValues = ["percent", "percent-total"];
 const editorBorderColorModeValues: EditorBorderColorMode[] = [
@@ -621,12 +621,12 @@ function buildAccentRailEditorStyleItems(
   const accentRail = config.components.editor.styles["accent-rail"];
   return [
     {
-      id: "accentRailSurface",
-      label: "Accent Rail surface",
+      id: "accentRailLayout",
+      label: "Accent Rail layout",
       description:
-        "Fill input and autocomplete surfaces or keep them transparent.",
+        "Fill input and autocomplete layouts or keep them transparent.",
       currentValue: accentRail.transparent ? "transparent" : "filled",
-      values: accentRailSurfaceValues,
+      values: accentRailLayoutValues,
     },
   ];
 }
@@ -1465,7 +1465,7 @@ export function registerSettingsCommand(
                       return;
                     }
                     if (
-                      id === "accentRailSurface" &&
+                      id === "accentRailLayout" &&
                       (newValue === "filled" || newValue === "transparent")
                     ) {
                       deps.setAccentRail(
@@ -1473,7 +1473,7 @@ export function registerSettingsCommand(
                         ctx,
                       );
                       settingsList.updateValue(id, newValue);
-                      notifyChange("Accent Rail surface", newValue);
+                      notifyChange("Accent Rail layout", newValue);
                       return;
                     }
                     if (id.startsWith("minimalist")) {

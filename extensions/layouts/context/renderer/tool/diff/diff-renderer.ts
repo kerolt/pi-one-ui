@@ -1,5 +1,5 @@
 /**
- * Public entry surface for the diff renderer.
+ * Public entry layout for the diff renderer.
  *
  * Implementation is split across focused modules by concern:
  *   - diff-parse.ts        : diff string → line/meta/hunk/file entries + stats

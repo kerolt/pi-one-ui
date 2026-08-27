@@ -440,7 +440,7 @@ export function formatRuntimeSegment(
 /**
  * Render the package-version segment in Starship `is <glyph> <version>` shape.
  *
- * Distinct from the runtime segment: this surfaces the project's own
+ * Distinct from the runtime segment: this layouts the project's own
  * manifest version (e.g. `package.json#version`), not the installed
  * toolchain version. Glyph comes from the Starship Nerd Font preset
  * (https://starship.rs/presets/nerd-font); default color `208` matches

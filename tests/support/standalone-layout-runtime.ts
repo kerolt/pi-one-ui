@@ -3,7 +3,7 @@ import type {
   ExtensionContext,
   Theme,
 } from "@earendil-works/pi-coding-agent";
-import type { AccentRailLayoutPatchDiagnostic } from "../../extensions/surfaces/editor/accent-rail-layout-patch.ts";
+import type { AccentRailLayoutPatchDiagnostic } from "../../extensions/layouts/editor/accent-rail-layout-patch.ts";
 import {
   ensureConfigExists,
   hasUnsupportedComponentStyle,
@@ -18,9 +18,9 @@ import {
   configStore,
   type ConfigRecord,
 } from "../../extensions/app/config/store.ts";
-import { EditorSurfaceController } from "../../extensions/surfaces/editor/controller.ts";
-import { FooterSurfaceController } from "../../extensions/surfaces/footer/controller.ts";
-export { activeFooterReferences } from "../../extensions/surfaces/footer/data.ts";
+import { EditorLayoutController } from "../../extensions/layouts/editor/controller.ts";
+import { FooterLayoutController } from "../../extensions/layouts/footer/controller.ts";
+export { activeFooterReferences } from "../../extensions/layouts/footer/data.ts";
 import {
   SessionStateService,
   syncState,
@@ -28,7 +28,7 @@ import {
 import {
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
-} from "../../extensions/surfaces/working-line/interaction-summary.ts";
+} from "../../extensions/layouts/working-line/interaction-summary.ts";
 import { LiveContextController } from "../../extensions/services/live-context.ts";
 import {
   ProjectRefreshService,
@@ -39,10 +39,10 @@ import { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle
 import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
 import { resolveFooterTelemetry } from "../../extensions/services/telemetry.ts";
 import {
-  WorkingLineSurfaceController,
+  WorkingLineLayoutController,
   type WorkingLineMessage,
   type WorkingLineMessageEnd,
-} from "../../extensions/surfaces/working-line/controller.ts";
+} from "../../extensions/layouts/working-line/controller.ts";
 
 function isTuiContext(ctx: ExtensionContext): boolean {
   try {
@@ -114,7 +114,7 @@ export default function (pi: ExtensionAPI, eventCoordinator: EventCoordinator) {
     currentConfig = loadConfig();
     return currentConfig;
   };
-  const workingLineController = new WorkingLineSurfaceController({
+  const workingLineController = new WorkingLineLayoutController({
     pi,
     getConfig: getCurrentConfig,
     saveComponent: (patch) => {
@@ -130,7 +130,7 @@ export default function (pi: ExtensionAPI, eventCoordinator: EventCoordinator) {
   });
   const getThinkingLevel = () =>
     sessionLifecycle.isCurrent() ? pi.getThinkingLevel() : ("off" as const);
-  const editorController = new EditorSurfaceController({
+  const editorController = new EditorLayoutController({
     getConfig: getCurrentConfig,
     saveComponent: (patch) => {
       currentConfig = saveEditorComponentPatch(patch);
@@ -199,7 +199,7 @@ export default function (pi: ExtensionAPI, eventCoordinator: EventCoordinator) {
   const selectorController = new SelectorController({
     getConfig: getCurrentConfig,
   });
-  const footerController = new FooterSurfaceController({
+  const footerController = new FooterLayoutController({
     getConfig: getCurrentConfig,
     saveComponent: (patch) => {
       currentConfig = saveFooterComponentPatch(patch);
@@ -223,7 +223,7 @@ export default function (pi: ExtensionAPI, eventCoordinator: EventCoordinator) {
   };
 
   /**
-   * Installs compatibility surfaces around the extracted Editor controller.
+   * Installs compatibility layouts around the extracted Editor controller.
    */
   const installUi = (ctx: ExtensionContext) => {
     if (!isTuiContext(ctx)) return;
@@ -242,7 +242,7 @@ export default function (pi: ExtensionAPI, eventCoordinator: EventCoordinator) {
   };
 
   /**
-   * Cleans all session-owned surface resources in dependency order.
+   * Cleans all session-owned layout resources in dependency order.
    */
   const cleanupUi = (ctx?: ExtensionContext) => {
     if (!ctx || !sessionLifecycle.isCurrent()) return;
@@ -319,7 +319,7 @@ export default function (pi: ExtensionAPI, eventCoordinator: EventCoordinator) {
       const payload = event as {
         message: WorkingLineMessage;
         assistantMessageEvent?: Parameters<
-          WorkingLineSurfaceController["messageUpdate"]
+          WorkingLineLayoutController["messageUpdate"]
         >[1];
       };
       liveContext.update(payload.message);

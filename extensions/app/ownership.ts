@@ -1,4 +1,4 @@
-/** Legacy slot map retained for existing callers during Surface extraction. */
+/** Legacy slot map retained for existing callers during Layout extraction. */
 export const UI_OWNERSHIP = {
   editor: "editor",
   userMessage: "context",
@@ -25,8 +25,8 @@ export function ownerFor(slot: UiSlot): UiOwner {
 }
 
 export {
-  SURFACE_OWNERSHIP,
-  SurfaceRegistry,
-  type SurfaceId,
-  type SurfaceOwner,
-} from "./ownership/surface-registry.ts";
+  LAYOUT_OWNERSHIP,
+  LayoutRegistry,
+  type LayoutId,
+  type LayoutOwner,
+} from "./ownership/layout-registry.ts";

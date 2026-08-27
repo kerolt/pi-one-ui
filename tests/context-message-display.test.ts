@@ -12,7 +12,7 @@ import {
   installMessageDisplayRendering,
   refreshMessageDisplays,
   setMessageDisplayTheme,
-} from "../extensions/surfaces/context/renderer/tool/message-display.ts";
+} from "../extensions/layouts/context/renderer/tool/message-display.ts";
 import {
   config,
   DEFAULT_CONFIG,

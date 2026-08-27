@@ -428,9 +428,9 @@ export function applyStartupHeader(ctx: any): void {
 }
 
 /**
- * Registers the Header surface lifecycle with the Pi extension host.
+ * Registers the Header layout lifecycle with the Pi extension host.
  */
-export default function registerHeaderSurface(pi: ExtensionAPI) {
+export default function registerHeaderLayout(pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     applyStartupHeader(ctx);
   });

@@ -37,7 +37,7 @@ import {
   WORKING_LINE_SPINNERS,
   WorkingLineController,
   workingLineSpinnerWidth,
-} from "../extensions/surfaces/working-line/working-line";
+} from "../extensions/layouts/working-line/working-line";
 
 function theme(): Theme {
   return {
@@ -149,7 +149,7 @@ describe("working-line presets and frame generation", () => {
   it("ships pinned Funky UI Pulse provenance and the required MIT notices", () => {
     const source = readFileSync(
       new URL(
-        "../extensions/surfaces/working-line/working-line-spinners.ts",
+        "../extensions/layouts/working-line/working-line-spinners.ts",
         import.meta.url,
       ),
       "utf8",
@@ -1834,7 +1834,7 @@ describe("working-line runtime ownership", () => {
     let failSetter = false;
     let setterCalls = 0;
     let failedAtMs = 0;
-    let indicatorSurface: unknown;
+    let indicatorLayout: unknown;
     let failedAttempt: { frames: string[]; intervalMs: number } | undefined;
     const harness = runtime(
       true,
@@ -1851,7 +1851,7 @@ describe("working-line runtime ownership", () => {
     );
     harness.ctx.ui.setWorkingIndicator = (value?: unknown) => {
       setterCalls += 1;
-      indicatorSurface = value;
+      indicatorLayout = value;
       if (failSetter) {
         failSetter = false;
         failedAtMs = now;
@@ -1871,7 +1871,7 @@ describe("working-line runtime ownership", () => {
     }
     harness.controller.startSession(harness.ctx);
     control.controller.startSession(control.ctx);
-    const lastSuccessfulSurface = indicatorSurface;
+    const lastSuccessfulLayout = indicatorLayout;
 
     now = 100;
     for (const current of [harness.current, control.current]) {
@@ -1881,7 +1881,7 @@ describe("working-line runtime ownership", () => {
     }
     failSetter = true;
     expect(harness.controller.reconcile(harness.ctx).applied).toBe(false);
-    expect(indicatorSurface).toBe(lastSuccessfulSurface);
+    expect(indicatorLayout).toBe(lastSuccessfulLayout);
     failSetter = false;
     control.controller.updateTokens({ input: 12, output: 3 }, control.ctx);
     harness.controller.updateTokens({ input: 12, output: 3 }, harness.ctx);
@@ -1940,7 +1940,7 @@ describe("working-line runtime ownership", () => {
   it("restores the previous message and phase when startTurn installation fails", () => {
     let now = 0;
     let failSetter = false;
-    let indicatorSurface: unknown;
+    let indicatorLayout: unknown;
     const harness = runtime(
       true,
       () => 0.75,
@@ -1953,7 +1953,7 @@ describe("working-line runtime ownership", () => {
     harness.current.components.workingLine.segments.elapsed = false;
     const setter = harness.ctx.ui.setWorkingIndicator.bind(harness.ctx.ui);
     harness.ctx.ui.setWorkingIndicator = (value?: unknown) => {
-      indicatorSurface = value;
+      indicatorLayout = value;
       if (failSetter) {
         failSetter = false;
         now = 250;
@@ -1962,12 +1962,12 @@ describe("working-line runtime ownership", () => {
       setter(value);
     };
     harness.controller.startSession(harness.ctx);
-    const lastSuccessfulSurface = indicatorSurface;
+    const lastSuccessfulLayout = indicatorLayout;
     expect(harness.controller.currentMessage()).toBe("A");
 
     failSetter = true;
     expect(harness.controller.startTurn(harness.ctx).applied).toBe(false);
-    expect(indicatorSurface).toBe(lastSuccessfulSurface);
+    expect(indicatorLayout).toBe(lastSuccessfulLayout);
     expect(harness.controller.currentMessage()).toBe("A");
     harness.controller.updateTokens({ input: 1, output: 1 }, harness.ctx);
     const retried = harness.calls.at(-1)?.[1] as { frames: string[] };
@@ -1978,7 +1978,7 @@ describe("working-line runtime ownership", () => {
   it("does not publish a failed forced agent-start rebase epoch", () => {
     let now = 0;
     let failSetter = false;
-    let indicatorSurface: unknown;
+    let indicatorLayout: unknown;
     const harness = runtime(
       true,
       () => 0,
@@ -1991,7 +1991,7 @@ describe("working-line runtime ownership", () => {
     harness.current.components.workingLine.segments.elapsed = false;
     const setter = harness.ctx.ui.setWorkingIndicator.bind(harness.ctx.ui);
     harness.ctx.ui.setWorkingIndicator = (value?: unknown) => {
-      indicatorSurface = value;
+      indicatorLayout = value;
       if (failSetter) {
         failSetter = false;
         now = 350;
@@ -2000,11 +2000,11 @@ describe("working-line runtime ownership", () => {
       setter(value);
     };
     harness.controller.startSession(harness.ctx);
-    const lastSuccessfulSurface = indicatorSurface;
+    const lastSuccessfulLayout = indicatorLayout;
     now = 250;
     failSetter = true;
     harness.controller.startAgent(harness.ctx);
-    expect(indicatorSurface).toBe(lastSuccessfulSurface);
+    expect(indicatorLayout).toBe(lastSuccessfulLayout);
     harness.controller.updateTokens({ input: 1, output: 1 }, harness.ctx);
     const retried = harness.calls.at(-1)?.[1] as { frames: string[] };
     expect(phaseSignature(retried.frames[0] ?? "")[0]).toBe("⣏⠀⣹");
@@ -2016,19 +2016,19 @@ describe("working-line runtime ownership", () => {
     current.components.workingLine.messages.values = ["Stable"];
     current.components.workingLine.segments.elapsed = false;
     const calls: string[] = [];
-    let indicatorSurface: unknown;
-    let messageSurface: string | undefined;
+    let indicatorLayout: unknown;
+    let messageLayout: string | undefined;
     let failureSets = 0;
     const ctx = {
       hasUI: true,
       mode: "tui",
       ui: {
         setWorkingMessage(value?: string) {
-          messageSurface = value;
+          messageLayout = value;
           calls.push(value === undefined ? "message-reset" : "message-set");
         },
         setWorkingIndicator(value?: unknown) {
-          indicatorSurface = value;
+          indicatorLayout = value;
           calls.push(value === undefined ? "indicator-reset" : "indicator-set");
           if (value !== undefined && failureSets > 0) {
             failureSets -= 1;
@@ -2048,8 +2048,8 @@ describe("working-line runtime ownership", () => {
       "indicator-reset",
       "message-reset",
     ]);
-    expect(indicatorSurface).toBeUndefined();
-    expect(messageSurface).toBeUndefined();
+    expect(indicatorLayout).toBeUndefined();
+    expect(messageLayout).toBeUndefined();
     const afterRelease = calls.length;
     controller.updateTokens({ input: 1, output: 1 }, ctx);
     expect(calls).toHaveLength(afterRelease);

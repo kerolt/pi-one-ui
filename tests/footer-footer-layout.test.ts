@@ -6,7 +6,7 @@ import {
   fullFooterFitsAligned,
   packCompactChunks,
   reflowFullFooter,
-} from "../extensions/surfaces/footer/footer-layout";
+} from "../extensions/layouts/footer/footer-layout";
 
 const chunk = (text: string, boundary: "space" | "separator" = "space") => ({
   text,

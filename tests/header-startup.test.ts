@@ -6,7 +6,7 @@ import {
   setKeybindings,
   TUI_KEYBINDINGS,
 } from "@earendil-works/pi-tui";
-import { renderHeaderLines } from "../extensions/surfaces/header/startup-header.ts";
+import { renderHeaderLines } from "../extensions/layouts/header/startup-header.ts";
 
 // Simulate the Pi runtime by registering app.* keybindings.
 setKeybindings(

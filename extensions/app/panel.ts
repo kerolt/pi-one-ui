@@ -104,7 +104,7 @@ function sectionDescription(section: SectionId): string {
 }
 
 /**
- * Builds settings owned by the Editor surface.
+ * Builds settings owned by the Editor layout.
  */
 function editorItems(): SettingItem[] {
   const config = loadShellConfig();
@@ -127,7 +127,7 @@ function editorItems(): SettingItem[] {
 }
 
 /**
- * Builds settings owned by the WorkingLine surface.
+ * Builds settings owned by the WorkingLine layout.
  */
 function workingLineItems(): SettingItem[] {
   const config = loadShellConfig();
@@ -150,7 +150,7 @@ function workingLineItems(): SettingItem[] {
 }
 
 /**
- * Builds settings owned by the Footer surface.
+ * Builds settings owned by the Footer layout.
  */
 function footerItems(): SettingItem[] {
   const config = loadShellConfig();
@@ -166,7 +166,7 @@ function footerItems(): SettingItem[] {
 }
 
 /**
- * Builds settings owned by the Context surface.
+ * Builds settings owned by the Context layout.
  */
 function contextItems(config: ContextConfig): SettingItem[] {
   const shellConfig = loadShellConfig();
@@ -232,7 +232,7 @@ function contextItems(config: ContextConfig): SettingItem[] {
 }
 
 /**
- * Builds settings owned by the Header surface.
+ * Builds settings owned by the Header layout.
  */
 function headerItems(config: ContextConfig): SettingItem[] {
   return [
@@ -356,7 +356,7 @@ type UnifiedPanelDeps = {
 };
 
 /**
- * Renders the Editor surface preview for the settings panel.
+ * Renders the Editor layout preview for the settings panel.
  */
 function renderEditorPreview(theme: any, width: number): string[] {
   const config = loadShellConfig();
@@ -371,7 +371,7 @@ function renderEditorPreview(theme: any, width: number): string[] {
 }
 
 /**
- * Renders the Context surface User Message preview for the settings panel.
+ * Renders the Context layout User Message preview for the settings panel.
  */
 function renderContextPreview(theme: any, width: number): string[] {
   const config = loadShellConfig();
@@ -393,7 +393,7 @@ function saveNotice(ctx: any, label: string, value: string): void {
 }
 
 /**
- * Persists one panel setting and reconciles its owning runtime surface.
+ * Persists one panel setting and reconciles its owning runtime layout.
  *
  * @param id Stable settings item identifier.
  * @param value Selected settings value.

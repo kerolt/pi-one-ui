@@ -5,7 +5,7 @@ import {
   ExpandedToolResultText,
   formatToolInputArgs,
   SHOW_MORE_LABEL,
-} from "../extensions/surfaces/context/renderer/index.ts";
+} from "../extensions/layouts/context/renderer/index.ts";
 import {
   truncateToWidth,
   visibleWidth,

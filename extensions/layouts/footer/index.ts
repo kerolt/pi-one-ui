@@ -1,5 +1,5 @@
 export {
-  FooterSurfaceController,
+  FooterLayoutController,
   type FooterControllerContext,
 } from "./controller.ts";
 export { activeFooterReferences } from "./data.ts";

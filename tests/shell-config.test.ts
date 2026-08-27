@@ -1381,7 +1381,7 @@ describe("canonical snapshot persistence", () => {
     );
   });
 
-  it("prevents legacy edits from recoupling surfaces after the first save", () => {
+  it("prevents legacy edits from recoupling layouts after the first save", () => {
     withConfig({ features: { editor: false, copyFriendly: true } }, (path) => {
       saveEditorComponentPatch({ enabled: true }, path);
       const raw = readRaw(path);

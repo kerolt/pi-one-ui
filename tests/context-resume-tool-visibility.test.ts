@@ -10,8 +10,8 @@ import {
 import { Container } from "@earendil-works/pi-tui";
 import claudeCodeStyle, {
   getCompactThinkingConfig,
-} from "../extensions/surfaces/context/renderer/index.ts";
-import { installCompactThinking } from "../extensions/surfaces/context/thinking/compact-thinking.ts";
+} from "../extensions/layouts/context/renderer/index.ts";
+import { installCompactThinking } from "../extensions/layouts/context/thinking/compact-thinking.ts";
 
 initTheme("dark");
 

@@ -12,25 +12,25 @@ import claudeCodeStyleExtension, {
   ExpandedToolIoView,
   installToolMouseInteraction,
   SHOW_MORE_LABEL,
-} from "../extensions/surfaces/context/renderer/index.ts";
+} from "../extensions/layouts/context/renderer/index.ts";
 import { showTextPreview } from "../extensions/features/context-inspector/index.ts";
 import { config } from "../extensions/app/config/renderer.ts";
 import {
   sharedToolHoverState,
   isToolCallHovered,
-} from "../extensions/surfaces/context/renderer/mouse/hover.ts";
-import { installCompactMode } from "../extensions/surfaces/context/renderer/compact-mode.ts";
+} from "../extensions/layouts/context/renderer/mouse/hover.ts";
+import { installCompactMode } from "../extensions/layouts/context/renderer/compact-mode.ts";
 import {
   getMessageDisplayTheme,
   installMessageDisplayRendering,
   setMessageDisplayTheme,
-} from "../extensions/surfaces/context/renderer/tool/message-display.ts";
-import { ToolGroupComponent } from "../extensions/surfaces/context/renderer/tool/grouping.ts";
+} from "../extensions/layouts/context/renderer/tool/message-display.ts";
+import { ToolGroupComponent } from "../extensions/layouts/context/renderer/tool/grouping.ts";
 import {
   installCompactThinking,
   ThinkingPreviewBlock,
-} from "../extensions/surfaces/context/thinking/compact-thinking.ts";
-import { WriteExecutionMetadataStore } from "../extensions/surfaces/context/renderer/tool/diff/write-execution.ts";
+} from "../extensions/layouts/context/thinking/compact-thinking.ts";
+import { WriteExecutionMetadataStore } from "../extensions/layouts/context/renderer/tool/diff/write-execution.ts";
 
 // 0.84+ 的稳定 TUI 引用会在 renderer 切换时重绑方法。插件不得捕获后回写
 // doRender/render/handleInput；regular 的工具点击改为按左键输入即时捕获内存 frame。
@@ -903,8 +903,8 @@ test("lazy-proxy tui: fullscreen hover uses scroll ancestor content width after 
   // isToolCallHovered 已移入 hover.ts（interaction.ts 不再 re-export）；
   // reload 语义不变：reset 走 interaction.ts 原生导出，状态读 globalThis 槽。
   assert.equal(isToolCallHovered("width-tool-b"), true);
-  const reloadSpecifier = `../extensions/surfaces/context/renderer/mouse/interaction.ts?reload=${Date.now()}`;
-  const reloadedMouse: typeof import("../extensions/surfaces/context/renderer/mouse/interaction.ts") =
+  const reloadSpecifier = `../extensions/layouts/context/renderer/mouse/interaction.ts?reload=${Date.now()}`;
+  const reloadedMouse: typeof import("../extensions/layouts/context/renderer/mouse/interaction.ts") =
     await import(reloadSpecifier);
   reloadedMouse.resetToolHoverState();
   assert.equal(

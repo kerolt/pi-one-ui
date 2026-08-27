@@ -1,4 +1,4 @@
-import type { CompactThinkingConfig } from "../../surfaces/context/thinking/compact-thinking.ts";
+import type { CompactThinkingConfig } from "../../layouts/context/thinking/compact-thinking.ts";
 import { configStore, type ConfigRecord } from "./store.ts";
 
 export type CompactStyleMode = "on" | "compact" | "off";

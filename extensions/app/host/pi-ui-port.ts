@@ -24,7 +24,7 @@ export type PiUiPort = Pick<
 };
 
 /**
- * Adapts a session UI context to the narrow port consumed by surfaces.
+ * Adapts a session UI context to the narrow port consumed by layouts.
  */
 export function createPiUiPort(
   ctx: ExtensionContext,

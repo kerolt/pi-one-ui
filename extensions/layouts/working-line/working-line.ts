@@ -1538,7 +1538,7 @@ export class WorkingLineController {
       if (snapshot.ownsMessage) ui.setWorkingMessage("");
     } catch {
       // Recovery is deliberately direct rather than recursive. If either setter cannot
-      // restore the last successful public state, release both unkeyed surfaces.
+      // restore the last successful public state, release both unkeyed layouts.
       this.releaseAfterFailure(ui);
     }
   }

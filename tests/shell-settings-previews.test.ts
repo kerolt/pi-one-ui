@@ -203,7 +203,7 @@ describe("settings previews", () => {
     expect(render()).toContain("▎ Explain this change safely.");
   });
 
-  it("previews filled and transparent Accent Rail surfaces", () => {
+  it("previews filled and transparent Accent Rail layouts", () => {
     const current = config();
     current.components.editor.style = "accent-rail";
     const render = () =>

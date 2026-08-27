@@ -35,7 +35,7 @@ export type FooterControllerContext = {
 /**
  * Owns Footer installation, ownership markers, status callbacks, and clocks.
  */
-export class FooterSurfaceController {
+export class FooterLayoutController {
   private readonly context: FooterControllerContext;
   private installedKind: FooterKind | undefined;
   private installedToken: symbol | undefined;
@@ -365,7 +365,7 @@ export class FooterSurfaceController {
   private restoreFailedInstallation(
     ctx: ExtensionContext,
     token: symbol,
-    previous: ReturnType<FooterSurfaceController["snapshotBookkeeping"]>,
+    previous: ReturnType<FooterLayoutController["snapshotBookkeeping"]>,
   ): void {
     if (
       previous.token !== undefined &&

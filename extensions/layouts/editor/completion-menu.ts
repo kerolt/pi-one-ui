@@ -70,10 +70,7 @@ export function fillTerminalLine(content: string, width: number): string {
   return `${truncated}${" ".repeat(Math.max(0, width - renderedWidth))}`;
 }
 
-export function applyOwnedSurfaceBackground(
-  theme: Theme,
-  text: string,
-): string {
+export function applyOwnedLayoutBackground(theme: Theme, text: string): string {
   try {
     const background = theme.getBgAnsi("userMessageBg");
     const restored = text.replace(SGR_SEQUENCE, (sequence) =>
@@ -136,7 +133,7 @@ export function renderCompletionRows({
       width,
     );
     const surfaced = ownedBackground
-      ? applyOwnedSurfaceBackground(theme, content)
+      ? applyOwnedLayoutBackground(theme, content)
       : content;
     return truncateTerminalLine(surfaced, width);
   });
@@ -176,7 +173,7 @@ export function renderCompletionPalette({
     return [...rows, truncateToWidth(separator, safeWidth, "")];
   const helpText = fillTerminalLine(helpLabel(safeWidth), safeWidth);
   const help = ownedBackground
-    ? applyOwnedSurfaceBackground(theme, helpText)
+    ? applyOwnedLayoutBackground(theme, helpText)
     : helpText;
   return [
     ...rows,

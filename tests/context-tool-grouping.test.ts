@@ -10,7 +10,7 @@ import { Container, Spacer } from "@earendil-works/pi-tui";
 import {
   installToolGrouping,
   ToolGroupComponent,
-} from "../extensions/surfaces/context/renderer/tool/grouping.ts";
+} from "../extensions/layouts/context/renderer/tool/grouping.ts";
 
 initTheme("dark");
 const ui = {

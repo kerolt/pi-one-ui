@@ -2,7 +2,7 @@ import { stripVTControlCharacters } from "node:util";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { Text } from "@earendil-works/pi-tui";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TURN_SUMMARY_ENTRY_TYPE } from "../extensions/surfaces/working-line/interaction-summary";
+import { TURN_SUMMARY_ENTRY_TYPE } from "../extensions/layouts/working-line/interaction-summary";
 
 const stripTerminalSequences = stripVTControlCharacters;
 
@@ -39,7 +39,7 @@ vi.mock("../extensions/app/config/shell", async (importOriginal) => {
   };
 });
 
-import zentui from "./support/surface-lifecycle";
+import zentui from "./support/layout-lifecycle";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
 

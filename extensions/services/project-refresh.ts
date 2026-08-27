@@ -109,7 +109,7 @@ export class ProjectRefreshService {
   /**
    * Creates a generation-aware project refresh service.
    *
-   * @param context Shared state and surface-neutral selectors.
+   * @param context Shared state and layout-neutral selectors.
    */
   constructor(context: ProjectRefreshServiceContext) {
     this.context = context;

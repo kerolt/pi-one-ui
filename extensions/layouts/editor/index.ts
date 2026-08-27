@@ -1,7 +1,7 @@
 export {
-  EditorSurfaceController,
+  EditorLayoutController,
   type EditorChangeResult,
-  type EditorSurfaceControllerContext,
+  type EditorLayoutControllerContext,
 } from "./controller.ts";
 export {
   installHostAccentRailLayoutPatch,

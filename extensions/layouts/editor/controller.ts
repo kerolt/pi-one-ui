@@ -32,7 +32,7 @@ import {
 
 export type EditorChangeResult = { ok: true } | { ok: false; reason: string };
 
-export type EditorSurfaceControllerContext = {
+export type EditorLayoutControllerContext = {
   readonly getConfig: () => PolishedTuiConfig;
   readonly saveComponent: (
     patch: Partial<PolishedTuiConfig["components"]["editor"]>,
@@ -61,8 +61,8 @@ type EditorInstallMode = "none" | "standalone" | "wrapper";
 /**
  * Owns the Pi editor factory and all Editor-specific lifecycle state.
  */
-export class EditorSurfaceController {
-  private readonly context: EditorSurfaceControllerContext;
+export class EditorLayoutController {
+  private readonly context: EditorLayoutControllerContext;
   private readonly ownerToken = Symbol("pi-one-ui-editor-owner");
   private activeTuiContext: ExtensionContext | undefined;
   private requestEditorRender: (() => void) | undefined;
@@ -81,7 +81,7 @@ export class EditorSurfaceController {
    *
    * @param context Runtime services and selectors exposed to the Editor.
    */
-  constructor(context: EditorSurfaceControllerContext) {
+  constructor(context: EditorLayoutControllerContext) {
     this.context = context;
   }
 
@@ -397,7 +397,7 @@ export class EditorSurfaceController {
   }
 
   /**
-   * Reports whether a context can safely install the Editor surface.
+   * Reports whether a context can safely install the Editor layout.
    *
    * @param ctx Candidate Pi extension context.
    * @returns Whether the context is an interactive TUI context.

@@ -631,14 +631,14 @@ describe("component-oriented /zentui settings", () => {
     expect(component.render(100).join("\n")).not.toContain("Completion menu");
   });
 
-  it("shows and persists the Accent Rail surface control only for that style", async () => {
+  it("shows and persists the Accent Rail layout control only for that style", async () => {
     const current = cloneConfig();
     current.components.editor.style = "accent-rail";
     const harness = createHarness(current);
     await harness.command().handler("", harness.ctx);
     const component = harness.component();
     goToSection(component, "Editor");
-    selectLabel(component, "Accent Rail surface");
+    selectLabel(component, "Accent Rail layout");
     expect(focusedRow(component)).toContain("filled");
     component.handleInput(" ");
     expect(focusedRow(component)).toContain("transparent");
@@ -650,9 +650,7 @@ describe("component-oriented /zentui settings", () => {
 
     selectLabel(component, "Editor style");
     component.handleInput(" ");
-    expect(component.render(80).join("\n")).not.toContain(
-      "Accent Rail surface",
-    );
+    expect(component.render(80).join("\n")).not.toContain("Accent Rail layout");
   });
 
   it("shows friendly message style labels and restores focus after rebuild", async () => {

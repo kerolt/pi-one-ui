@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { initTheme } from "@earendil-works/pi-coding-agent";
 import agentSummaryFeature, {
   AGENT_SUMMARY_ENTRY_TYPE,
-} from "../extensions/surfaces/context/summary/index.ts";
+} from "../extensions/layouts/context/summary/index.ts";
 import {
   AgentRunSummary,
   bindAgentSummary,
@@ -12,7 +12,7 @@ import {
   summaryLine,
   summaryMarkdown,
   type AgentSummaryData,
-} from "../extensions/surfaces/context/summary/core.ts";
+} from "../extensions/layouts/context/summary/core.ts";
 
 function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");

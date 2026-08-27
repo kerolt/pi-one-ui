@@ -10,13 +10,13 @@ import {
   ToolExecutionComponent,
   initTheme,
 } from "@earendil-works/pi-coding-agent";
-import { shouldRenderRichDiff } from "../extensions/surfaces/context/renderer/index.ts";
+import { shouldRenderRichDiff } from "../extensions/layouts/context/renderer/index.ts";
 import { config } from "../extensions/app/config/renderer.ts";
-import { installDefaultMode } from "../extensions/surfaces/context/renderer/default-mode.ts";
+import { installDefaultMode } from "../extensions/layouts/context/renderer/default-mode.ts";
 import {
   renderEditDiffResult,
   renderWriteDiffResult,
-} from "../extensions/surfaces/context/renderer/tool/diff/diff-renderer.ts";
+} from "../extensions/layouts/context/renderer/tool/diff/diff-renderer.ts";
 import { normalizeConfig } from "../extensions/app/config/renderer.ts";
 
 initTheme("dark");
@@ -26,12 +26,12 @@ import {
   renderRichToolResult,
   WriteExecutionMetadataStore,
   type ToolDisplayConfig,
-} from "../extensions/surfaces/context/renderer/tool/diff/index.ts";
+} from "../extensions/layouts/context/renderer/tool/diff/index.ts";
 import {
   executeWriteWithMetadata,
   MAX_COMPARABLE_WRITE_BYTES,
   MAX_WRITE_METADATA_ENTRIES,
-} from "../extensions/surfaces/context/renderer/tool/diff/write-execution.ts";
+} from "../extensions/layouts/context/renderer/tool/diff/write-execution.ts";
 
 const theme = {
   fg(_color: string, text: string) {

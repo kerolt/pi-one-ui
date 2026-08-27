@@ -1,7 +1,7 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import {
-  applyOwnedSurfaceBackground,
+  applyOwnedLayoutBackground,
   fillTerminalLine,
   renderCompletionRows,
 } from "./completion-menu.ts";
@@ -90,17 +90,17 @@ export function renderAccentRailEditorFrame({
   ];
   const transparent =
     config.components.editor.styles["accent-rail"].transparent;
-  const surface = rows.map((line) => {
+  const layout = rows.map((line) => {
     const railCell = transparent
       ? rail
-      : applyOwnedSurfaceBackground(uiTheme, rail);
+      : applyOwnedLayoutBackground(uiTheme, rail);
     const bodyText = ` ${fillTerminalLine(line, contentWidth)}`;
     const body = transparent
       ? bodyText
-      : applyOwnedSurfaceBackground(uiTheme, bodyText);
+      : applyOwnedLayoutBackground(uiTheme, bodyText);
     return `${railCell}${body}`;
   });
-  const autocompleteSurface = renderCompletionRows({
+  const autocompleteLayout = renderCompletionRows({
     lines: autocompleteLines,
     width,
     theme: uiTheme,
@@ -108,5 +108,5 @@ export function renderAccentRailEditorFrame({
     ownedBackground: !transparent,
   });
 
-  return clampLines([...surface, ...autocompleteSurface], width);
+  return clampLines([...layout, ...autocompleteLayout], width);
 }

@@ -2,7 +2,7 @@ import { stripVTControlCharacters } from "node:util";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
-import { renderAccentRailEditorFrame } from "../extensions/surfaces/editor/accent-rail-editor";
+import { renderAccentRailEditorFrame } from "../extensions/layouts/editor/accent-rail-editor";
 import {
   defaultConfig,
   type PolishedTuiConfig,
@@ -41,7 +41,7 @@ function plain(value: string): string {
 }
 
 describe("accent rail editor frame", () => {
-  it("renders a full-width filled rail surface for every input row", () => {
+  it("renders a full-width filled rail layout for every input row", () => {
     const rows = renderAccentRailEditorFrame({
       width: 20,
       editorLines: ["Ask anything", "continuation"],

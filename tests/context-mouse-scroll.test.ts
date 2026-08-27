@@ -6,7 +6,7 @@ import {
   resetScrollButtonState,
   scheduleScrollButtonSync,
   setToolMouseTui,
-} from "../extensions/surfaces/context/renderer/mouse/scroll.ts";
+} from "../extensions/layouts/context/renderer/mouse/scroll.ts";
 
 /** 伪造官方 fullscreen 惰性 Proxy TUI：requestRender 每次 get 返回新函数。 */
 function lazyFullscreenTui() {

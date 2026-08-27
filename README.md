@@ -18,7 +18,7 @@ pi install git:github.com/<your-account>/pi-one-ui
 /oneui
 ```
 
-`/oneui` 是唯一的公开管理命令。设置面板按照 TUI 的视觉 Surface 划分：
+`/oneui` 是唯一的公开管理命令。设置面板按照 TUI 的视觉 Layout 划分：
 
 ```text
 Header → Context → WorkingLine → Editor → Footer → Features → Presets
@@ -61,7 +61,7 @@ Header → Context → WorkingLine → Editor → Footer → Features → Preset
 }
 ```
 
-所有读写已经经过统一 ConfigStore；旧的 `zentui.json`、`claude-code-style.json` 和 `pi-mine-ui.json` 会被兼容读取并保留。`enableWorkingMessage` 仍可被旧配置读取，但统一插件不会注册第二套 working-message 实现，WorkingLine 的唯一 owner 是本插件的 WorkingLine surface。
+所有读写已经经过统一 ConfigStore；旧的 `zentui.json`、`claude-code-style.json` 和 `pi-mine-ui.json` 会被兼容读取并保留。`enableWorkingMessage` 仍可被旧配置读取，但统一插件不会注册第二套 working-message 实现，WorkingLine 的唯一 owner 是本插件的 WorkingLine layout。
 
 ## 源码结构
 
@@ -72,11 +72,11 @@ extensions/
     runtime/                       # TuiRuntime、state、事件和调度
     host/                          # Pi API 的窄化 host ports
     config/                        # ConfigStore 与配置领域解析
-    ownership/                     # Surface ownership
+    ownership/                     # Layout ownership
     overlay/                       # OverlayManager、InputRouter、selector
     commands/                      # /oneui and settings panel previews
-  surfaces/
-    header/                        # Header surface
+  layouts/
+    header/                        # Header layout
     context/                       # 原 Transcript：对话内容区
       message/                     # User Message
       thinking/                    # Thinking
@@ -98,7 +98,7 @@ extensions/
 vendor/                           # 只读上游参考快照
 ```
 
-`TuiRuntime` 是唯一 composition root，并直接装配 Surface controllers、services 和 shared lifecycle effects。standalone compatibility harness 只位于 `tests/support/`，不进入安装包。
+`TuiRuntime` 是唯一 composition root，并直接装配 Layout controllers、services 和 shared lifecycle effects。standalone compatibility harness 只位于 `tests/support/`，不进入安装包。
 
 ## 开发
 
@@ -122,7 +122,7 @@ npm run verify
 - `tests/editor-*`：Editor、completion、metadata、transfer 和 Accent Rail。
 - `tests/footer-*`：Footer、Footer format/layout/status。
 - `tests/services-*`：Git、runtime、project、session 和 telemetry。
-- `tests/shell-*`：standalone compatibility tests for the remaining surface lifecycle glue。
+- `tests/shell-*`：standalone compatibility tests for the remaining layout lifecycle glue。
 
 本地启动：
 

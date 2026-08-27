@@ -16,26 +16,26 @@ import {
   formatConfigStatus,
   normalizeConfig,
 } from "../extensions/app/config/renderer.ts";
-import { installCompactThinking } from "../extensions/surfaces/context/thinking/compact-thinking.ts";
+import { installCompactThinking } from "../extensions/layouts/context/thinking/compact-thinking.ts";
 import {
   buildMessageSummary,
   installCompactMode,
   isCompactAssistantComponent,
   refreshCompactModeComponents,
   styleCompactThinkingText,
-} from "../extensions/surfaces/context/renderer/compact-mode.ts";
-import { refreshMountedContext } from "../extensions/surfaces/context/renderer/context-refresh.ts";
-import claudeCodeStyleExtension from "../extensions/surfaces/context/renderer/index.ts";
+} from "../extensions/layouts/context/renderer/compact-mode.ts";
+import { refreshMountedContext } from "../extensions/layouts/context/renderer/context-refresh.ts";
+import claudeCodeStyleExtension from "../extensions/layouts/context/renderer/index.ts";
 import {
   getMessageDisplayTheme,
   setMessageDisplayTheme,
-} from "../extensions/surfaces/context/renderer/tool/message-display.ts";
-import { WriteExecutionMetadataStore } from "../extensions/surfaces/context/renderer/tool/diff/write-execution.ts";
+} from "../extensions/layouts/context/renderer/tool/message-display.ts";
+import { WriteExecutionMetadataStore } from "../extensions/layouts/context/renderer/tool/diff/write-execution.ts";
 import {
   invalidateIoView,
   isExpandedToolIoView,
-} from "../extensions/surfaces/context/renderer/tool/result.ts";
-import { toolCallSummary } from "../extensions/surfaces/context/renderer/tool/names.ts";
+} from "../extensions/layouts/context/renderer/tool/result.ts";
+import { toolCallSummary } from "../extensions/layouts/context/renderer/tool/names.ts";
 
 initTheme("dark");
 
@@ -801,7 +801,7 @@ test("compact folds Agent/Task tools always; no pending outer flash", () => {
   }
 });
 
-test("compact surfaces abort outside folded tools", () => {
+test("compact layouts abort outside folded tools", () => {
   const previousMode = config.mode;
   config.mode = "compact";
   const hooks = installCompactMode({

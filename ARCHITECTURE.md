@@ -39,7 +39,7 @@ TuiRuntime
     Overlay stack
 ```
 
-`Context` is the renamed Transcript surface. It means the conversation content area, not the `/context` command. The command is named **Context Inspector** in the feature layer.
+`Context` is the renamed Transcript layout. It means the conversation content area, not the `/context` command. The command is named **Context Inspector** in the feature layer.
 
 ## 3. Runtime architecture
 
@@ -52,17 +52,17 @@ extensions/index.ts
     ├── RuntimeStateStore
     ├── EventCoordinator
     ├── RenderScheduler
-    ├── SurfaceRegistry
-    ├── Header surface
-    ├── Context surface
-    ├── WorkingLine surface
-    ├── Editor surface
-    ├── Footer surface
+    ├── LayoutRegistry
+    ├── Header layout
+    ├── Context layout
+    ├── WorkingLine layout
+    ├── Editor layout
+    ├── Footer layout
     ├── OverlayManager / InputRouter
     └── non-visual Features
 ```
 
-`TuiRuntime` mounts the Surface controllers, services, and shared lifecycle effects directly. Standalone compatibility wiring is test-only and is not part of the product runtime.
+`TuiRuntime` mounts the Layout controllers, services, and shared lifecycle effects directly. Standalone compatibility wiring is test-only and is not part of the product runtime.
 
 ### Event flow
 
@@ -73,18 +73,18 @@ EventCoordinator
        ↓
 Runtime/session state and feature effects
        ↓
-Surface selectors
+Layout selectors
        ↓
 RenderScheduler
        ↓
 Pi TUI redraw
 ```
 
-A Surface should not independently register a second handler for every shared lifecycle event. EventCoordinator owns shared lifecycle registration; specialized renderer hooks may remain local to the renderer that owns them.
+A Layout should not independently register a second handler for every shared lifecycle event. EventCoordinator owns shared lifecycle registration; specialized renderer hooks may remain local to the renderer that owns them.
 
-## 4. Surface ownership
+## 4. Layout ownership
 
-| Surface / seam | Canonical owner | Pi seam |
+| Layout / seam | Canonical owner | Pi seam |
 |---|---|---|
 | Header | Header | `ctx.ui.setHeader()` |
 | Conversation content | Context | message/entry renderers and context patches |
@@ -98,7 +98,7 @@ A Surface should not independently register a second handler for every shared li
 | Raw input | InputRouter | `ctx.ui.onTerminalInput()` and fullscreen adapter |
 | Selector styling | Overlay/selector implementation | selector patch |
 
-Features contribute commands, autocomplete, data or entry effects. They do not claim the visual seam owned by a Surface.
+Features contribute commands, autocomplete, data or entry effects. They do not claim the visual seam owned by a Layout.
 
 ## 5. Source layout
 
@@ -109,11 +109,11 @@ extensions/
 │   ├── runtime/                 # TuiRuntime, state, event and render coordination
 │   ├── host/                    # Narrow Pi extension/UI ports and capabilities
 │   ├── config/                  # ConfigStore and domain projections
-│   ├── ownership/               # Surface and patch ownership
+│   ├── ownership/               # Layout and patch ownership
 │   ├── overlay/                 # Overlay activity, selector and input routing
 │   ├── commands/                # /oneui and settings panel previews
 │   └── panel.ts                 # /oneui settings UI
-├── surfaces/
+├── layouts/
 │   ├── header/                  # Startup Header
 │   ├── context/                # Conversation content area
 │   │   ├── message/
@@ -155,18 +155,18 @@ pi-one-ui.json
 └── renderer             # existing Context-compatible settings
 ```
 
-A future schema version may rename these sections to `surfaces.header`, `surfaces.context`, `surfaces.editor`, `surfaces.footer` and `features`. That schema migration must happen in ConfigStore, not in individual Surface implementations.
+A future schema version may rename these sections to `surfaces.header`, `surfaces.context`, `surfaces.editor`, `surfaces.footer` and `features`. That schema migration must happen in ConfigStore, not in individual Layout implementations.
 
 ## 7. Ownership and compatibility rules
 
 1. One Pi UI seam has one canonical owner in the unified runtime.
-2. Standalone compatibility tests may keep an old adapter owner behind an explicit option; unified runtime options must delegate to the canonical Surface.
+2. Standalone compatibility tests may keep an old adapter owner behind an explicit option; unified runtime options must delegate to the canonical Layout.
 3. Prototype patches must record their owner and restore only when the installed method is still theirs.
 4. `dispose()` must be idempotent and generation-aware.
 5. Overlay activity must be balanced in `finally` paths.
 6. Raw input routes must be removed together with their host listener.
 7. Legacy configuration is read-only compatibility input after migration; new writes use the shared store.
-8. Surface implementation files may be internally large, but their public interface should remain small and deep.
+8. Layout implementation files may be internally large, but their public interface should remain small and deep.
 
 ## 8. Verification
 

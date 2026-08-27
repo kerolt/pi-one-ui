@@ -6,7 +6,7 @@ import {
 } from "../extensions/app/runtime/event-coordinator.ts";
 import { RenderScheduler } from "../extensions/app/runtime/render-scheduler.ts";
 import { RuntimeStateStore } from "../extensions/app/runtime/runtime-state.ts";
-import { SurfaceRegistry } from "../extensions/app/ownership/surface-registry.ts";
+import { LayoutRegistry } from "../extensions/app/ownership/layout-registry.ts";
 
 test("EventCoordinator installs each runtime event once and dispatches in order", async () => {
   const registrations: Array<{
@@ -76,8 +76,8 @@ test("RuntimeStateStore rejects stale shutdown and notifies session transitions"
   assert.deepEqual(states, ["active:1:tui", "active:2:tui", "idle:2:"]);
 });
 
-test("SurfaceRegistry permits one token per surface and safe release", () => {
-  const registry = new SurfaceRegistry();
+test("LayoutRegistry permits one token per layout and safe release", () => {
+  const registry = new LayoutRegistry();
   const first = {};
   const second = {};
   const release = registry.claim("footer", first);

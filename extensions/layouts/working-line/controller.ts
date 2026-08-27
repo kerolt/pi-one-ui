@@ -26,7 +26,7 @@ export type WorkingLineMessageEnd = Parameters<
   InteractionMetricsTracker["messageEnd"]
 >[0];
 
-export type WorkingLineSurfaceContext = {
+export type WorkingLineLayoutContext = {
   readonly pi: ExtensionAPI;
   readonly getConfig: () => PolishedTuiConfig;
   readonly saveComponent: (
@@ -41,8 +41,8 @@ export type WorkingLineSurfaceContext = {
 /**
  * Owns WorkingLine lifecycle, interaction metrics, timing, and summary writes.
  */
-export class WorkingLineSurfaceController {
-  private readonly context: WorkingLineSurfaceContext;
+export class WorkingLineLayoutController {
+  private readonly context: WorkingLineLayoutContext;
   private readonly durationClock = new AgentDurationClock();
   private readonly metrics = new InteractionMetricsTracker();
   private readonly workingLine: WorkingLineController;
@@ -54,7 +54,7 @@ export class WorkingLineSurfaceController {
    *
    * @param context Shared runtime services consumed by WorkingLine.
    */
-  constructor(context: WorkingLineSurfaceContext) {
+  constructor(context: WorkingLineLayoutContext) {
     this.context = context;
     this.workingLine = new WorkingLineController(
       context.getConfig,

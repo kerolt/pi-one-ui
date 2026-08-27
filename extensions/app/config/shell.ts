@@ -8,8 +8,8 @@ import {
   resolveConfiguredIcons,
 } from "../../shared/icons.ts";
 import { isSupportedColorSpec } from "../../shared/style.ts";
-import { normalizeWorkingLineMessages } from "../../surfaces/working-line/working-line.ts";
-import { PI_WORKING_LINE_MESSAGES } from "../../surfaces/working-line/working-line-messages.ts";
+import { normalizeWorkingLineMessages } from "../../layouts/working-line/working-line.ts";
+import { PI_WORKING_LINE_MESSAGES } from "../../layouts/working-line/working-line-messages.ts";
 import {
   configPath as defaultConfigPath,
   configStore,

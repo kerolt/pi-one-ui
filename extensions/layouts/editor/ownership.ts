@@ -1,6 +1,6 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-/** Symbol used to identify factories created by the Editor surface. */
+/** Symbol used to identify factories created by the Editor layout. */
 export const ZENTUI_EDITOR_FACTORY = Symbol.for("pi-zentui.editor-factory");
 
 /** Symbol used to retain the wrapped third-party editor factory. */
@@ -8,7 +8,7 @@ export const ZENTUI_EDITOR_BASE_FACTORY = Symbol.for(
   "pi-zentui.editor-base-factory",
 );
 
-/** Symbol used to identify the active Editor surface owner. */
+/** Symbol used to identify the active Editor layout owner. */
 export const ZENTUI_EDITOR_OWNER = Symbol.for("pi-zentui.editor-owner");
 
 export type EditorFactory = NonNullable<
@@ -22,10 +22,10 @@ export type ZentuiEditorFactory = EditorFactory & {
 };
 
 /**
- * Reports whether a factory was marked as an Editor surface factory.
+ * Reports whether a factory was marked as an Editor layout factory.
  *
  * @param factory Candidate host editor factory.
- * @returns Whether the factory carries the Editor surface marker.
+ * @returns Whether the factory carries the Editor layout marker.
  */
 export function isZentuiEditorFactory(
   factory: EditorFactory | undefined,
@@ -36,7 +36,7 @@ export function isZentuiEditorFactory(
 }
 
 /**
- * Returns the third-party factory wrapped by an Editor surface factory.
+ * Returns the third-party factory wrapped by an Editor layout factory.
  *
  * @param factory Candidate host editor factory.
  * @returns The retained base factory, when present.
@@ -50,7 +50,7 @@ export function getZentuiEditorBaseFactory(
 }
 
 /**
- * Reports whether a factory belongs to the supplied Editor surface owner.
+ * Reports whether a factory belongs to the supplied Editor layout owner.
  *
  * @param factory Candidate host editor factory.
  * @param ownerToken Owner token to compare.
@@ -67,7 +67,7 @@ export function isOwnedEditorFactory(
 }
 
 /**
- * Marks a factory as owned by the Editor surface.
+ * Marks a factory as owned by the Editor layout.
  *
  * @param factory Factory to mark.
  * @param ownerToken Owner token written to the factory.
@@ -87,7 +87,7 @@ export function markEditorFactory<T extends EditorFactory>(
  * Retains a base factory on an Editor wrapper for safe restoration.
  *
  * @param factory Wrapper factory to mark.
- * @param baseFactory Third-party factory wrapped by the surface.
+ * @param baseFactory Third-party factory wrapped by the layout.
  * @param ownerToken Owner token written to the wrapper.
  * @returns The marked wrapper.
  */

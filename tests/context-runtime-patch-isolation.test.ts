@@ -6,8 +6,8 @@ import {
   initTheme,
 } from "@earendil-works/pi-coding-agent";
 import { Container } from "@earendil-works/pi-tui";
-import claudeCodeStyleExtension from "../extensions/surfaces/context/renderer/index.ts";
-import { ToolGroupComponent } from "../extensions/surfaces/context/renderer/tool/grouping.ts";
+import claudeCodeStyleExtension from "../extensions/layouts/context/renderer/index.ts";
+import { ToolGroupComponent } from "../extensions/layouts/context/renderer/tool/grouping.ts";
 
 initTheme("dark");
 

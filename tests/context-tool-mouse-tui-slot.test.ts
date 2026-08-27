@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { setHoveredToolCallId } from "../extensions/surfaces/context/renderer/mouse/hover.ts";
-import * as interaction from "../extensions/surfaces/context/renderer/mouse/interaction.ts";
+import { setHoveredToolCallId } from "../extensions/layouts/context/renderer/mouse/hover.ts";
+import * as interaction from "../extensions/layouts/context/renderer/mouse/interaction.ts";
 import {
   getToolMouseTui,
   setToolMouseTui,
-} from "../extensions/surfaces/context/renderer/mouse/scroll.ts";
+} from "../extensions/layouts/context/renderer/mouse/scroll.ts";
 
 // jiti 转译下经 re-export 链读取的模块级 let 是初始值快照；跨模块必须走 getter。
 test("toolMouseTui getter reads the global slot written by setter", () => {
