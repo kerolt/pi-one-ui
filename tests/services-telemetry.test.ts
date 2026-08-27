@@ -1,6 +1,6 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveFooterTelemetry } from "../extensions/shell/telemetry";
+import { resolveFooterTelemetry } from "../extensions/services/telemetry";
 
 function makeContext(overrides: Record<string, unknown> = {}) {
   return {

@@ -7,14 +7,14 @@ import {
   mergeConfig,
   type PolishedTuiConfig,
 } from "../extensions/app/config/shell";
-import { installFooter } from "../extensions/shell/footer";
-import { emptyGitStatus } from "../extensions/shell/git";
+import { installFooter } from "../extensions/surfaces/footer/footer";
+import { emptyGitStatus } from "../extensions/services/git-data";
 import {
   formatElapsedDuration,
   type MinimalistEditorMetadata,
   renderMinimalistFrame,
 } from "../extensions/surfaces/editor/minimalist-editor";
-import { createInitialState } from "../extensions/shell/state";
+import { createInitialState } from "../extensions/services/session-state";
 
 function theme(): Theme {
   return {

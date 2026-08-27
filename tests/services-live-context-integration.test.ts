@@ -19,9 +19,9 @@ vi.mock("../extensions/app/config/shell", async (importOriginal) => {
   };
 });
 
-vi.mock("../extensions/shell/git", async (importOriginal) => {
+vi.mock("../extensions/services/git-data", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("../extensions/shell/git")>();
+    await importOriginal<typeof import("../extensions/services/git-data")>();
   return {
     ...actual,
     readGitStatus: async () => ({
@@ -31,19 +31,21 @@ vi.mock("../extensions/shell/git", async (importOriginal) => {
   };
 });
 
-vi.mock("../extensions/shell/runtime", async (importOriginal) => {
+vi.mock("../extensions/services/runtime-data", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("../extensions/shell/runtime")>();
+    await importOriginal<
+      typeof import("../extensions/services/runtime-data")
+    >();
   return {
     ...actual,
     readRuntimeInfo: async () => ({ kind: "ok" as const, runtime: undefined }),
   };
 });
 
-vi.mock("../extensions/shell/package-version", async (importOriginal) => {
+vi.mock("../extensions/services/package-data", async (importOriginal) => {
   const actual =
     await importOriginal<
-      typeof import("../extensions/shell/package-version")
+      typeof import("../extensions/services/package-data")
     >();
   return {
     ...actual,

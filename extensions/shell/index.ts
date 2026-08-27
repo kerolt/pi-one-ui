@@ -58,32 +58,35 @@ import {
   type EditorTransferFailureReason,
   replaceEditorComponentWithExpandedText,
 } from "../surfaces/editor/index.ts";
-import { installFooter, installHiddenFooter } from "./footer.ts";
+import {
+  installFooter,
+  installHiddenFooter,
+} from "../surfaces/footer/index.ts";
 import {
   collectFooterFormatReferences,
   parseFooterFormat,
-} from "./footer-format.ts";
+} from "../surfaces/footer/index.ts";
 import {
   buildSessionDurationLabel,
   invalidateUsageTotalsCache,
 } from "./format.ts";
-import { emptyGitStatus, readGitStatus } from "./git.ts";
+import { emptyGitStatus, readGitStatus } from "../services/git-data.ts";
 import {
   InteractionMetricsTracker,
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
 } from "../surfaces/working-line/interaction-summary.ts";
-import { LiveContextController } from "./live-context.ts";
-import { readPackageVersionResult } from "./package-version.ts";
+import { LiveContextController } from "../services/live-context.ts";
+import { readPackageVersionResult } from "../services/package-data.ts";
 import {
   createProjectRefreshScheduler,
   type ProjectRefreshRun,
   type ScheduleProjectRefreshOptions,
   type StopProjectRefreshInterval,
   startProjectRefreshInterval,
-} from "./project-refresh.ts";
-import { applyProjectRefreshToState } from "./project-state.ts";
-import { readRuntimeInfo } from "./runtime.ts";
+} from "../services/project-refresh.ts";
+import { applyProjectRefreshToState } from "../services/project-state.ts";
+import { readRuntimeInfo } from "../services/runtime-data.ts";
 import {
   installSelectorBorderStyle,
   removeSelectorBorderStyle,
@@ -95,8 +98,8 @@ import {
   type FooterState,
   modelLabelFor,
   syncState,
-} from "./state.ts";
-import { resolveFooterTelemetry } from "./telemetry.ts";
+} from "../surfaces/footer/index.ts";
+import { resolveFooterTelemetry } from "../services/telemetry.ts";
 import {
   PolishedEditor,
   WrappedPolishedEditor,

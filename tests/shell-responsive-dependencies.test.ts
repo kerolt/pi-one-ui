@@ -1,7 +1,10 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PolishedTuiConfig } from "../extensions/app/config/shell";
-import { emptyGitStatus, type GitReadResult } from "../extensions/shell/git";
+import {
+  emptyGitStatus,
+  type GitReadResult,
+} from "../extensions/services/git-data";
 
 const mocks = vi.hoisted(() => ({
   config: undefined as unknown as PolishedTuiConfig,
@@ -239,24 +242,26 @@ vi.mock("../extensions/app/config/shell", async (importOriginal) => {
   };
 });
 
-vi.mock("../extensions/shell/git", async (importOriginal) => {
+vi.mock("../extensions/services/git-data", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("../extensions/shell/git")>();
+    await importOriginal<typeof import("../extensions/services/git-data")>();
   mocks.readGitStatus.mockImplementation(async () => ({
     kind: "ok" as const,
     status: actual.emptyGitStatus(),
   }));
   return { ...actual, readGitStatus: mocks.readGitStatus };
 });
-vi.mock("../extensions/shell/runtime", () => ({
+vi.mock("../extensions/services/runtime-data", () => ({
   readRuntimeInfo: mocks.readRuntimeInfo,
 }));
-vi.mock("../extensions/shell/package-version", () => ({
+vi.mock("../extensions/services/package-data", () => ({
   readPackageVersionResult: mocks.readPackageVersionResult,
 }));
-vi.mock("../extensions/shell/state", async (importOriginal) => {
+vi.mock("../extensions/services/session-state", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("../extensions/shell/state")>();
+    await importOriginal<
+      typeof import("../extensions/services/session-state")
+    >();
   return {
     ...actual,
     syncState(...args: Parameters<typeof actual.syncState>) {

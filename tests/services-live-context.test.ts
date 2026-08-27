@@ -4,7 +4,7 @@ import {
   calculateLiveContextTokens,
   LiveContextController,
   liveContextFromMessage,
-} from "../extensions/shell/live-context";
+} from "../extensions/services/live-context";
 import { SessionLifecycle } from "../extensions/shell/session-lifecycle";
 
 function usage(patch: Partial<Usage> = {}): Usage {

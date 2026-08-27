@@ -8,10 +8,10 @@ import {
   buildTokenLabel,
   formatProviderLabel,
   getUsageTotals,
-} from "./format.ts";
-import type { GitStatusSummary } from "./git.ts";
-import type { PackageVersionResult } from "./package-version.ts";
-import type { RuntimeInfo } from "./runtime.ts";
+} from "../shell/format.ts";
+import type { GitStatusSummary } from "./git-data.ts";
+import type { PackageVersionResult } from "./package-data.ts";
+import type { RuntimeInfo } from "./runtime-data.ts";
 import type { FooterTelemetry } from "./telemetry.ts";
 
 export type FooterState = GitStatusSummary & {

@@ -9,7 +9,7 @@ import {
   resolveOsIcon,
   resolveRuntimeSymbol,
 } from "../extensions/shell/icons";
-import { runtimeMetadata } from "../extensions/shell/runtime";
+import { runtimeMetadata } from "../extensions/services/runtime-data";
 
 describe("icon tables", () => {
   it("keeps nerd defaults byte-identical to historical defaultConfig icons", () => {

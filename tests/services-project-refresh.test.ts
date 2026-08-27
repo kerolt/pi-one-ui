@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createProjectRefreshScheduler,
   startProjectRefreshInterval,
-} from "../extensions/shell/project-refresh";
+} from "../extensions/services/project-refresh";
 
 async function flushPromises(): Promise<void> {
   await Promise.resolve();

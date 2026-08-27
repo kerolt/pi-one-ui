@@ -3,7 +3,7 @@ import type { ZentuiConfig } from "../../app/config/shell.ts";
 import {
   type FormatToken,
   parseFooterFormat,
-} from "../../shell/footer-format.ts";
+} from "../footer/footer-format.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   renderStyleForSourceOrFallback,

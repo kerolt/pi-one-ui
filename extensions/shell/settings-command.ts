@@ -54,7 +54,7 @@ import {
   type WorkingLineSpinner,
   type WorkingLineTextAnimation,
 } from "../app/config/shell.ts";
-import { sanitizeExtensionStatusText } from "./extension-status.ts";
+import { sanitizeExtensionStatusText } from "../surfaces/footer/extension-status.ts";
 import { isIconMode } from "./icons.ts";
 import type { SessionLifecycle } from "./session-lifecycle.ts";
 import {

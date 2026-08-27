@@ -7,7 +7,7 @@ import {
   collectExtensionStatusSegments,
   sanitizeExtensionStatusOriginalText,
   sanitizeExtensionStatusText,
-} from "../extensions/shell/extension-status";
+} from "../extensions/surfaces/footer/extension-status";
 
 function configWithExtensionStatuses(
   extensionStatuses: Partial<PolishedTuiConfig["extensionStatuses"]>,

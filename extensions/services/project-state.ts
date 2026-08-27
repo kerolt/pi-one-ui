@@ -1,8 +1,8 @@
-import type { GitReadResult } from "./git.ts";
-import { emptyGitStatus } from "./git.ts";
-import type { PackageVersionReadResult } from "./package-version.ts";
-import type { RuntimeReadResult } from "./runtime.ts";
-import type { FooterState } from "./state.ts";
+import type { GitReadResult } from "./git-data.ts";
+import { emptyGitStatus } from "./git-data.ts";
+import type { PackageVersionReadResult } from "./package-data.ts";
+import type { RuntimeReadResult } from "./runtime-data.ts";
+import type { FooterState } from "./session-state.ts";
 
 /**
  * Apply a project refresh (git + runtime) onto footer state, preserving

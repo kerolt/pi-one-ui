@@ -1,11 +1,11 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
-import { emptyGitStatus } from "../extensions/shell/git";
+import { emptyGitStatus } from "../extensions/services/git-data";
 import {
   createInitialState,
   modelLabelFor,
   syncState,
-} from "../extensions/shell/state";
+} from "../extensions/services/session-state";
 
 function makeCtx(model: unknown) {
   return {

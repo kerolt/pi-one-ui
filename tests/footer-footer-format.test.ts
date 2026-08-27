@@ -8,7 +8,7 @@ import {
   renderFormatSplit,
   renderFormatTokens,
   stripOrphanSeparators,
-} from "../extensions/shell/footer-format";
+} from "../extensions/surfaces/footer/footer-format";
 
 describe("parseFooterFormat", () => {
   it("returns empty array for empty string", () => {

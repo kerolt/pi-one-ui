@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { emptyGitStatus } from "../extensions/shell/git";
-import { applyProjectRefreshToState } from "../extensions/shell/project-state";
-import { createInitialState } from "../extensions/shell/state";
+import { emptyGitStatus } from "../extensions/services/git-data";
+import { applyProjectRefreshToState } from "../extensions/services/project-state";
+import { createInitialState } from "../extensions/services/session-state";
 
 describe("applyProjectRefreshToState", () => {
   it("keeps last-good git and runtime on transient errors", () => {

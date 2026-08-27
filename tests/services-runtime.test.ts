@@ -7,7 +7,7 @@ import {
   detectRuntime,
   readRuntimeInfo,
   runtimeMetadata,
-} from "../extensions/shell/runtime";
+} from "../extensions/services/runtime-data";
 
 function starshipRuntimeModules(): string[] {
   const toml = readFileSync(

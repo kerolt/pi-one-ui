@@ -3,12 +3,12 @@ import type {
   ExtensionStatusColorMode,
   ExtensionStatusPlacement,
   ZentuiConfig,
-} from "../app/config/shell.ts";
+} from "../../app/config/shell.ts";
 import {
   getExtensionStatusColorMode,
   getExtensionStatusPlacement,
   isExtensionStatusPlacement,
-} from "../app/config/shell.ts";
+} from "../../app/config/shell.ts";
 
 export type ExtensionStatusSegment = {
   key: string;

@@ -29,8 +29,8 @@ import {
   type PolishedTuiConfig,
   type SeparatorStyle,
 } from "../extensions/app/config/shell";
-import { installFooter as installFooterProduction } from "../extensions/shell/footer";
-import { emptyGitStatus } from "../extensions/shell/git";
+import { installFooter as installFooterProduction } from "../extensions/surfaces/footer/footer";
+import { emptyGitStatus } from "../extensions/services/git-data";
 import zentui, { activeFooterReferences } from "../extensions/shell/index";
 import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../extensions/shell/prototype-patch-registry";
 import {
@@ -39,7 +39,7 @@ import {
 } from "../extensions/shell/selector-border";
 import { SessionLifecycle } from "../extensions/shell/session-lifecycle";
 import { registerZentuiSettingsCommand } from "../extensions/shell/settings-command";
-import { createInitialState } from "../extensions/shell/state";
+import { createInitialState } from "../extensions/services/session-state";
 import {
   PolishedEditor as PolishedEditorProduction,
   WrappedPolishedEditor as WrappedPolishedEditorProduction,

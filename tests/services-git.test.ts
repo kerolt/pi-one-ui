@@ -7,7 +7,7 @@ import {
   emptyGitStatus,
   parseGitNumstat,
   parseGitStatusPorcelain,
-} from "../extensions/shell/git";
+} from "../extensions/services/git-data";
 
 describe("parseGitStatusPorcelain", () => {
   it("returns empty status for empty output", () => {
