@@ -47,11 +47,9 @@ import {
   type WorkingLineComponentPatch,
   type ZentuiConfig,
 } from "../../extensions/app/config/shell.ts";
-import registerSurfaceLifecycle, {
-  type SurfaceRuntimeOptions,
-} from "../../extensions/app/runtime/surface-lifecycle.ts";
+import registerSurfaceLifecycle from "../../extensions/app/runtime/surface-lifecycle.ts";
+import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
 import { registerSettingsCommand } from "./settings-command.ts";
-import type { SelectorController } from "../../extensions/app/overlay/selector-controller.ts";
 import { removeSelectorBorderStyle } from "../../extensions/app/overlay/selector-border.ts";
 import {
   installUserMessageStyle,
@@ -70,6 +68,9 @@ function isTuiContext(ctx: ExtensionContext): boolean {
 }
 
 type SurfaceBindings = ReturnType<typeof registerSurfaceLifecycle>;
+type TestSurfaceOptions = {
+  ownTurnSummary?: boolean;
+};
 
 /**
  * Builds the test-only settings dependencies without shipping a settings hook.
@@ -262,18 +263,17 @@ function createSettingsDeps(
  * Registers production surface lifecycle and test-only User Message ownership.
  *
  * @param pi Pi extension API.
- * @param options Production lifecycle options.
+ * @param options Test-only compatibility options.
  */
 export default function (
   pi: ExtensionAPI,
-  options: SurfaceRuntimeOptions = {},
+  options: TestSurfaceOptions = {},
 ): void {
   let contextConfig: ZentuiConfig = loadConfig();
   let activeTheme: Theme | undefined;
   let cleanupUserMessageStyle: () => void = () => {};
   let userMessageStyleInstalled = false;
   let unsubscribeConfig: () => void = () => {};
-  let selectorController: SelectorController | undefined;
 
   /**
    * Reconciles the standalone User Message compatibility renderer.
@@ -333,11 +333,15 @@ export default function (
       removeSelectorBorderStyle();
     }
   });
-  const bindings = registerSurfaceLifecycle(pi, {
-    ...options,
-    manageSelectorLifecycle: false,
+  const coordinator = new EventCoordinator({
+    on: (event, handler) => pi.on(event as never, handler as never),
   });
-  selectorController = bindings.selectorController;
+  const bindings = registerSurfaceLifecycle(pi, coordinator);
+  bindings.workingLineController.setSummaryWriterEnabled(
+    options.ownTurnSummary !== false,
+  );
+  bindings.installEventHandlers(coordinator);
+  coordinator.install();
   if (typeof pi.registerCommand === "function") {
     registerSettingsCommand(
       pi,
@@ -347,7 +351,6 @@ export default function (
   pi.on("session_start", (_event, ctx) => {
     if (!isTuiContext(ctx)) return;
     activeTheme = ctx.ui.theme;
-    selectorController?.startSession(ctx);
     contextConfig = loadConfig();
     unsubscribeConfig();
     unsubscribeConfig = configStore.subscribe((record: ConfigRecord) => {
@@ -357,7 +360,6 @@ export default function (
     reconcileUserMessages();
   });
   pi.on("session_shutdown", () => {
-    selectorController?.cleanup();
     unsubscribeConfig();
     unsubscribeConfig = () => {};
     try {

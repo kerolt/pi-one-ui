@@ -47,6 +47,7 @@ export class WorkingLineSurfaceController {
   private readonly metrics = new InteractionMetricsTracker();
   private readonly workingLine: WorkingLineController;
   private agentRunActive = false;
+  private writeSummary = true;
 
   /**
    * Creates a WorkingLine controller with one timing and metrics owner.
@@ -185,11 +186,20 @@ export class WorkingLineSurfaceController {
   }
 
   /**
-   * Settles completed runs and writes one canonical summary entry.
+   * Configures whether this controller writes the canonical turn summary.
+   *
+   * @param enabled Whether summary entries should be persisted.
+   */
+  setSummaryWriterEnabled(enabled: boolean): void {
+    this.writeSummary = enabled;
+  }
+
+  /**
+   * Settles completed runs and writes one canonical summary entry when enabled.
    *
    * @param ctx Active Pi extension context.
    */
-  agentSettled(ctx: ExtensionContext, writeSummary = true): void {
+  agentSettled(ctx: ExtensionContext): void {
     const settled = this.metrics.settle(ctx.isIdle());
     if (!settled) return;
     this.agentRunActive = settled.nextStartedAt !== undefined;
@@ -198,7 +208,7 @@ export class WorkingLineSurfaceController {
     this.context.onAgentActiveChanged(this.agentRunActive);
     this.workingLine.settle(settled.nextTokens, settled.nextThought, ctx);
     const config = this.context.getConfig().components.workingLine;
-    if (!writeSummary || !config.enabled || !config.turnSummary) return;
+    if (!this.writeSummary || !config.enabled || !config.turnSummary) return;
     try {
       this.context.pi.appendEntry(TURN_SUMMARY_ENTRY_TYPE, {
         version: 3,

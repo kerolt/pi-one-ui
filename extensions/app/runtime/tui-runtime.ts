@@ -10,9 +10,7 @@ import registerHeaderSurface from "../../surfaces/header/index.ts";
 import { EventCoordinator } from "./event-coordinator.ts";
 import { RenderScheduler } from "./render-scheduler.ts";
 import { RuntimeStateStore } from "./runtime-state.ts";
-import registerSurfaceLifecycle, {
-  type SurfaceRuntimeOptions,
-} from "./surface-lifecycle.ts";
+import registerSurfaceLifecycle from "./surface-lifecycle.ts";
 import type { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
 import type { FooterSurfaceController } from "../../surfaces/footer/controller.ts";
 import type { WorkingLineSurfaceController } from "../../surfaces/working-line/controller.ts";
@@ -108,17 +106,14 @@ export class TuiRuntime {
     if (this.installed) return;
     this.installed = true;
 
-    const surfaceOptions: SurfaceRuntimeOptions = {
-      eventCoordinator: this.coordinator,
-      ownTurnSummary: false,
-    };
     const contextOptions: ContextExtensionOptions = {
       onRuntimeController: (controller) => {
         this.contextController = controller;
       },
     };
 
-    const surfaceBindings = registerSurfaceLifecycle(this.pi, surfaceOptions);
+    const surfaceBindings = registerSurfaceLifecycle(this.pi, this.coordinator);
+    surfaceBindings.workingLineController.setSummaryWriterEnabled(false);
     this.editorController = surfaceBindings.editorController;
     this.footerController = surfaceBindings.footerController;
     this.workingLineController = surfaceBindings.workingLineController;

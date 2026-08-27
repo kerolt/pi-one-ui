@@ -50,34 +50,7 @@ function isTuiContext(ctx: ExtensionContext): boolean {
   }
 }
 
-export type SurfaceRuntimeOptions = {
-  /**
-   * Keeps turn-summary entry ownership available for standalone compatibility.
-   */
-  ownTurnSummary?: boolean;
-  /**
-   * Lets the unified runtime own Editor and WorkingLine session installation.
-   */
-  manageEditorLifecycle?: boolean;
-  /**
-   * Lets the unified runtime own selector session installation.
-   */
-  manageSelectorLifecycle?: boolean;
-  /**
-   * Shared lifecycle coordinator supplied by the unified runtime.
-   */
-  eventCoordinator?: EventCoordinator;
-};
-
-export default function (
-  pi: ExtensionAPI,
-  options: SurfaceRuntimeOptions = {},
-) {
-  const eventCoordinator =
-    options.eventCoordinator ??
-    new EventCoordinator({
-      on: (event, handler) => pi.on(event as never, handler as never),
-    });
+export default function (pi: ExtensionAPI, eventCoordinator: EventCoordinator) {
   const sessionLifecycle = new SessionLifecycle();
   let currentConfig: PolishedTuiConfig = loadConfig();
   configStore.subscribe((record: ConfigRecord) => {
@@ -241,8 +214,7 @@ export default function (
 
   const applyConfiguredUi = (ctx: ExtensionContext) => {
     if (!isTuiContext(ctx)) return;
-    if (options.manageSelectorLifecycle !== false)
-      selectorController.reconcile();
+    selectorController.reconcile();
     projectRefreshService.reconcile(ctx);
     footerController.reconcileSessionTimer();
   };
@@ -259,11 +231,9 @@ export default function (
     syncFooterState(ctx);
     projectRefreshService.stop();
 
-    if (options.manageSelectorLifecycle !== false)
-      selectorController.startSession(ctx);
     footerController.install(ctx);
-    if (options.manageEditorLifecycle !== false)
-      editorController.install(ctx, true);
+    editorController.install(ctx, true);
+    selectorController.startSession(ctx);
     applyConfiguredUi(ctx);
     refresh();
   };
@@ -276,7 +246,7 @@ export default function (
     editorController.cleanup(ctx);
     footerController.cleanup(ctx);
     projectRefreshService.stop();
-    if (options.manageSelectorLifecycle !== false) selectorController.cleanup();
+    selectorController.cleanup();
     activeTheme = undefined;
     activeTuiContext = undefined;
   };
@@ -299,21 +269,18 @@ export default function (
   const installEventHandlers = (coordinator: EventCoordinator): void => {
     coordinator.on("session_start", async (_event, ctx) => {
       sessionLifecycle.start();
-      if (options.manageEditorLifecycle !== false)
-        await editorController.startSession(ctx);
+      await editorController.startSession(ctx);
       if (!sessionLifecycle.isCurrent()) return;
       liveContext.startSession();
       sessionState.startSession();
       minimalistProjectRoot = undefined;
       installUi(ctx);
-      if (options.manageEditorLifecycle !== false)
-        workingLineController.startSession(ctx);
+      workingLineController.startSession(ctx);
     });
 
     coordinator.on("session_shutdown", async (_event, ctx) => {
       liveContext.shutdown();
-      if (options.manageEditorLifecycle !== false)
-        workingLineController.dispose(ctx);
+      workingLineController.dispose(ctx);
       cleanupUi(ctx);
     });
 
@@ -378,7 +345,7 @@ export default function (
       syncInteractiveAndProjectStateWithUsage(event, ctx);
     });
     coordinator.on("agent_settled", (_event, ctx) => {
-      workingLineController.agentSettled(ctx, options.ownTurnSummary !== false);
+      workingLineController.agentSettled(ctx);
     });
     coordinator.on("tool_execution_start", (event, ctx) => {
       liveContext.clear();
@@ -404,10 +371,6 @@ export default function (
       syncInteractiveAndProjectStateWithUsage(event, ctx);
     });
   };
-  if (!options.eventCoordinator) {
-    installEventHandlers(eventCoordinator);
-    eventCoordinator.install();
-  }
 
   return {
     sessionLifecycle,
