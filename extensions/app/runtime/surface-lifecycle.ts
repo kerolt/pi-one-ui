@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
 import type {
   ExtensionAPI,
   ExtensionContext,
@@ -50,21 +48,16 @@ import { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
 import { FooterSurfaceController } from "../../surfaces/footer/controller.ts";
 export { activeFooterReferences } from "../../surfaces/footer/data.ts";
 import { invalidateUsageTotalsCache } from "../../shared/format.ts";
-import { emptyGitStatus, readGitStatus } from "../../services/git-data.ts";
+import { emptyGitStatus } from "../../services/git-data.ts";
 import {
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
 } from "../../surfaces/working-line/interaction-summary.ts";
 import { LiveContextController } from "../../services/live-context.ts";
-import { readPackageVersionResult } from "../../services/package-data.ts";
 import {
-  createProjectRefreshScheduler,
-  ProjectRefreshActivation,
-  type ProjectRefreshRun,
+  ProjectRefreshService,
   type ScheduleProjectRefreshOptions,
 } from "../../services/project-refresh.ts";
-import { applyProjectRefreshToState } from "../../services/project-state.ts";
-import { readRuntimeInfo } from "../../services/runtime-data.ts";
 import { SelectorController } from "../overlay/selector-controller.ts";
 import { SessionLifecycle } from "./session-lifecycle.ts";
 import { EventCoordinator } from "./event-coordinator.ts";
@@ -80,16 +73,6 @@ import {
   type WorkingLineMessage,
   type WorkingLineMessageEnd,
 } from "../../surfaces/working-line/controller.ts";
-
-function findRepositoryRoot(cwd: string): string | undefined {
-  let current = resolve(cwd);
-  while (true) {
-    if (existsSync(join(current, ".git"))) return current;
-    const parent = dirname(current);
-    if (parent === current) return undefined;
-    current = parent;
-  }
-}
 
 function isTuiContext(ctx: ExtensionContext): boolean {
   try {
@@ -179,8 +162,6 @@ export default function (
     );
   }
   let activeTheme: Theme | undefined;
-  let lastProjectCwd: string | undefined;
-  let requestedProjectCwd: string | undefined;
   let minimalistProjectRoot: string | undefined;
   let activeTuiContext: ExtensionContext | undefined;
 
@@ -256,71 +237,20 @@ export default function (
       currentConfig.icons.cacheHit,
       resolveFooterTelemetry(ctx),
     );
-  type ProjectRefreshTarget = { cwd: string; generation: number };
-  const refreshProjectState = async (
-    { cwd, generation }: ProjectRefreshTarget,
-    run: ProjectRefreshRun,
-  ) => {
-    if (!run.isCurrent() || !sessionLifecycle.isCurrent(generation)) return;
-    const starship = currentConfig.components.footer.styles.starship;
-    const gitCommitConfig = starship.gitCommit;
-    const gitMetricsConfig = starship.gitMetrics;
-    const references = footerController.installedFooterReferences();
-    const wantExactTag =
-      (references.has("git_commit") && gitCommitConfig.showTag) ||
-      references.has("git_tag");
-    const wantMetrics =
-      references.has("git_metrics") ||
-      references.has("git_added") ||
-      references.has("git_deleted");
-    const wantPackage =
-      references.has("package") || references.has("package_version");
-    const wantRuntime = references.has("runtime");
-    const [git, runtime, packageVersion] = await Promise.all([
-      readGitStatus(cwd, {
-        readExactTag: wantExactTag,
-        readMetrics: wantMetrics,
-        ignoreSubmodules: gitMetricsConfig.ignoreSubmodules,
-      }),
-      wantRuntime
-        ? readRuntimeInfo(cwd)
-        : Promise.resolve({ kind: "ok" as const, runtime: undefined }),
-      wantPackage
-        ? readPackageVersionResult(cwd)
-        : Promise.resolve({ kind: "ok" as const, result: null }),
-    ]);
-    if (
-      !run.isCurrent() ||
-      !sessionLifecycle.isCurrent(generation) ||
-      requestedProjectCwd !== cwd
-    ) {
-      return;
-    }
-    minimalistProjectRoot =
-      git.kind === "ok" ? findRepositoryRoot(cwd) : undefined;
-    lastProjectCwd = applyProjectRefreshToState(state, {
-      cwd,
-      previousCwd: lastProjectCwd,
-      git,
-      runtime,
-      packageVersion,
-    });
-  };
-
-  const projectRefreshScheduler = createProjectRefreshScheduler(
-    refreshProjectState,
+  const projectRefreshService = new ProjectRefreshService({
+    getConfig: getCurrentConfig,
+    state,
+    sessionLifecycle,
+    getFooterReferences: () => footerController.installedFooterReferences(),
+    onProjectRoot: (root) => {
+      minimalistProjectRoot = root;
+    },
     refresh,
-  );
+  });
   const scheduleProjectRefresh = (
     ctx: ExtensionContext,
     options?: ScheduleProjectRefreshOptions,
-  ) => {
-    const generation = sessionLifecycle.currentGeneration();
-    if (!sessionLifecycle.isCurrent(generation)) return;
-    const cwd = ctx.cwd;
-    requestedProjectCwd = cwd;
-    projectRefreshScheduler.schedule({ cwd, generation }, options);
-  };
+  ) => projectRefreshService.schedule(ctx, options);
 
   /**
    * Reports whether any active surface currently needs project metadata.
@@ -329,39 +259,26 @@ export default function (
     footerController.needsProjectRefresh() ||
     editorController.needsProjectRefresh();
 
-  const projectRefreshActivation = new ProjectRefreshActivation();
-
-  const stopProjectRefresh = () => {
-    projectRefreshActivation.stop();
-    projectRefreshScheduler.stop();
-  };
+  /**
+   * Stops polling and invalidates pending project refresh work.
+   */
+  const stopProjectRefresh = () => projectRefreshService.stop();
 
   /**
-   * Starts, stops, or invalidates shared project refresh work.
+   * Starts or invalidates shared project refresh work.
    */
-  const reconcileProjectRefresh = (ctx: ExtensionContext, force = false) => {
-    if (!sessionLifecycle.isCurrent() || !needsProjectRefresh()) {
-      stopProjectRefresh();
-      return;
-    }
-    const activated = projectRefreshActivation.reconcile({
-      needed: true,
-      intervalMs: currentConfig.projectRefreshIntervalMs,
-      onTick: () => {
-        editorController.reconcileOwnership(ctx);
-        if (!needsProjectRefresh()) {
-          stopProjectRefresh();
-          return;
-        }
-        scheduleProjectRefresh(ctx);
-      },
+  const reconcileProjectRefresh = (ctx: ExtensionContext, force = false) =>
+    projectRefreshService.reconcile(ctx, needsProjectRefresh(), force, () => {
+      editorController.reconcileOwnership(ctx);
+      if (!needsProjectRefresh()) projectRefreshService.stop();
+      else projectRefreshService.schedule(ctx);
     });
-    if (force && !activated) projectRefreshScheduler.invalidate();
-    if (force || activated) scheduleProjectRefresh(ctx, { force: true });
-  };
 
   /**
    * Synchronizes shared session state and requests a visible redraw.
+   *
+   * @param ctx Active Pi extension context.
+   * @param project Whether project data should be scheduled.
    */
   const refreshInteractiveState = (ctx: ExtensionContext, project = false) => {
     if (!sessionLifecycle.isCurrent() || !ctx.hasUI) return;
@@ -371,6 +288,9 @@ export default function (
     refresh();
   };
 
+  /**
+   * Reconciles Footer timer dependencies after configuration updates.
+   */
   const reconcileSessionTimer = () => footerController.reconcileSessionTimer();
 
   const sameReferences = (left: Set<string>, right: Set<string>) =>
@@ -463,8 +383,6 @@ export default function (
     liveContext.clear();
     state.sessionStartEpoch = Date.now();
     invalidateUsageTotalsCache();
-    lastProjectCwd = undefined;
-    requestedProjectCwd = undefined;
     minimalistProjectRoot = undefined;
     installUi(ctx);
     if (options.manageEditorLifecycle !== false)
