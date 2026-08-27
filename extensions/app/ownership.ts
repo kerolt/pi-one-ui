@@ -1,3 +1,4 @@
+// Legacy slot map retained for existing tests and callers during migration.
 export const UI_OWNERSHIP = {
   editor: "shell",
   userMessage: "shell",
@@ -16,3 +17,10 @@ export type UiOwner = (typeof UI_OWNERSHIP)[UiSlot];
 export function ownerFor(slot: UiSlot): UiOwner {
   return UI_OWNERSHIP[slot];
 }
+
+export {
+  SURFACE_OWNERSHIP,
+  SurfaceRegistry,
+  type SurfaceId,
+  type SurfaceOwner,
+} from "./ownership/surface-registry.ts";

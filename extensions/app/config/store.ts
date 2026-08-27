@@ -24,6 +24,9 @@ export type ConfigStorePaths = {
   legacyRenderer: string;
 };
 
+/**
+ * Returns canonical and legacy configuration locations for an agent directory.
+ */
 export function configPaths(agentDir = getAgentDir()): ConfigStorePaths {
   return {
     canonical: join(agentDir, "pi-one-ui.json"),
@@ -41,12 +44,18 @@ export type ConfigFileState =
   | { kind: "valid"; record: ConfigRecord; writePath: string; mode: number }
   | { kind: "corrupt"; error: unknown };
 
+/**
+ * Extracts a Node filesystem error code without depending on an error class.
+ */
 function errorCode(error: unknown): string | undefined {
   return typeof error === "object" && error !== null && "code" in error
     ? String(error.code)
     : undefined;
 }
 
+/**
+ * Reads one config file, resolving symlink targets without replacing the link.
+ */
 export function readConfigFileState(path: string): ConfigFileState {
   let writePath = path;
   try {
@@ -80,6 +89,9 @@ export function readConfigFileState(path: string): ConfigFileState {
   }
 }
 
+/**
+ * Writes JSON through a temporary file and atomic rename.
+ */
 export function writeConfigAtomically(
   path: string,
   record: ConfigRecord,
@@ -115,6 +127,9 @@ export function writeConfigAtomically(
   }
 }
 
+/**
+ * Builds a stable read error while preserving the underlying failure detail.
+ */
 function configReadError(path: string, error: unknown): Error {
   const detail = error instanceof Error ? ` (${error.message})` : "";
   return new Error(
@@ -122,6 +137,9 @@ function configReadError(path: string, error: unknown): Error {
   );
 }
 
+/**
+ * Builds the compatibility error used when a config write is unsafe.
+ */
 function configWriteError(path: string, label: string, error: unknown): Error {
   const detail = error instanceof Error ? ` (${error.message})` : "";
   return new Error(
@@ -136,6 +154,9 @@ type SelectedConfig = {
   materialize: boolean;
 };
 
+/**
+ * Reads an optional config source and turns corruption into an explicit error.
+ */
 function optionalConfig(
   path: string,
 ): { record: ConfigRecord; writePath: string; mode: number } | undefined {
@@ -145,6 +166,9 @@ function optionalConfig(
   return state;
 }
 
+/**
+ * Selects the active source and the destination used by a later update.
+ */
 function selectUnifiedConfig(paths: ConfigStorePaths): SelectedConfig {
   const canonical = optionalConfig(paths.canonical);
   if (canonical) return { ...canonical, materialize: false };
@@ -198,7 +222,9 @@ export function readUnifiedConfigRecord(
   return selected.record;
 }
 
-/** Mutate one explicitly selected file while preserving its existing safety semantics. */
+/**
+ * Mutates one explicitly selected file while preserving its safety semantics.
+ */
 export function mutateConfigFile(
   path: string,
   mutate: (record: ConfigRecord) => void,
@@ -227,14 +253,23 @@ export class ConfigStore {
   readonly paths: ConfigStorePaths;
   private readonly listeners = new Set<ConfigStoreListener>();
 
+  /**
+   * Creates a store for canonical and legacy paths.
+   */
   constructor(paths: ConfigStorePaths = defaultConfigPaths) {
     this.paths = paths;
   }
 
+  /**
+   * Reads the current canonical or legacy-backed raw configuration record.
+   */
   read(): ConfigRecord {
     return readUnifiedConfigRecord(this.paths);
   }
 
+  /**
+   * Mutates and atomically persists the active raw configuration record.
+   */
   update(mutate: (record: ConfigRecord) => void): ConfigRecord {
     const selected = selectUnifiedConfig(this.paths);
     mutate(selected.record);
@@ -243,6 +278,9 @@ export class ConfigStore {
     return selected.record;
   }
 
+  /**
+   * Subscribes to successful updates and returns an idempotent unsubscribe function.
+   */
   subscribe(listener: ConfigStoreListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);

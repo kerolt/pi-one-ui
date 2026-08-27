@@ -962,6 +962,9 @@ function validFooterSegmentEntries(
   ) as Partial<FooterSegmentsConfig>;
 }
 
+/**
+ * Applies one compatibility mutation through the shared config writer.
+ */
 function mutateConfig(
   path: string,
   mutate: (record: ConfigRecord) => void,
@@ -1701,6 +1704,9 @@ export function getExtensionStatusColorMode(
   return DEFAULT_EXTENSION_STATUS_COLOR_MODE;
 }
 
+/**
+ * Loads and normalizes the shared raw configuration for shell consumers.
+ */
 export function loadConfig(): PolishedTuiConfig {
   try {
     return mergeConfig(configStore.read());

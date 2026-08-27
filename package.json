@@ -13,7 +13,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "npm run test:node && npm run test:vitest",
-    "test:node": "node --test tests/config.test.ts tests/config-store.test.ts tests/one-ui-integration.test.ts tests/transcript-*.test.ts",
+    "test:node": "node --test tests/config.test.ts tests/config-store.test.ts tests/one-ui-integration.test.ts tests/runtime-infrastructure.test.ts tests/transcript-*.test.ts",
     "format": "biome format --write extensions tests package.json tsconfig.json biome.json",
     "format:check": "biome format extensions tests package.json tsconfig.json biome.json",
     "lint": "biome check extensions/index.ts extensions/app/panel.ts extensions/app/presets.ts package.json tsconfig.json biome.json",

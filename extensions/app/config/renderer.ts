@@ -368,6 +368,9 @@ export function formatConfigStatus(source: Config = config): string {
 /** 进程内唯一的活动配置对象。读取直接用 `config.xxx`；写入必须走 `updateConfig`。 */
 export const config: Config = loadConfig();
 
+/**
+ * Loads and normalizes the renderer projection from the shared store.
+ */
 function loadConfig(): Config {
   try {
     return normalizeConfig(rendererConfigFrom(configStore.read()));
@@ -377,6 +380,9 @@ function loadConfig(): Config {
   return { ...DEFAULT_CONFIG };
 }
 
+/**
+ * Persists the in-memory renderer projection through the shared store.
+ */
 export function saveConfig() {
   configStore.update((record) => {
     record.version = 1;

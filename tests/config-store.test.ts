@@ -15,6 +15,9 @@ import {
   type ConfigStorePaths,
 } from "../extensions/app/config/store.ts";
 
+/**
+ * Creates isolated canonical and legacy paths for a store test.
+ */
 function makePaths(): { dir: string; paths: ConfigStorePaths } {
   const dir = mkdtempSync(join(tmpdir(), "pi-one-ui-config-store-"));
   return {
@@ -28,10 +31,16 @@ function makePaths(): { dir: string; paths: ConfigStorePaths } {
   };
 }
 
+/**
+ * Reads a JSON object from a test configuration path.
+ */
 function readRecord(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
 }
 
+/**
+ * Lists temporary files that would indicate an incomplete atomic write.
+ */
 function tempFiles(dir: string): string[] {
   return readdirSync(dir).filter((name) => name.endsWith(".tmp"));
 }
