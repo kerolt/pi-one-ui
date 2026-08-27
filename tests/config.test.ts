@@ -13,3 +13,14 @@ test("renderer config still accepts legacy enabled migration", () => {
   assert.equal(normalizeConfig({ enabled: false }).mode, "off");
   assert.equal(normalizeConfig({ enabled: true }).mode, "on");
 });
+
+test("renderer config preserves the current working-message opt-in", () => {
+  assert.equal(
+    normalizeConfig({ enableWorkingMessage: true }).enableWorkingMessage,
+    true,
+  );
+  assert.equal(
+    normalizeConfig({ enableWorkingMessage: false }).enableWorkingMessage,
+    false,
+  );
+});
