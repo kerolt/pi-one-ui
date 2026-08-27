@@ -498,7 +498,7 @@ export default function (
       if (options.manageEditorLifecycle !== false)
         await editorController.startSession(ctx);
       if (!sessionLifecycle.isCurrent()) return;
-      liveContext.clear();
+      liveContext.startSession();
       sessionState.startSession();
       minimalistProjectRoot = undefined;
       installUi(ctx);
@@ -507,7 +507,7 @@ export default function (
     });
 
     coordinator.on("session_shutdown", async (_event, ctx) => {
-      liveContext.clear();
+      liveContext.shutdown();
       if (options.manageEditorLifecycle !== false)
         workingLineController.dispose(ctx);
       cleanupUi(ctx);

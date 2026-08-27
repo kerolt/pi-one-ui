@@ -49,10 +49,35 @@ export class LiveContextController {
     this.requestRender = requestRender;
   }
 
+  /**
+   * Starts a new live-context session and clears predecessor data.
+   */
+  startSession(): void {
+    this.clear();
+  }
+
+  /**
+   * Shuts down live-context updates and clears pending redraw state.
+   */
+  shutdown(): void {
+    this.clear();
+  }
+
+  /**
+   * Returns the latest valid streaming context override.
+   *
+   * @returns Current live context override, when available.
+   */
   get(): LiveContextOverride | undefined {
     return this.override;
   }
 
+  /**
+   * Records a valid assistant usage update and schedules a throttled redraw.
+   *
+   * @param message Latest assistant message snapshot.
+   * @returns Whether the update produced a live context override.
+   */
   update(message: unknown): boolean {
     const next = liveContextFromMessage(message);
     if (!next || !this.lifecycle.isCurrent()) return false;
@@ -73,6 +98,9 @@ export class LiveContextController {
     return true;
   }
 
+  /**
+   * Clears the current override and cancels its pending redraw.
+   */
   clear(): void {
     this.override = undefined;
     this.cancelScheduledRender?.();

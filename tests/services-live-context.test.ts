@@ -137,6 +137,24 @@ describe("live context usage", () => {
     expect(renderedTokens).toEqual([200, 400]);
   });
 
+  it("clears session bindings through explicit start and shutdown methods", () => {
+    vi.useFakeTimers();
+    const lifecycle = new SessionLifecycle();
+    lifecycle.start();
+    const controller = new LiveContextController(lifecycle, () => {});
+
+    controller.update(assistant(usage({ totalTokens: 100 })));
+    expect(controller.get()).toEqual({ tokens: 100 });
+    controller.shutdown();
+    expect(controller.get()).toBeUndefined();
+    expect(vi.getTimerCount()).toBe(0);
+
+    lifecycle.start();
+    controller.update(assistant(usage({ totalTokens: 200 })));
+    controller.startSession();
+    expect(controller.get()).toBeUndefined();
+  });
+
   it("recovers from a cleared compaction boundary when live usage resumes", () => {
     const lifecycle = new SessionLifecycle();
     lifecycle.start();
