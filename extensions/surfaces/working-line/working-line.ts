@@ -6,15 +6,15 @@ import type {
   WorkingLineComponentConfig,
   WorkingLineTextAnimation,
   ZentuiConfig,
-} from "../app/config/shell.ts";
-import { formatCount } from "./format.ts";
+} from "../../app/config/shell.ts";
+import { formatCount } from "../../shell/format.ts";
 import {
   isSafeSgrStylePrefix,
   isSupportedColorSpec,
   renderStyleForSourceOrFallback,
   type SourceStyleFallback,
   type ThemeLike,
-} from "./style.ts";
+} from "../../shell/style.ts";
 import { PI_WORKING_LINE_MESSAGES } from "./working-line-messages.ts";
 import { WORKING_LINE_SPINNERS } from "./working-line-spinners.ts";
 

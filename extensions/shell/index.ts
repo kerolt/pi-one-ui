@@ -72,7 +72,7 @@ import {
   InteractionMetricsTracker,
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
-} from "./interaction-summary.ts";
+} from "../surfaces/working-line/interaction-summary.ts";
 import { LiveContextController } from "./live-context.ts";
 import { readPackageVersionResult } from "./package-version.ts";
 import {
@@ -106,7 +106,7 @@ import {
   AgentDurationClock,
   snapshotWorkingLineHighStyle,
   WorkingLineController,
-} from "./working-line.ts";
+} from "../surfaces/working-line/working-line.ts";
 
 const ZENTUI_EDITOR_FACTORY = Symbol.for("pi-zentui.editor-factory");
 const ZENTUI_EDITOR_BASE_FACTORY = Symbol.for("pi-zentui.editor-base-factory");
@@ -243,6 +243,10 @@ export type ShellExtensionOptions = {
    * Keeps User Message patch ownership in Shell for standalone compatibility.
    */
   ownUserMessages?: boolean;
+  /**
+   * Keeps turn-summary entry ownership in Shell for standalone compatibility.
+   */
+  ownTurnSummary?: boolean;
   onRuntimeController?: (controller: ShellRuntimeController) => void;
 };
 
@@ -1632,7 +1636,11 @@ export default function (
     settleAgentTurn(settled.nextStartedAt);
     workingLine.settle(settled.nextTokens, settled.nextThought, ctx);
     const config = currentConfig.components.workingLine;
-    if (config.enabled && config.turnSummary) {
+    if (
+      options.ownTurnSummary !== false &&
+      config.enabled &&
+      config.turnSummary
+    ) {
       try {
         pi.appendEntry(TURN_SUMMARY_ENTRY_TYPE, {
           version: 3,

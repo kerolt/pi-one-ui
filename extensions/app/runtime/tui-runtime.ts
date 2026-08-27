@@ -95,6 +95,7 @@ export class TuiRuntime {
     const shellOptions: ShellExtensionOptions = {
       registerCommand: false,
       ownUserMessages: false,
+      ownTurnSummary: false,
       onRuntimeController: (controller) => {
         this.shellController = controller;
       },

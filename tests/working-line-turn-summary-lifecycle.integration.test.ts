@@ -2,7 +2,7 @@ import { stripVTControlCharacters } from "node:util";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { Text } from "@earendil-works/pi-tui";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TURN_SUMMARY_ENTRY_TYPE } from "../extensions/shell/interaction-summary";
+import { TURN_SUMMARY_ENTRY_TYPE } from "../extensions/surfaces/working-line/interaction-summary";
 
 const stripTerminalSequences = stripVTControlCharacters;
 
@@ -56,7 +56,13 @@ function assistant(input: number, output: number, timestamp: number) {
   };
 }
 
-function harness(options: { renderer?: boolean; appendError?: boolean } = {}) {
+function harness(
+  options: {
+    renderer?: boolean;
+    appendError?: boolean;
+    ownTurnSummary?: boolean;
+  } = {},
+) {
   const handlers = new Map<string, Handler[]>();
   const appended: Array<[string, unknown]> = [];
   const appendEntry = vi.fn((type: string, data: unknown) => {
@@ -66,22 +72,25 @@ function harness(options: { renderer?: boolean; appendError?: boolean } = {}) {
   const renderers = new Map<string, unknown>();
   const workingIndicators: Array<{ frames?: string[] }> = [];
   const sendMessage = vi.fn();
-  zentui({
-    on(name: string, handler: Handler) {
-      handlers.set(name, [...(handlers.get(name) ?? []), handler]);
-    },
-    registerCommand() {},
-    ...(options.renderer === false
-      ? {}
-      : {
-          registerEntryRenderer(type: string, renderer: unknown) {
-            renderers.set(type, renderer);
-          },
-        }),
-    appendEntry,
-    sendMessage,
-    getThinkingLevel: () => "off",
-  } as never);
+  zentui(
+    {
+      on(name: string, handler: Handler) {
+        handlers.set(name, [...(handlers.get(name) ?? []), handler]);
+      },
+      registerCommand() {},
+      ...(options.renderer === false
+        ? {}
+        : {
+            registerEntryRenderer(type: string, renderer: unknown) {
+              renderers.set(type, renderer);
+            },
+          }),
+      appendEntry,
+      sendMessage,
+      getThinkingLevel: () => "off",
+    } as never,
+    { ownTurnSummary: options.ownTurnSummary },
+  );
   let idle = true;
   const ctx = {
     hasUI: true,
@@ -237,6 +246,16 @@ describe("turn summary lifecycle integration", () => {
       expect(current.appended).toEqual([]);
     },
   );
+
+  it("delegates summary appends when the unified runtime owns the summary", async () => {
+    const current = harness({ ownTurnSummary: false });
+    await current.emit("session_start");
+    await current.emit("agent_start");
+    await current.emit("agent_end");
+    await current.emit("agent_settled");
+    expect(current.appended).toEqual([]);
+    expect(current.renderers.has(TURN_SUMMARY_ENTRY_TYPE)).toBe(true);
+  });
 
   it("initializes and settles without registerEntryRenderer", async () => {
     const current = harness({ renderer: false });

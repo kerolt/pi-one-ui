@@ -19,7 +19,6 @@ import {
 // shell
 import piAliases from "../../features/shell/aliases.ts";
 import { installFlushDockedBash } from "../../features/shell/flush-docked-bash.ts";
-import workingMessage from "../../features/shell/working-message.ts";
 
 // feature
 import agentAutocomplete from "../../features/reference/subagent.ts";
@@ -138,8 +137,6 @@ export default function (
   // shell chrome
   if (config.enableAliases) piAliases(pi);
   installFlushDockedBash();
-  if (config.enableWorkingMessage) workingMessage(pi);
-
   // The thinking controller is queried directly by the context render stack.
   markdownEnhance(pi);
   registerContextRenderer(

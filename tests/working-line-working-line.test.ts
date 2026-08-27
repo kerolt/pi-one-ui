@@ -37,7 +37,7 @@ import {
   WORKING_LINE_SPINNERS,
   WorkingLineController,
   workingLineSpinnerWidth,
-} from "../extensions/shell/working-line";
+} from "../extensions/surfaces/working-line/working-line";
 
 function theme(): Theme {
   return {
@@ -148,7 +148,10 @@ describe("working-line token formatting", () => {
 describe("working-line presets and frame generation", () => {
   it("ships pinned Funky UI Pulse provenance and the required MIT notices", () => {
     const source = readFileSync(
-      new URL("../extensions/shell/working-line-spinners.ts", import.meta.url),
+      new URL(
+        "../extensions/surfaces/working-line/working-line-spinners.ts",
+        import.meta.url,
+      ),
       "utf8",
     );
     expect(source).toContain(

@@ -17,7 +17,7 @@
     "format": "biome format --write extensions tests package.json tsconfig.json biome.json",
     "format:check": "biome format extensions tests package.json tsconfig.json biome.json",
     "lint": "biome check extensions/index.ts extensions/app/panel.ts extensions/app/presets.ts package.json tsconfig.json biome.json",
-    "test:vitest": "vitest run tests/shell-*.test.ts",
+    "test:vitest": "vitest run tests/shell-*.test.ts tests/working-line-*.test.ts",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "pack:check": "npm pack --dry-run",
     "pi:dev": "${PI_BIN:-pi} --no-extensions -e ./extensions/index.ts",

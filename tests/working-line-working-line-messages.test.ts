@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   PI_WORKING_LINE_DEFAULT_PHRASES,
   PI_WORKING_LINE_MESSAGES,
-} from "../extensions/shell/working-line-messages";
+} from "../extensions/surfaces/working-line/working-line-messages";
 
 const EXPECTED_PHRASES = [
   "Sautéing",

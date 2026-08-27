@@ -72,7 +72,7 @@ import {
   normalizeWorkingLineMessages,
   remapWorkingLineTextTick,
   type WorkingLineFrames,
-} from "./working-line.ts";
+} from "../surfaces/working-line/working-line.ts";
 
 const colorSourceValues: ColorSource[] = ["theme", "terminal"];
 const extensionStatusPlacementValues: ExtensionStatusPlacement[] = [
