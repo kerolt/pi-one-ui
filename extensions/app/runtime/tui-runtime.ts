@@ -14,6 +14,7 @@ import registerShell, {
   type ShellExtensionOptions,
   type ShellRuntimeController,
 } from "./legacy-shell-adapter.ts";
+import type { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
 import registerContext, {
   type ContextExtensionOptions,
   type ContextRuntimeController,
@@ -42,6 +43,7 @@ export class TuiRuntime {
   private activeUi: PiUiPort | undefined;
   private installed = false;
   private shellController: ShellRuntimeController | undefined;
+  private editorController: EditorSurfaceController | undefined;
   private contextController: ContextRuntimeController | undefined;
 
   /**
@@ -57,13 +59,15 @@ export class TuiRuntime {
       on: (event, handler) =>
         this.extensions.on(event as never, handler as never),
     });
-    this.coordinator.on("session_start", (_event, ctx) => {
+    this.coordinator.on("session_start", async (_event, ctx) => {
       this.state.start(ctx.mode);
       if (ctx.mode === "tui" && ctx.hasUI) {
         // Pi exposes redraw through concrete TUI components; surfaces will
         // connect that callback when they migrate behind this runtime.
         this.activeUi = createPiUiPort(ctx);
       }
+      await this.editorController?.startSession(ctx);
+      this.editorController?.install(ctx, true);
     });
     this.coordinator.on("session_shutdown", () => {
       this.activeUi = undefined;
@@ -94,10 +98,14 @@ export class TuiRuntime {
 
     const shellOptions: ShellExtensionOptions = {
       registerCommand: false,
+      manageEditorLifecycle: false,
       ownUserMessages: false,
       ownTurnSummary: false,
       onRuntimeController: (controller) => {
         this.shellController = controller;
+      },
+      onEditorController: (controller) => {
+        this.editorController = controller;
       },
     };
     const contextOptions: ContextExtensionOptions = {
@@ -118,6 +126,7 @@ export class TuiRuntime {
       handler: async (_args, ctx) => {
         await showOneUiPanel(ctx, {
           shell: this.shellController,
+          editor: this.editorController,
           context: this.contextController,
         });
       },

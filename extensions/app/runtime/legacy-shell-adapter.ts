@@ -3,16 +3,9 @@ import { dirname, join, resolve } from "node:path";
 import type {
   ExtensionAPI,
   ExtensionContext,
-  KeybindingsManager,
   Theme,
 } from "@earendil-works/pi-coding-agent";
-import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
-import {
-  type AccentRailLayoutPatchDiagnostic,
-  installHostAccentRailLayoutPatch,
-  markAccentRailLayoutEditor,
-  retainAccentRailLayoutPatchInstallation,
-} from "../../surfaces/editor/index.ts";
+import type { AccentRailLayoutPatchDiagnostic } from "../../surfaces/editor/accent-rail-layout-patch.ts";
 import {
   type AccentRailEditorStyleConfig,
   type ContextStyle,
@@ -54,10 +47,7 @@ import {
   type WorkingLineComponentPatch,
   type ZentuiConfig,
 } from "../config/shell.ts";
-import {
-  type EditorTransferFailureReason,
-  replaceEditorComponentWithExpandedText,
-} from "../../surfaces/editor/index.ts";
+import { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
 import {
   installFooter,
   installHiddenFooter,
@@ -101,10 +91,6 @@ import {
 } from "../../surfaces/footer/index.ts";
 import { resolveFooterTelemetry } from "../../services/telemetry.ts";
 import {
-  PolishedEditor,
-  WrappedPolishedEditor,
-} from "../../surfaces/editor/index.ts";
-import {
   installUserMessageStyle,
   removeUserMessageStyle,
 } from "../../surfaces/context/message/user-message.ts";
@@ -114,63 +100,9 @@ import {
   WorkingLineController,
 } from "../../surfaces/working-line/working-line.ts";
 
-const ZENTUI_EDITOR_FACTORY = Symbol.for("pi-zentui.editor-factory");
-const ZENTUI_EDITOR_BASE_FACTORY = Symbol.for("pi-zentui.editor-base-factory");
-const ZENTUI_EDITOR_OWNER = Symbol.for("pi-zentui.editor-owner");
 const ZENTUI_FOOTER_OWNER = Symbol.for("pi-zentui.footer-owner");
 
-type EditorFactory = NonNullable<
-  Parameters<ExtensionContext["ui"]["setEditorComponent"]>[0]
->;
-
-type ZentuiEditorFactory = EditorFactory & {
-  [ZENTUI_EDITOR_FACTORY]?: true;
-  [ZENTUI_EDITOR_BASE_FACTORY]?: EditorFactory;
-  [ZENTUI_EDITOR_OWNER]?: symbol;
-};
-
-type ApplyUiResult = {
-  editorBlocked: boolean;
-  editorReason?: string;
-};
-
-type EditorChangeResult = { ok: true } | { ok: false; reason: string };
-
-type EditorInstallMode = "none" | "standalone" | "wrapper";
 type InstalledFooterKind = "starship" | "hidden";
-
-function editorTransferFailureMessage(
-  reason: EditorTransferFailureReason,
-): string {
-  switch (reason) {
-    case "unsupported-transfer-api":
-      return "this Pi version cannot safely transfer expanded editor text; reload Pi to apply this change";
-    case "editor-factory-snapshot-failed":
-      return "the current editor factory could not be read safely; reload Pi to apply this change";
-    case "editor-text-snapshot-failed":
-      return "expanded editor text could not be read safely; reload Pi to apply this change";
-    case "editor-text-preparation-failed":
-      return "expanded editor text could not be prepared safely; reload Pi to apply this change";
-    case "editor-replacement-failed-with-rollback":
-      return "the editor replacement failed; the previous factory was reapplied, but editor instance identity is not guaranteed";
-    case "editor-replacement-rollback-failed":
-      return "the editor replacement and previous-factory rollback both failed; reload Pi before editing";
-  }
-}
-
-function isZentuiEditorFactory(factory: EditorFactory | undefined): boolean {
-  return Boolean(
-    (factory as ZentuiEditorFactory | undefined)?.[ZENTUI_EDITOR_FACTORY],
-  );
-}
-
-function getZentuiEditorBaseFactory(
-  factory: EditorFactory | undefined,
-): EditorFactory | undefined {
-  return (factory as ZentuiEditorFactory | undefined)?.[
-    ZENTUI_EDITOR_BASE_FACTORY
-  ];
-}
 
 export function activeFooterReferences(config: ZentuiConfig): Set<string> {
   const starship = config.components.footer.styles.starship;
@@ -219,10 +151,6 @@ function isTuiContext(ctx: ExtensionContext): boolean {
 }
 
 export type ShellRuntimeController = {
-  setEditorComponent: (
-    patch: Partial<EditorComponentConfig>,
-    ctx: ExtensionContext,
-  ) => { applied: boolean; reason?: string };
   setUserMessagesComponent: (
     patch: Partial<UserMessagesComponentConfig>,
     ctx: ExtensionContext,
@@ -254,6 +182,11 @@ export type ShellExtensionOptions = {
    */
   ownTurnSummary?: boolean;
   onRuntimeController?: (controller: ShellRuntimeController) => void;
+  onEditorController?: (controller: EditorSurfaceController) => void;
+  /**
+   * Lets the unified runtime own Editor session installation.
+   */
+  manageEditorLifecycle?: boolean;
 };
 
 export default function (
@@ -262,8 +195,6 @@ export default function (
 ) {
   const state: FooterState = createInitialState(emptyGitStatus());
   const sessionLifecycle = new SessionLifecycle();
-  const editorOwnerToken = Symbol("zentui-editor-owner");
-
   let currentConfig: PolishedTuiConfig = loadConfig();
   // Keep the capability guard defensive for hosts with incomplete extension APIs.
   if (typeof pi.registerEntryRenderer === "function") {
@@ -281,7 +212,6 @@ export default function (
   }
   let activeTheme: Theme | undefined;
   let requestFooterRender: (() => void) | undefined;
-  let requestEditorRender: (() => void) | undefined;
   let getActiveExtensionStatuses: () => ReadonlyMap<string, string> = () =>
     new Map();
   let stopRefreshInterval: StopProjectRefreshInterval = () => {};
@@ -291,14 +221,7 @@ export default function (
   let selectorBorderStyleInstalled = false;
   let installedFooterKind: InstalledFooterKind | undefined;
   let installedFooterToken: symbol | undefined;
-  let editorInstalled = false;
-  let editorInstallMode: EditorInstallMode = "none";
-  let installedEditorFactory: EditorFactory | undefined;
-  let wrappedEditorFactory: EditorFactory | undefined;
   let stopSessionTimer: () => void = () => {};
-  let stopMinimalistDurationUpdates: () => void = () => {};
-  let minimalistDurationUpdatesActive = false;
-  let minimalistDecorationActive = false;
   let sessionTimerRequirements = "";
   let lastDurationLabel = "";
   let lastProjectCwd: string | undefined;
@@ -309,8 +232,6 @@ export default function (
   let minimalistProjectRoot: string | undefined;
   let projectRefreshActive = false;
   let activeTuiContext: ExtensionContext | undefined;
-  let cleanupAccentRailLayoutPatch: () => void = () => {};
-  let accentRailLayoutPatchInstallSerial = 0;
 
   const recordAccentRailLayoutPatchDiagnostic = (
     diagnostic: AccentRailLayoutPatchDiagnostic,
@@ -323,12 +244,6 @@ export default function (
     }
   };
 
-  const isOwnedEditorFactory = (factory: EditorFactory | undefined) =>
-    (factory as ZentuiEditorFactory | undefined)?.[ZENTUI_EDITOR_OWNER] ===
-    editorOwnerToken;
-  const effectiveEditorEnabled = () =>
-    currentConfig.components.editor.enabled &&
-    !hasUnsupportedComponentStyle(currentConfig, "editor");
   const effectiveUserMessagesEnabled = () =>
     options.ownUserMessages !== false &&
     currentConfig.components.userMessages.enabled &&
@@ -341,29 +256,12 @@ export default function (
       ? ("native" as const)
       : currentConfig.components.footer.style;
 
-  const ownsInstalledEditorFactory = () => {
-    if (
-      !sessionLifecycle.isCurrent() ||
-      !editorInstalled ||
-      !installedEditorFactory ||
-      !activeTuiContext
-    ) {
-      return false;
-    }
-    try {
-      return (
-        isOwnedEditorFactory(installedEditorFactory) &&
-        activeTuiContext.ui.getEditorComponent() === installedEditorFactory
-      );
-    } catch {
-      return false;
-    }
-  };
-
+  /**
+   * Requests redraws from the Editor controller and shared render seam.
+   */
   const refresh = () => {
     if (!sessionLifecycle.isCurrent()) return;
-    requestFooterRender?.();
-    requestEditorRender?.();
+    editorController.requestRender();
   };
   const liveContext = new LiveContextController(sessionLifecycle, refresh);
   const getActiveTheme = () => activeTheme;
@@ -376,19 +274,40 @@ export default function (
     Date.now,
     () => interactionMetrics.currentThought(),
   );
-  const getContextWindow = (ctx: ExtensionContext): number | undefined =>
-    ctx.model?.contextWindow ?? ctx.getContextUsage()?.contextWindow;
-  const getContextPercent = (ctx: ExtensionContext): number | undefined => {
-    const usage = ctx.getContextUsage();
-    const contextWindow = getContextWindow(ctx);
-    const live = liveContext.get();
-    return live && contextWindow && contextWindow > 0
-      ? (live.tokens / contextWindow) * 100
-      : (usage?.percent ?? undefined);
-  };
-  const getAgentDurationMs = () => agentDurationClock.elapsedMs();
   const getThinkingLevel = () =>
     sessionLifecycle.isCurrent() ? pi.getThinkingLevel() : ("off" as const);
+  const editorController = new EditorSurfaceController({
+    getConfig: getCurrentConfig,
+    saveComponent: (patch) => {
+      currentConfig = saveEditorComponentPatch(patch);
+      return currentConfig;
+    },
+    getState: () => state,
+    sessionLifecycle,
+    render: { request: () => requestFooterRender?.() },
+    getThinkingLevel,
+    getContextWindow: (ctx) =>
+      ctx.model?.contextWindow ?? ctx.getContextUsage()?.contextWindow,
+    getContextPercent: (ctx) => {
+      const usage = ctx.getContextUsage();
+      const contextWindow = ctx.model?.contextWindow ?? usage?.contextWindow;
+      const live = liveContext.get();
+      return live && contextWindow && contextWindow > 0
+        ? (live.tokens / contextWindow) * 100
+        : (usage?.percent ?? undefined);
+    },
+    getAgentDurationMs: () => agentDurationClock.elapsedMs() ?? 0,
+    isAgentActive: () => agentRunActive,
+    isAgentDurationActive: () => agentDurationClock.isActive(),
+    subscribeAgentDuration: (listener) =>
+      agentDurationClock.subscribe(listener),
+    getProjectRoot: () => minimalistProjectRoot,
+    onProjectRequirementChanged: () => {
+      if (activeTuiContext) reconcileProjectRefresh(activeTuiContext);
+    },
+    onModelLabelChanged: (ctx) => syncFooterState(ctx),
+    recordLayoutDiagnostic: recordAccentRailLayoutPatchDiagnostic,
+  });
   const syncFooterState = (ctx: ExtensionContext) =>
     syncState(
       state,
@@ -473,20 +392,12 @@ export default function (
     projectRefreshScheduler.schedule({ cwd, generation }, options);
   };
 
-  const minimalistProjectRequired = () => {
-    const editor = currentConfig.components.editor;
-    const minimalist = editor.styles.minimalist;
-    return (
-      effectiveEditorEnabled() &&
-      ownsInstalledEditorFactory() &&
-      editor.style === "minimalist" &&
-      (minimalist.showGit || minimalist.pathDisplay === "project")
-    );
-  };
-
+  /**
+   * Reports whether any active surface currently needs project metadata.
+   */
   const needsProjectRefresh = () =>
     (installedFooterKind === "starship" && ownsInstalledFooter()) ||
-    minimalistProjectRequired();
+    editorController.needsProjectRefresh();
 
   const stopProjectRefresh = () => {
     stopRefreshInterval();
@@ -495,6 +406,9 @@ export default function (
     projectRefreshActive = false;
   };
 
+  /**
+   * Starts, stops, or invalidates shared project refresh work.
+   */
   const reconcileProjectRefresh = (ctx: ExtensionContext, force = false) => {
     if (!sessionLifecycle.isCurrent() || !needsProjectRefresh()) {
       stopProjectRefresh();
@@ -505,9 +419,7 @@ export default function (
       stopRefreshInterval = startProjectRefreshInterval(
         currentConfig.projectRefreshIntervalMs,
         () => {
-          if (editorInstalled && !ownsInstalledEditorFactory()) {
-            reconcileObservedEditorOwnership(ctx);
-          }
+          editorController.reconcileOwnership(ctx);
           if (!needsProjectRefresh()) {
             stopProjectRefresh();
             return;
@@ -521,10 +433,12 @@ export default function (
     if (force || activated) scheduleProjectRefresh(ctx, { force: true });
   };
 
+  /**
+   * Synchronizes shared session state and requests a visible redraw.
+   */
   const refreshInteractiveState = (ctx: ExtensionContext, project = false) => {
     if (!sessionLifecycle.isCurrent() || !ctx.hasUI) return;
-    if (editorInstalled && !ownsInstalledEditorFactory())
-      reconcileObservedEditorOwnership(ctx);
+    editorController.reconcileOwnership(ctx);
     syncFooterState(ctx);
     if (project && needsProjectRefresh()) scheduleProjectRefresh(ctx);
     refresh();
@@ -572,69 +486,43 @@ export default function (
     };
   };
 
-  const reconcileAgentTimer = () => {
-    const needed =
-      sessionLifecycle.isCurrent() &&
-      agentRunActive &&
-      agentDurationClock.isActive() &&
-      minimalistDecorationActive &&
-      effectiveEditorEnabled() &&
-      ownsInstalledEditorFactory() &&
-      currentConfig.components.editor.style === "minimalist" &&
-      currentConfig.components.editor.styles.minimalist.showTimer;
-    if (!needed) {
-      stopMinimalistDurationUpdates();
-      stopMinimalistDurationUpdates = () => {};
-      minimalistDurationUpdatesActive = false;
-      return;
-    }
-    if (minimalistDurationUpdatesActive) return;
-    minimalistDurationUpdatesActive = true;
-    stopMinimalistDurationUpdates = agentDurationClock.subscribe(() => {
-      const ctx = activeTuiContext;
-      if (ctx && editorInstalled && !ownsInstalledEditorFactory()) {
-        reconcileObservedEditorOwnership(ctx);
-      }
-      reconcileAgentTimer();
-      if (minimalistDurationUpdatesActive) refresh();
-    });
-  };
-
-  const setMinimalistDecorationActive = (active: boolean) => {
-    const next =
-      sessionLifecycle.isCurrent() && active && ownsInstalledEditorFactory();
-    if (minimalistDecorationActive === next) return;
-    minimalistDecorationActive = next;
-    reconcileAgentTimer();
-  };
-
+  /**
+   * Starts agent timing and notifies the Editor controller.
+   */
   const startAgentTurn = (interactionStarted: boolean) => {
     agentRunActive = true;
     if (interactionStarted) agentDurationClock.start();
-    reconcileAgentTimer();
+    editorController.setAgentRunActive(true);
     refresh();
   };
 
+  /**
+   * Pauses agent timing and notifies the Editor controller.
+   */
   const pauseAgentRun = () => {
     agentRunActive = false;
-    reconcileAgentTimer();
+    editorController.setAgentRunActive(false);
     refresh();
   };
 
+  /**
+   * Settles or rolls forward agent timing after an idle check.
+   */
   const settleAgentTurn = (nextStartedAt?: number) => {
     agentRunActive = nextStartedAt !== undefined;
     if (nextStartedAt === undefined) agentDurationClock.finish();
     else agentDurationClock.start(nextStartedAt);
-    reconcileAgentTimer();
+    editorController.setAgentRunActive(agentRunActive);
     refresh();
   };
 
+  /**
+   * Resets agent timing for the next session generation.
+   */
   const resetAgentTimer = () => {
-    stopMinimalistDurationUpdates();
-    stopMinimalistDurationUpdates = () => {};
-    minimalistDurationUpdatesActive = false;
     agentRunActive = false;
     agentDurationClock.reset();
+    editorController.resetAgentTimer();
   };
 
   const sameReferences = (left: Set<string>, right: Set<string>) =>
@@ -721,240 +609,6 @@ export default function (
     if (effectiveSelectorBordersEnabled() && selectors.style === "zentui") {
       installSelectorBorders();
     } else uninstallSelectorBorders();
-  };
-
-  const clearEditorOwnership = () => {
-    setMinimalistDecorationActive(false);
-    requestEditorRender = undefined;
-    wrappedEditorFactory = undefined;
-    installedEditorFactory = undefined;
-    editorInstallMode = "none";
-    editorInstalled = false;
-  };
-
-  const trackZentuiEditorFactory = (factory: EditorFactory): boolean => {
-    if (!isOwnedEditorFactory(factory)) return false;
-    const baseFactory = getZentuiEditorBaseFactory(factory);
-    wrappedEditorFactory = baseFactory;
-    installedEditorFactory = factory;
-    editorInstallMode = baseFactory ? "wrapper" : "standalone";
-    editorInstalled = true;
-    return true;
-  };
-
-  const observeEditorFactory = (
-    ctx: ExtensionContext,
-  ): { known: true; factory: EditorFactory | undefined } | { known: false } => {
-    try {
-      return { known: true, factory: ctx.ui.getEditorComponent() };
-    } catch {
-      return { known: false };
-    }
-  };
-
-  const reconcileObservedEditorOwnership = (ctx: ExtensionContext) => {
-    const observed = observeEditorFactory(ctx);
-    if (!observed.known) return observed;
-    if (observed.factory && isOwnedEditorFactory(observed.factory)) {
-      trackZentuiEditorFactory(observed.factory);
-    } else {
-      clearEditorOwnership();
-      reconcileProjectRefresh(ctx);
-    }
-    return observed;
-  };
-
-  const accentRailLayoutActive = () =>
-    sessionLifecycle.isCurrent() &&
-    ownsInstalledEditorFactory() &&
-    effectiveEditorEnabled() &&
-    currentConfig.components.editor.style === "accent-rail";
-
-  const markOwnedAccentRailEditor = <T extends object>(editor: T): T => {
-    markAccentRailLayoutEditor(
-      editor,
-      editorOwnerToken,
-      accentRailLayoutActive,
-    );
-    return editor;
-  };
-
-  const makeEditorFactory = (ctx: ExtensionContext): ZentuiEditorFactory => {
-    const sessionTheme = ctx.ui.theme;
-    const factory = ((
-      tui: TUI,
-      theme: EditorTheme,
-      keybindings: KeybindingsManager,
-    ) => {
-      requestEditorRender = () => tui.requestRender();
-      return markOwnedAccentRailEditor(
-        new PolishedEditor(
-          tui,
-          theme,
-          keybindings,
-          sessionTheme,
-          getCurrentConfig,
-          () => ({
-            modelLabel: modelLabelFor(
-              state,
-              currentConfig.components.editor.modelLabel,
-            ),
-            modelId: state.modelId,
-            modelName: state.modelName,
-            providerLabel: state.providerLabel,
-            sessionName: ctx.sessionManager.getSessionName() ?? "",
-          }),
-          getThinkingLevel,
-          () => ({
-            cwd: ctx.cwd,
-            projectRoot: minimalistProjectRoot,
-            branch: state.branch,
-            dirty: state.dirty,
-            ahead: state.ahead,
-            behind: state.behind,
-            costLabel: state.costLabel,
-            modelLabel: modelLabelFor(
-              state,
-              currentConfig.components.editor.modelLabel,
-            ),
-            thinkingLevel: getThinkingLevel(),
-            contextPercent: getContextPercent(ctx),
-            contextWindow: getContextWindow(ctx),
-            sessionName: ctx.sessionManager.getSessionName() ?? "",
-            agentDurationMs: getAgentDurationMs(),
-            agentActive: agentRunActive,
-          }),
-          setMinimalistDecorationActive,
-        ),
-      );
-    }) as ZentuiEditorFactory;
-    factory[ZENTUI_EDITOR_FACTORY] = true;
-    factory[ZENTUI_EDITOR_OWNER] = editorOwnerToken;
-    return factory;
-  };
-
-  const makeWrappedEditorFactory = (
-    ctx: ExtensionContext,
-    baseFactory: EditorFactory,
-  ): ZentuiEditorFactory => {
-    const sessionTheme = ctx.ui.theme;
-    const factory = ((
-      tui: TUI,
-      theme: EditorTheme,
-      keybindings: KeybindingsManager,
-    ) => {
-      requestEditorRender = () => tui.requestRender();
-      return markOwnedAccentRailEditor(
-        new WrappedPolishedEditor(
-          baseFactory(tui, theme, keybindings),
-          sessionTheme,
-          getCurrentConfig,
-          () => ({
-            modelLabel: modelLabelFor(
-              state,
-              currentConfig.components.editor.modelLabel,
-            ),
-            modelId: state.modelId,
-            modelName: state.modelName,
-            providerLabel: state.providerLabel,
-            sessionName: ctx.sessionManager.getSessionName() ?? "",
-          }),
-          getThinkingLevel,
-          () => ({
-            cwd: ctx.cwd,
-            projectRoot: minimalistProjectRoot,
-            branch: state.branch,
-            dirty: state.dirty,
-            ahead: state.ahead,
-            behind: state.behind,
-            costLabel: state.costLabel,
-            modelLabel: modelLabelFor(
-              state,
-              currentConfig.components.editor.modelLabel,
-            ),
-            thinkingLevel: getThinkingLevel(),
-            contextPercent: getContextPercent(ctx),
-            contextWindow: getContextWindow(ctx),
-            sessionName: ctx.sessionManager.getSessionName() ?? "",
-            agentDurationMs: getAgentDurationMs(),
-            agentActive: agentRunActive,
-          }),
-          setMinimalistDecorationActive,
-        ),
-      );
-    }) as ZentuiEditorFactory;
-    factory[ZENTUI_EDITOR_FACTORY] = true;
-    factory[ZENTUI_EDITOR_OWNER] = editorOwnerToken;
-    factory[ZENTUI_EDITOR_BASE_FACTORY] = baseFactory;
-    return factory;
-  };
-
-  const replaceEditor = (
-    ctx: ExtensionContext,
-    factory: EditorFactory | undefined,
-  ): EditorChangeResult => {
-    const result = replaceEditorComponentWithExpandedText(ctx.ui, factory);
-    return result.ok
-      ? result
-      : { ok: false, reason: editorTransferFailureMessage(result.reason) };
-  };
-
-  const installEditor = (ctx: ExtensionContext): EditorChangeResult => {
-    const currentFactory = ctx.ui.getEditorComponent();
-    if (currentFactory && currentFactory === installedEditorFactory) {
-      editorInstalled = true;
-      return { ok: true };
-    }
-
-    const currentZentuiBaseFactory = getZentuiEditorBaseFactory(currentFactory);
-    const baseFactory =
-      currentZentuiBaseFactory ??
-      (currentFactory && !isZentuiEditorFactory(currentFactory)
-        ? currentFactory
-        : undefined);
-    const nextFactory = baseFactory
-      ? makeWrappedEditorFactory(ctx, baseFactory)
-      : makeEditorFactory(ctx);
-    const replacement = replaceEditor(ctx, nextFactory);
-    if (!replacement.ok) return replacement;
-
-    trackZentuiEditorFactory(nextFactory);
-    return { ok: true };
-  };
-
-  const uninstallEditor = (
-    ctx: ExtensionContext,
-    options: { allowStaleZentui?: boolean } = {},
-  ): EditorChangeResult => {
-    const observed = observeEditorFactory(ctx);
-    if (!observed.known) {
-      return {
-        ok: false,
-        reason:
-          "the current editor factory could not be observed safely; reload Pi to apply this change",
-      };
-    }
-    const currentFactory = observed.factory;
-    if (!currentFactory || !isZentuiEditorFactory(currentFactory)) {
-      clearEditorOwnership();
-      return { ok: true };
-    }
-    if (!isOwnedEditorFactory(currentFactory) && !options.allowStaleZentui) {
-      clearEditorOwnership();
-      return { ok: true };
-    }
-
-    const replacement = replaceEditor(
-      ctx,
-      getZentuiEditorBaseFactory(currentFactory) ??
-        (editorInstallMode === "wrapper" && wrappedEditorFactory
-          ? wrappedEditorFactory
-          : undefined),
-    );
-    if (!replacement.ok) return replacement;
-
-    clearEditorOwnership();
-    return { ok: true };
   };
 
   const ctxFooterOwner = (ctx: ExtensionContext): unknown =>
@@ -1099,60 +753,21 @@ export default function (
     }
   };
 
-  const reconcileEditor = (
-    ctx: ExtensionContext,
-    options: { allowStaleZentui?: boolean } = {},
-  ): EditorChangeResult | undefined => {
-    try {
-      if (effectiveEditorEnabled()) {
-        const currentFactory = ctx.ui.getEditorComponent();
-        if (
-          isZentuiEditorFactory(currentFactory) &&
-          !isOwnedEditorFactory(currentFactory) &&
-          !options.allowStaleZentui
-        ) {
-          clearEditorOwnership();
-          return;
-        }
-        const editorMissingOrReplaced =
-          !editorInstalled || !isOwnedEditorFactory(currentFactory);
-        if (editorMissingOrReplaced) return installEditor(ctx);
-      } else {
-        const currentFactory = ctx.ui.getEditorComponent();
-        if (editorInstalled || isOwnedEditorFactory(currentFactory))
-          return uninstallEditor(ctx);
-      }
-    } catch {
-      return {
-        ok: false,
-        reason:
-          "the editor could not be reconciled safely; reload Pi to apply this change",
-      };
-    }
-  };
-
-  const applyConfiguredUi = (
-    ctx: ExtensionContext,
-    options: { allowStaleZentui?: boolean } = {},
-  ): ApplyUiResult => {
-    const result: ApplyUiResult = { editorBlocked: false };
-    if (!isTuiContext(ctx)) return result;
-    activeTheme = ctx.ui.theme;
-
-    const editorChange = reconcileEditor(ctx, options);
-    if (editorChange && !editorChange.ok) {
-      result.editorBlocked = true;
-      result.editorReason = editorChange.reason;
-    }
+  /**
+   * Reconciles non-Editor compatibility surfaces for the active session.
+   */
+  const applyConfiguredUi = (ctx: ExtensionContext) => {
+    if (!isTuiContext(ctx)) return;
     reconcileUserMessages();
     reconcileSelectorBorders();
     reconcileFooter(ctx);
     reconcileProjectRefresh(ctx);
     reconcileSessionTimer();
-    reconcileAgentTimer();
-    return result;
   };
 
+  /**
+   * Installs compatibility surfaces around the extracted Editor controller.
+   */
   const installUi = (ctx: ExtensionContext) => {
     if (!isTuiContext(ctx)) return;
     activeTuiContext = ctx;
@@ -1178,87 +793,26 @@ export default function (
       // Startup alone may supersede a stale registration from an earlier reload.
     }
     uninstallStatusLine(ctx);
-    if (effectiveEditorEnabled()) clearEditorOwnership();
-    else {
-      try {
-        uninstallEditor(ctx, { allowStaleZentui: true });
-      } catch {
-        // Reconciliation below retries observable stale ownership.
-      }
-    }
-
-    applyConfiguredUi(ctx, { allowStaleZentui: true });
+    if (options.manageEditorLifecycle !== false)
+      editorController.install(ctx, true);
+    applyConfiguredUi(ctx);
     refresh();
   };
 
-  const scheduleEditorReconciliation = (ctx: ExtensionContext) => {
-    sessionLifecycle.defer(() => {
-      if (!isTuiContext(ctx) || !effectiveEditorEnabled()) return;
-      const observed = observeEditorFactory(ctx);
-      if (!observed.known) return;
-      if (observed.factory === installedEditorFactory) {
-        reconcileProjectRefresh(ctx);
-        return;
-      }
-      if (!observed.factory || !isOwnedEditorFactory(observed.factory)) {
-        clearEditorOwnership();
-        reconcileProjectRefresh(ctx);
-        refresh();
-        return;
-      }
-      trackZentuiEditorFactory(observed.factory);
-      reconcileProjectRefresh(ctx);
-      refresh();
-    });
-  };
-
+  /**
+   * Cleans all session-owned surface resources in dependency order.
+   */
   const cleanupUi = (ctx?: ExtensionContext) => {
     if (!ctx || !sessionLifecycle.isCurrent()) return;
-    sessionLifecycle.shutdown();
+    editorController.cleanup(ctx);
     stopSessionTimer();
-    resetAgentTimer();
     stopProjectRefresh();
-
-    let retainedEditorOwnership = false;
-    if (isTuiContext(ctx)) {
-      uninstallStatusLine(ctx, { forceLocalCleanup: true });
-      try {
-        const before = observeEditorFactory(ctx);
-        if (before.known) {
-          const currentFactory = before.factory;
-          if (currentFactory && isOwnedEditorFactory(currentFactory)) {
-            replaceEditor(
-              ctx,
-              getZentuiEditorBaseFactory(currentFactory) ??
-                (editorInstallMode === "wrapper" && wrappedEditorFactory
-                  ? wrappedEditorFactory
-                  : undefined),
-            );
-          }
-        }
-        const after = observeEditorFactory(ctx);
-        if (
-          after.known &&
-          after.factory &&
-          isOwnedEditorFactory(after.factory)
-        ) {
-          trackZentuiEditorFactory(after.factory);
-          retainedEditorOwnership = true;
-        }
-      } catch {
-        // Continue cleaning independent surfaces.
-      }
-    }
-    if (!retainedEditorOwnership) clearEditorOwnership();
-    accentRailLayoutPatchInstallSerial += 1;
-    cleanupAccentRailLayoutPatch();
-    cleanupAccentRailLayoutPatch = () => {};
+    uninstallStatusLine(ctx, { forceLocalCleanup: true });
     uninstallUserMessages();
     uninstallSelectorBorders();
     installedFooterKind = undefined;
     installedFooterToken = undefined;
     requestFooterRender = undefined;
-    requestEditorRender = undefined;
     getActiveExtensionStatuses = () => new Map();
     activeTheme = undefined;
     activeTuiContext = undefined;
@@ -1275,31 +829,10 @@ export default function (
   };
 
   pi.on("session_start", async (_event, ctx) => {
-    const lifecycleGeneration = sessionLifecycle.start();
-    const layoutInstallSerial = ++accentRailLayoutPatchInstallSerial;
-    cleanupAccentRailLayoutPatch();
-    cleanupAccentRailLayoutPatch = () => {};
-    if (isTuiContext(ctx)) {
-      const layoutPatchRetention =
-        await retainAccentRailLayoutPatchInstallation(
-          () => installHostAccentRailLayoutPatch(editorOwnerToken),
-          () =>
-            sessionLifecycle.isCurrent(lifecycleGeneration) &&
-            layoutInstallSerial === accentRailLayoutPatchInstallSerial,
-          (layoutPatch) => {
-            cleanupAccentRailLayoutPatch = layoutPatch.cleanup;
-            recordAccentRailLayoutPatchDiagnostic(
-              layoutPatch.diagnostic,
-              layoutPatch.version,
-            );
-          },
-        );
-      if (layoutPatchRetention === "stale") return;
-      if (layoutPatchRetention === "failed") {
-        recordAccentRailLayoutPatchDiagnostic("host-module-unavailable");
-      }
-    }
-    if (!sessionLifecycle.isCurrent(lifecycleGeneration)) return;
+    sessionLifecycle.start();
+    if (options.manageEditorLifecycle !== false)
+      await editorController.startSession(ctx);
+    if (!sessionLifecycle.isCurrent()) return;
     liveContext.clear();
     interactionMetrics.shutdown();
     state.sessionStartEpoch = Date.now();
@@ -1310,29 +843,15 @@ export default function (
     minimalistProjectRoot = undefined;
     installUi(ctx);
     workingLine.startSession(ctx);
-    scheduleEditorReconciliation(ctx);
   });
 
+  /**
+   * Delegates a live Editor configuration change to the Editor controller.
+   */
   const setEditorComponent = (
     patch: Partial<EditorComponentConfig>,
     ctx: ExtensionContext,
-  ) => {
-    currentConfig = saveEditorComponentPatch(patch);
-    let result: EditorChangeResult | undefined;
-    if (patch.enabled !== undefined && isTuiContext(ctx))
-      result = reconcileEditor(ctx);
-    if (patch.style !== undefined && patch.style !== "minimalist") {
-      setMinimalistDecorationActive(false);
-    }
-    if (patch.modelLabel !== undefined) syncFooterState(ctx);
-    reconcileProjectRefresh(ctx);
-    reconcileAgentTimer();
-    refresh();
-    return {
-      applied: !result || result.ok,
-      reason: result && !result.ok ? result.reason : undefined,
-    };
-  };
+  ) => editorController.setComponent(patch, ctx);
   const setUserMessagesComponent = (
     patch: Partial<UserMessagesComponentConfig>,
     _ctx: ExtensionContext,
@@ -1362,8 +881,8 @@ export default function (
     reconcileSessionTimer();
     refresh();
   };
+  options.onEditorController?.(editorController);
   options.onRuntimeController?.({
-    setEditorComponent,
     setUserMessagesComponent,
     setWorkingLineComponent,
     setFooterComponent,
@@ -1373,27 +892,7 @@ export default function (
     registerShellSettingsCommand(pi, {
       sessionLifecycle,
       getConfig: getCurrentConfig,
-      setEditorComponent(
-        patch: Partial<EditorComponentConfig>,
-        ctx: ExtensionContext,
-      ) {
-        currentConfig = saveEditorComponentPatch(patch);
-        let result: EditorChangeResult | undefined;
-        if (patch.enabled !== undefined && isTuiContext(ctx)) {
-          result = reconcileEditor(ctx);
-        }
-        if (patch.style !== undefined && patch.style !== "minimalist") {
-          setMinimalistDecorationActive(false);
-        }
-        if (patch.modelLabel !== undefined) syncFooterState(ctx);
-        reconcileProjectRefresh(ctx);
-        reconcileAgentTimer();
-        refresh();
-        return {
-          applied: !result || result.ok,
-          reason: result && !result.ok ? result.reason : undefined,
-        };
-      },
+      setEditorComponent,
       setPolished(
         patch: Partial<PolishedEditorStyleConfig>,
         _ctx: ExtensionContext,
@@ -1417,7 +916,7 @@ export default function (
       },
       setMinimalist(patch: Partial<MinimalistConfig>, ctx: ExtensionContext) {
         currentConfig = saveMinimalistEditorStylePatch(patch);
-        reconcileAgentTimer();
+        editorController.reconcileTimers();
         reconcileProjectRefresh(
           ctx,
           patch.pathDisplay !== undefined || patch.showGit !== undefined,

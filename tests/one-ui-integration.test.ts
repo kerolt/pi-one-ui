@@ -8,14 +8,14 @@ import { createJiti } from "jiti";
 import { UI_OWNERSHIP, ownerFor } from "../extensions/app/ownership.ts";
 
 test("ownership map assigns each Pi UI seam to one module", () => {
-  assert.equal(ownerFor("editor"), "shell");
+  assert.equal(ownerFor("editor"), "editor");
   assert.equal(ownerFor("footer"), "shell");
   assert.equal(ownerFor("workingLine"), "shell");
   assert.equal(ownerFor("toolRenderer"), "context");
   assert.equal(ownerFor("diffRenderer"), "context");
   assert.equal(ownerFor("thinking"), "context");
   assert.deepEqual(UI_OWNERSHIP, {
-    editor: "shell",
+    editor: "editor",
     userMessage: "context",
     footer: "shell",
     workingLine: "shell",

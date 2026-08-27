@@ -6,6 +6,7 @@ import {
   truncateToWidth,
 } from "@earendil-works/pi-tui";
 import type { ContextRuntimeController } from "../surfaces/context/index.ts";
+import type { EditorSurfaceController } from "../surfaces/editor/controller.ts";
 import {
   renderEditorSettingsPreview,
   renderUserMessageSettingsPreview,
@@ -324,6 +325,7 @@ function isOn(value: string): boolean {
 
 type UnifiedPanelDeps = {
   shell?: ShellRuntimeController;
+  editor?: EditorSurfaceController;
   context?: ContextRuntimeController;
 };
 
@@ -364,6 +366,14 @@ function saveNotice(ctx: any, label: string, value: string): void {
   );
 }
 
+/**
+ * Persists one panel setting and reconciles its owning runtime surface.
+ *
+ * @param id Stable settings item identifier.
+ * @param value Selected settings value.
+ * @param ctx Active Pi extension context.
+ * @param deps Live runtime controllers available to the panel.
+ */
 function updateSetting(
   id: string,
   value: string,
@@ -371,15 +381,14 @@ function updateSetting(
   deps: UnifiedPanelDeps,
 ): void {
   if (id === "editorEnabled") {
-    if (deps.shell)
-      deps.shell.setEditorComponent({ enabled: isOn(value) }, ctx);
+    if (deps.editor) deps.editor.setComponent({ enabled: isOn(value) }, ctx);
     else saveEditorComponentPatch({ enabled: isOn(value) });
     saveNotice(ctx, "Editor", value);
     return;
   }
   if (id === "editorStyle" && EDITOR_STYLES.includes(value as EditorStyle)) {
-    if (deps.shell)
-      deps.shell.setEditorComponent({ style: value as EditorStyle }, ctx);
+    if (deps.editor)
+      deps.editor.setComponent({ style: value as EditorStyle }, ctx);
     else saveEditorComponentPatch({ style: value as EditorStyle });
     saveNotice(ctx, "Editor style", value);
     return;

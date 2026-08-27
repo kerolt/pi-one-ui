@@ -1,6 +1,6 @@
-// Legacy slot map retained for existing tests and callers during migration.
+/** Legacy slot map retained for existing callers during Surface extraction. */
 export const UI_OWNERSHIP = {
-  editor: "shell",
+  editor: "editor",
   userMessage: "context",
   footer: "shell",
   workingLine: "shell",
@@ -14,6 +14,12 @@ export const UI_OWNERSHIP = {
 export type UiSlot = keyof typeof UI_OWNERSHIP;
 export type UiOwner = (typeof UI_OWNERSHIP)[UiSlot];
 
+/**
+ * Returns the canonical visual owner for a Pi UI slot.
+ *
+ * @param slot UI slot to resolve.
+ * @returns Canonical owner identifier.
+ */
 export function ownerFor(slot: UiSlot): UiOwner {
   return UI_OWNERSHIP[slot];
 }
