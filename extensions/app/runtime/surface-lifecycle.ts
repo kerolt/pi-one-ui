@@ -352,20 +352,6 @@ export default function (
     refreshInteractiveState(ctx, true);
   };
 
-  eventCoordinator.on("session_start", async (_event, ctx) => {
-    sessionLifecycle.start();
-    if (options.manageEditorLifecycle !== false)
-      await editorController.startSession(ctx);
-    if (!sessionLifecycle.isCurrent()) return;
-    liveContext.clear();
-    state.sessionStartEpoch = Date.now();
-    invalidateUsageTotalsCache();
-    minimalistProjectRoot = undefined;
-    installUi(ctx);
-    if (options.manageEditorLifecycle !== false)
-      workingLineController.startSession(ctx);
-  });
-
   /**
    * Provides standalone settings support without registering a compatibility command.
    *
@@ -523,96 +509,124 @@ export default function (
     },
   } as const;
 
-  eventCoordinator.on("session_shutdown", async (_event, ctx) => {
-    liveContext.clear();
-    if (options.manageEditorLifecycle !== false)
-      workingLineController.dispose(ctx);
-    cleanupUi(ctx);
-  });
-
-  const syncInteractiveAndProjectStateWithUsage = (
-    _event: unknown,
-    ctx: ExtensionContext,
-  ) => {
-    invalidateUsageTotalsCache();
-    refreshInteractiveState(ctx, true);
-  };
-
-  eventCoordinator.on("agent_start", (event, ctx) => {
-    liveContext.clear();
-    workingLineController.agentStart(ctx);
-    syncInteractiveState(event, ctx);
-  });
-  eventCoordinator.on("turn_start", (_event, ctx) => {
-    workingLineController.turnStart(ctx);
-  });
-  eventCoordinator.on("agent_end", (event, ctx) => {
-    liveContext.clear();
-    workingLineController.agentEnd(ctx);
-    // Reconcile once more after Pi has persisted the assistant message.
-    syncInteractiveAndProjectStateWithUsage(event, ctx);
-  });
-  eventCoordinator.on("model_select", (event, ctx) => {
-    liveContext.clear();
-    syncInteractiveState(event, ctx);
-  });
-  eventCoordinator.on("thinking_level_select", syncInteractiveState);
-  eventCoordinator.on("session_info_changed", syncInteractiveState);
-  eventCoordinator.on("message_update", (event, ctx) => {
-    const payload = event as {
-      message: WorkingLineMessage;
-      assistantMessageEvent?: Parameters<
-        WorkingLineSurfaceController["messageUpdate"]
-      >[1];
-    };
-    liveContext.update(payload.message);
-    workingLineController.messageUpdate(
-      payload.message,
-      payload.assistantMessageEvent,
-      ctx,
-    );
-  });
-  eventCoordinator.on("message_end", (event, ctx) => {
-    const payload = event as {
-      message: WorkingLineMessageEnd & { stopReason?: string };
-    };
-    const result = workingLineController.messageEnd(payload.message, ctx);
-    // Pi notifies extensions before persisting a successful message, so retain its live
-    // context until agent_end; accepted failed messages clear immediately instead of showing
-    // stale usage. Rejected and duplicate finals are not authoritative.
-    if (
-      result.status === "accepted" &&
-      payload.message.role === "assistant" &&
-      (payload.message.stopReason === "error" ||
-        payload.message.stopReason === "aborted")
-    ) {
+  /**
+   * Registers session and runtime effects with the supplied event coordinator.
+   *
+   * @param coordinator Shared lifecycle event coordinator.
+   */
+  const installEventHandlers = (coordinator: EventCoordinator): void => {
+    coordinator.on("session_start", async (_event, ctx) => {
+      sessionLifecycle.start();
+      if (options.manageEditorLifecycle !== false)
+        await editorController.startSession(ctx);
+      if (!sessionLifecycle.isCurrent()) return;
       liveContext.clear();
-    }
-    syncInteractiveAndProjectStateWithUsage(event, ctx);
-  });
-  eventCoordinator.on("agent_settled", (_event, ctx) => {
-    workingLineController.agentSettled(ctx, options.ownTurnSummary !== false);
-  });
-  eventCoordinator.on("tool_execution_start", (event, ctx) => {
-    liveContext.clear();
-    const payload = event as { toolCallId: string; toolName: string };
-    workingLineController.toolStart(payload.toolCallId, payload.toolName, ctx);
-    syncInteractiveState(event, ctx);
-  });
-  eventCoordinator.on("tool_execution_end", (event, ctx) => {
-    const payload = event as { toolCallId: string };
-    workingLineController.toolEnd(payload.toolCallId, ctx);
-    syncInteractiveAndProjectState(event, ctx);
-  });
-  eventCoordinator.on("session_compact", (event, ctx) => {
-    liveContext.clear();
-    syncInteractiveAndProjectStateWithUsage(event, ctx);
-  });
-  eventCoordinator.on("session_tree", (event, ctx) => {
-    liveContext.clear();
-    syncInteractiveAndProjectStateWithUsage(event, ctx);
-  });
-  if (!options.eventCoordinator) eventCoordinator.install();
+      state.sessionStartEpoch = Date.now();
+      invalidateUsageTotalsCache();
+      minimalistProjectRoot = undefined;
+      installUi(ctx);
+      if (options.manageEditorLifecycle !== false)
+        workingLineController.startSession(ctx);
+    });
+
+    coordinator.on("session_shutdown", async (_event, ctx) => {
+      liveContext.clear();
+      if (options.manageEditorLifecycle !== false)
+        workingLineController.dispose(ctx);
+      cleanupUi(ctx);
+    });
+
+    const syncInteractiveAndProjectStateWithUsage = (
+      _event: unknown,
+      ctx: ExtensionContext,
+    ) => {
+      invalidateUsageTotalsCache();
+      refreshInteractiveState(ctx, true);
+    };
+
+    coordinator.on("agent_start", (event, ctx) => {
+      liveContext.clear();
+      workingLineController.agentStart(ctx);
+      syncInteractiveState(event, ctx);
+    });
+    coordinator.on("turn_start", (_event, ctx) => {
+      workingLineController.turnStart(ctx);
+    });
+    coordinator.on("agent_end", (event, ctx) => {
+      liveContext.clear();
+      workingLineController.agentEnd(ctx);
+      // Reconcile once more after Pi has persisted the assistant message.
+      syncInteractiveAndProjectStateWithUsage(event, ctx);
+    });
+    coordinator.on("model_select", (event, ctx) => {
+      liveContext.clear();
+      syncInteractiveState(event, ctx);
+    });
+    coordinator.on("thinking_level_select", syncInteractiveState);
+    coordinator.on("session_info_changed", syncInteractiveState);
+    coordinator.on("message_update", (event, ctx) => {
+      const payload = event as {
+        message: WorkingLineMessage;
+        assistantMessageEvent?: Parameters<
+          WorkingLineSurfaceController["messageUpdate"]
+        >[1];
+      };
+      liveContext.update(payload.message);
+      workingLineController.messageUpdate(
+        payload.message,
+        payload.assistantMessageEvent,
+        ctx,
+      );
+    });
+    coordinator.on("message_end", (event, ctx) => {
+      const payload = event as {
+        message: WorkingLineMessageEnd & { stopReason?: string };
+      };
+      const result = workingLineController.messageEnd(payload.message, ctx);
+      // Pi notifies extensions before persisting a successful message, so retain its live
+      // context until agent_end; accepted failed messages clear immediately instead of showing
+      // stale usage. Rejected and duplicate finals are not authoritative.
+      if (
+        result.status === "accepted" &&
+        payload.message.role === "assistant" &&
+        (payload.message.stopReason === "error" ||
+          payload.message.stopReason === "aborted")
+      ) {
+        liveContext.clear();
+      }
+      syncInteractiveAndProjectStateWithUsage(event, ctx);
+    });
+    coordinator.on("agent_settled", (_event, ctx) => {
+      workingLineController.agentSettled(ctx, options.ownTurnSummary !== false);
+    });
+    coordinator.on("tool_execution_start", (event, ctx) => {
+      liveContext.clear();
+      const payload = event as { toolCallId: string; toolName: string };
+      workingLineController.toolStart(
+        payload.toolCallId,
+        payload.toolName,
+        ctx,
+      );
+      syncInteractiveState(event, ctx);
+    });
+    coordinator.on("tool_execution_end", (event, ctx) => {
+      const payload = event as { toolCallId: string };
+      workingLineController.toolEnd(payload.toolCallId, ctx);
+      syncInteractiveAndProjectState(event, ctx);
+    });
+    coordinator.on("session_compact", (event, ctx) => {
+      liveContext.clear();
+      syncInteractiveAndProjectStateWithUsage(event, ctx);
+    });
+    coordinator.on("session_tree", (event, ctx) => {
+      liveContext.clear();
+      syncInteractiveAndProjectStateWithUsage(event, ctx);
+    });
+  };
+  if (!options.eventCoordinator) {
+    installEventHandlers(eventCoordinator);
+    eventCoordinator.install();
+  }
 
   return {
     sessionLifecycle,
@@ -622,5 +636,6 @@ export default function (
     workingLineController,
     selectorController,
     settings,
+    installEventHandlers,
   };
 }

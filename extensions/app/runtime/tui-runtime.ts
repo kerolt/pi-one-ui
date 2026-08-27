@@ -8,7 +8,6 @@ import { createPiUiPort, type PiUiPort } from "../host/pi-ui-port.ts";
 import { SurfaceRegistry } from "../ownership/surface-registry.ts";
 import registerHeaderSurface from "../../surfaces/header/index.ts";
 import { EventCoordinator } from "./event-coordinator.ts";
-import type { SelectorController } from "../overlay/selector-controller.ts";
 import { RenderScheduler } from "./render-scheduler.ts";
 import { RuntimeStateStore } from "./runtime-state.ts";
 import registerSurfaceLifecycle, {
@@ -47,7 +46,6 @@ export class TuiRuntime {
   private editorController: EditorSurfaceController | undefined;
   private footerController: FooterSurfaceController | undefined;
   private workingLineController: WorkingLineSurfaceController | undefined;
-  private selectorController: SelectorController | undefined;
   private contextController: ContextRuntimeController | undefined;
 
   /**
@@ -111,8 +109,6 @@ export class TuiRuntime {
     this.installed = true;
 
     const surfaceOptions: SurfaceRuntimeOptions = {
-      manageEditorLifecycle: false,
-      manageSelectorLifecycle: false,
       eventCoordinator: this.coordinator,
       ownTurnSummary: false,
     };
@@ -126,7 +122,7 @@ export class TuiRuntime {
     this.editorController = surfaceBindings.editorController;
     this.footerController = surfaceBindings.footerController;
     this.workingLineController = surfaceBindings.workingLineController;
-    this.selectorController = surfaceBindings.selectorController;
+    surfaceBindings.installEventHandlers(this.coordinator);
     registerHeaderSurface(this.pi);
     registerContext(this.pi, contextOptions);
     this.coordinator.on("session_start", async (_event, ctx) => {
@@ -136,14 +132,8 @@ export class TuiRuntime {
         // connect that callback when they migrate behind this runtime.
         this.activeUi = createPiUiPort(ctx);
       }
-      await this.editorController?.startSession(ctx);
-      this.editorController?.install(ctx, true);
-      this.workingLineController?.startSession(ctx);
-      this.selectorController?.startSession(ctx);
     });
     this.coordinator.on("session_shutdown", (_event, ctx) => {
-      this.workingLineController?.dispose(ctx);
-      this.selectorController?.cleanup();
       this.activeUi = undefined;
       this.state.shutdown();
     });
