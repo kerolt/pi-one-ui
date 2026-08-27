@@ -57,8 +57,11 @@ const WORKING_SPINNERS: WorkingLineSpinner[] = [
 const PREVIEW_LINES = ["0", "1", "3", "5", "10"];
 
 const SECTIONS = [
-  { id: "shell", label: "Shell" },
+  { id: "header", label: "Header" },
   { id: "context", label: "Context" },
+  { id: "workingLine", label: "WorkingLine" },
+  { id: "editor", label: "Editor" },
+  { id: "footer", label: "Footer" },
   { id: "features", label: "Features" },
   { id: "presets", label: "Presets" },
 ] as const;
@@ -78,10 +81,16 @@ function renderTabs(theme: any, active: number, width: number): string {
 
 function sectionDescription(section: SectionId): string {
   switch (section) {
-    case "shell":
-      return `${ownerFor("editor")} owns the editor, user messages, working line, and footer.`;
+    case "header":
+      return "Header owns startup branding and startup guidance.";
     case "context":
-      return `${ownerFor("toolRenderer")} owns tool cards, rich diffs, thinking, and context layout.`;
+      return `${ownerFor("toolRenderer")} owns messages, tool cards, diffs, thinking, and summaries.`;
+    case "workingLine":
+      return "WorkingLine is the sole owner of Pi's unkeyed working row.";
+    case "editor":
+      return `${ownerFor("editor")} owns the input editor factory and its styles.`;
+    case "footer":
+      return `${ownerFor("footer")} owns footer rendering and project status segments.`;
     case "features":
       return "Feature switches are saved immediately and applied after /reload.";
     case "presets":
@@ -89,13 +98,16 @@ function sectionDescription(section: SectionId): string {
   }
 }
 
-function shellItems(): SettingItem[] {
+/**
+ * Builds settings owned by the Editor surface.
+ */
+function editorItems(): SettingItem[] {
   const config = loadShellConfig();
   return [
     {
       id: "editorEnabled",
       label: "Editor",
-      description: "Enable Zentui's custom input editor.",
+      description: "Enable the custom input editor.",
       currentValue: onOff(config.components.editor.enabled),
       values: ["on", "off"],
     },
@@ -106,24 +118,19 @@ function shellItems(): SettingItem[] {
       currentValue: config.components.editor.style,
       values: EDITOR_STYLES,
     },
-    {
-      id: "userMessagesEnabled",
-      label: "User messages",
-      description: "Enable custom rendering for previous user messages.",
-      currentValue: onOff(config.components.userMessages.enabled),
-      values: ["on", "off"],
-    },
-    {
-      id: "userMessagesStyle",
-      label: "Message style",
-      description: "Choose the previous user message treatment.",
-      currentValue: config.components.userMessages.style,
-      values: MESSAGE_STYLES,
-    },
+  ];
+}
+
+/**
+ * Builds settings owned by the WorkingLine surface.
+ */
+function workingLineItems(): SettingItem[] {
+  const config = loadShellConfig();
+  return [
     {
       id: "workingLineEnabled",
       label: "Working line",
-      description: "Zentui is the sole owner of Pi's working row.",
+      description: "Enable the sole owner of Pi's working row.",
       currentValue: onOff(config.components.workingLine.enabled),
       values: ["on", "off"],
     },
@@ -134,6 +141,15 @@ function shellItems(): SettingItem[] {
       currentValue: config.components.workingLine.spinner,
       values: WORKING_SPINNERS,
     },
+  ];
+}
+
+/**
+ * Builds settings owned by the Footer surface.
+ */
+function footerItems(): SettingItem[] {
+  const config = loadShellConfig();
+  return [
     {
       id: "footerStyle",
       label: "Footer",
@@ -144,8 +160,26 @@ function shellItems(): SettingItem[] {
   ];
 }
 
+/**
+ * Builds settings owned by the Context surface.
+ */
 function contextItems(config: ContextConfig): SettingItem[] {
+  const shellConfig = loadShellConfig();
   return [
+    {
+      id: "userMessagesEnabled",
+      label: "User messages",
+      description: "Enable custom rendering for previous user messages.",
+      currentValue: onOff(shellConfig.components.userMessages.enabled),
+      values: ["on", "off"],
+    },
+    {
+      id: "userMessagesStyle",
+      label: "Message style",
+      description: "Choose the previous user message treatment.",
+      currentValue: shellConfig.components.userMessages.style,
+      values: MESSAGE_STYLES,
+    },
     {
       id: "contextMode",
       label: "Tool style",
@@ -192,6 +226,24 @@ function contextItems(config: ContextConfig): SettingItem[] {
   ];
 }
 
+/**
+ * Builds settings owned by the Header surface.
+ */
+function headerItems(config: ContextConfig): SettingItem[] {
+  return [
+    {
+      id: "showStartupHeader",
+      label: "Startup header",
+      description: "Show the custom startup header on new sessions.",
+      currentValue: onOff(config.showStartupHeader),
+      values: ["on", "off"],
+    },
+  ];
+}
+
+/**
+ * Builds non-visual feature switches.
+ */
 function featureItems(config: ContextConfig): SettingItem[] {
   return [
     {
@@ -229,13 +281,6 @@ function featureItems(config: ContextConfig): SettingItem[] {
       currentValue: onOff(config.enableAliases),
       values: ["on", "off"],
     },
-    {
-      id: "showStartupHeader",
-      label: "Startup header",
-      description: "Show CC Style's startup header on new sessions.",
-      currentValue: onOff(config.showStartupHeader),
-      values: ["on", "off"],
-    },
   ];
 }
 
@@ -256,10 +301,16 @@ function presetItems(): SettingItem[] {
 
 function itemsFor(section: SectionId): SettingItem[] {
   switch (section) {
-    case "shell":
-      return shellItems();
+    case "header":
+      return headerItems(rendererConfig);
     case "context":
       return contextItems(rendererConfig);
+    case "workingLine":
+      return workingLineItems();
+    case "editor":
+      return editorItems();
+    case "footer":
+      return footerItems();
     case "features":
       return featureItems(rendererConfig);
     case "presets":
@@ -276,7 +327,10 @@ type UnifiedPanelDeps = {
   context?: ContextRuntimeController;
 };
 
-function renderShellPreview(theme: any, width: number): string[] {
+/**
+ * Renders the Editor surface preview for the settings panel.
+ */
+function renderEditorPreview(theme: any, width: number): string[] {
   const config = loadShellConfig();
   const previewWidth = Math.max(20, Math.min(72, width - 2));
   return [
@@ -285,6 +339,16 @@ function renderShellPreview(theme: any, width: number): string[] {
     ...renderEditorSettingsPreview(config, theme, previewWidth).map(
       (line) => `  ${line}`,
     ),
+  ];
+}
+
+/**
+ * Renders the Context surface User Message preview for the settings panel.
+ */
+function renderContextPreview(theme: any, width: number): string[] {
+  const config = loadShellConfig();
+  const previewWidth = Math.max(20, Math.min(72, width - 2));
+  return [
     "",
     theme.fg("muted", "  User message preview"),
     ...renderUserMessageSettingsPreview(config, theme, previewWidth).map(
@@ -508,9 +572,11 @@ export async function showOneUiPanel(
               ),
               "",
               ...list.render(width),
-              ...(SECTIONS[activeIndex].id === "shell"
-                ? renderShellPreview(theme, width)
-                : []),
+              ...(SECTIONS[activeIndex].id === "editor"
+                ? renderEditorPreview(theme, width)
+                : SECTIONS[activeIndex].id === "context"
+                  ? renderContextPreview(theme, width)
+                  : []),
               "",
               truncateToWidth(
                 theme.fg(

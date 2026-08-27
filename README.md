@@ -1,11 +1,6 @@
 # pi-one-ui
 
-`pi-one-ui` 是一个单一 Pi 插件包，将两个 UI 扩展合并为一个可自定义的源码仓库：
-
-- **Zentui**：Editor、User message、Working line、Selector border、Footer
-- **CC Style**：Tool renderer、Rich diff、Thinking、Compact transcript、鼠标交互和辅助功能
-
-安装后只需要启用这个包，不需要再单独安装 `pi-zentui` 或 `pi-cc-extensions`。
+`pi-one-ui` 是一个统一的 Pi TUI 插件包，将 Zentui 的终端外壳能力与 Claude Code 风格的对话内容渲染合并到一个插件中。
 
 ## 安装
 
@@ -23,23 +18,37 @@ pi install git:github.com/<your-account>/pi-one-ui
 /oneui
 ```
 
-`/oneui` 是唯一的公开管理命令，执行后直接打开融合后的交互面板。面板按 `Tab` / `Shift+Tab` 切换 Shell、Renderer、Features、Presets 分区。Shell 分区会显示 Editor 和 User Message 的实时样式预览；修改会立即写入统一配置，活动会话支持的样式也会自动重绘。
+`/oneui` 是唯一的公开管理命令。设置面板按照 TUI 的视觉 Surface 划分：
+
+```text
+Header → Context → WorkingLine → Editor → Footer → Features → Presets
+```
+
+其中：
+
+- **Header**：启动信息、Logo、快捷键提示。
+- **Context**：对话内容区，包含 User Message、Assistant Message、Thinking、Tool、Diff、Summary 和鼠标交互。
+- **WorkingLine**：Pi 的工作状态行、spinner、token/thought/elapsed 信息。
+- **Editor**：输入编辑器、completion、metadata、Accent Rail 和 Minimalist 样式。
+- **Footer**：目录、Git、runtime、token、cost、extension status 等信息。
+- **Features**：Context Inspector、Session Reference、Subagent Autocomplete、Aliases 等行为能力。
+- **Overlay**：设置面板和 Context Inspector 等临时浮层由统一 OverlayManager 跟踪。
+
+## 配置
+
+配置文件：
 
 ```text
 ~/.pi/agent/pi-one-ui.json
 ```
 
-面板中的详细配置仍可直接编辑 JSON，以便开发自定义字段。
-
-## 配置结构
-
-Zentui 的配置保留在 JSON 根级，CC Style 的配置放在 `renderer` 下：
+当前仍兼容 v1 配置结构：
 
 ```json
 {
   "version": 1,
   "components": {
-    "editor": { "enabled": true, "style": "accent-rail" },
+    "editor": { "enabled": true, "style": "opencode" },
     "userMessages": { "enabled": true, "style": "framed" },
     "workingLine": { "enabled": true },
     "footer": { "style": "starship" }
@@ -52,34 +61,42 @@ Zentui 的配置保留在 JSON 根级，CC Style 的配置放在 `renderer` 下�
 }
 ```
 
-完整字段可参考上游快照：
+所有读写已经经过统一 ConfigStore；旧的 `zentui.json`、`claude-code-style.json` 和 `pi-mine-ui.json` 会被兼容读取并保留。`enableWorkingMessage` 仍可被旧配置读取，但统一插件不会注册第二套 working-message 实现，WorkingLine 的唯一 owner 是本插件的 WorkingLine surface。
 
-- `vendor/pi-zentui/docs/configuration.md`
-- `vendor/pi-cc-extensions/README.md`
-
-Working line 的 owner 固定为 Zentui，因此默认关闭 CC Style 的 `enableWorkingMessage`，避免两个扩展争抢 Pi 的无 key working row。
-
-## 来源与目录结构
-
-本项目基于以下上游项目进行融合开发：
-
-- `pi-zentui`：提供 Shell chrome、Editor、Footer、Working line 等能力
-- `pi-cc-extensions`：提供 Tool renderer、Diff、Thinking 和 Transcript 能力
-
-上游源码快照保存在 `vendor/` 中，仅用于追踪和同步。`extensions/` 按 `pi-one-ui` 的产品能力组织，不保留上游项目的目录结构：
+## 源码结构
 
 ```text
 extensions/
-  index.ts                 # 唯一公开入口和 /oneui 命令
-  app/                     # 统一配置、面板、预设和应用装配
-  shell/                  # Editor、Footer、Working line 等终端外壳能力
-  transcript/             # Tool、Diff、Thinking 和消息渲染
-  features/               # Context、Session reference、Agent summary 等功能
-  tools/                  # Patch、ANSI、组件树和其他底层能力
-vendor/                    # 上游只读参考快照和版本记录
+  index.ts                         # 唯一插件入口，创建 TuiRuntime
+  app/
+    runtime/                       # runtime state、事件协调、渲染调度
+    host/                          # Pi API 的窄化 host ports
+    config/                        # ConfigStore 与配置领域解析
+    ownership/                     # Surface ownership
+    overlay/                       # OverlayManager 与 InputRouter
+  surfaces/
+    header/                        # Header surface
+    context/                       # 原 Transcript：对话内容区
+      message/                     # User Message
+      thinking/                    # Thinking
+      renderer/                    # Tool、Diff、Markdown、Mouse
+      summary/                     # Agent summary
+    working-line/                  # WorkingLine 与 interaction summary
+    editor/                        # Editor 及其样式实现
+    footer/                        # Footer 及其布局/format/status
+  features/
+    aliases.ts
+    context-inspector/             # /context，不是 Context 对话区
+    flush-docked-bash.ts
+    legacy/                        # standalone compatibility implementation
+    session-reference/
+    subagent-autocomplete.ts
+  services/                        # Git、runtime、package、project、session 数据
+  tools/                          # 仍在迁移中的底层兼容工具
+vendor/                            # 只读上游参考快照
 ```
 
-公共入口只有 `/oneui`。Shell 和 Transcript 的内部 owner 由应用装配层统一管理，避免不同模块争抢同一个 Pi UI 接缝。
+`TuiRuntime` 是统一 composition root。当前部分 Surface 的生命周期仍由 legacy adapter 实现，但装配入口和 ownership 已经收敛到统一 runtime。
 
 ## 开发
 
@@ -90,12 +107,20 @@ npm test
 npm run pack:check
 ```
 
-`npm test` 会同时运行：
+完整检查：
 
-- `node:test`：Transcript、工具渲染和融合入口测试
-- `Vitest`：Shell 及其生命周期、布局和配置测试
+```bash
+npm run verify
+```
 
-测试文件按产品能力命名为 `tests/shell-*`、`tests/transcript-*` 和 `tests/one-ui-*`。
+测试按领域划分：
+
+- `tests/context-*`：Context 内容区、Tool、Diff、Thinking 和鼠标行为。
+- `tests/working-line-*`：WorkingLine 和 turn summary。
+- `tests/editor-*`：Editor、completion、metadata、transfer 和 Accent Rail。
+- `tests/footer-*`：Footer、Footer format/layout/status。
+- `tests/services-*`：Git、runtime、project、session 和 telemetry。
+- `tests/shell-*`：剩余 Shell compatibility adapter 测试。
 
 本地启动：
 
@@ -103,4 +128,4 @@ npm run pack:check
 npm run pi:dev
 ```
 
-上游快照版本记录在 `ARCHITECTURE.md`。更新上游时，先在 `vendor/` 中获取新快照，再将对应源码同步到 `extensions/`，不要直接修改 vendor 参考目录。
+上游快照保存在 `vendor/`，仅用于追踪和同步。不要直接修改 `vendor/` 或 `node_modules/`。

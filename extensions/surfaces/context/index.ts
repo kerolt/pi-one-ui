@@ -17,14 +17,14 @@ import {
 } from "./message/user-message.ts";
 
 // shell
-import piAliases from "../../features/shell/aliases.ts";
-import { installFlushDockedBash } from "../../features/shell/flush-docked-bash.ts";
+import piAliases from "../../features/aliases.ts";
+import { installFlushDockedBash } from "../../features/flush-docked-bash.ts";
 
 // feature
-import agentAutocomplete from "../../features/reference/subagent.ts";
+import agentAutocomplete from "../../features/subagent-autocomplete.ts";
 import agentSummary from "./summary/index.ts";
 import context from "../../features/context-inspector/index.ts";
-import sessionReference from "../../features/reference/index.ts";
+import sessionReference from "../../features/session-reference/index.ts";
 import { installCompactThinking } from "./thinking/compact-thinking.ts";
 
 // renderer

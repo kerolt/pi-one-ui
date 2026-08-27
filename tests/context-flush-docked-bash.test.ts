@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { InteractiveMode } from "@earendil-works/pi-coding-agent";
-import { installFlushDockedBash } from "../extensions/features/shell/flush-docked-bash.ts";
+import { installFlushDockedBash } from "../extensions/features/flush-docked-bash.ts";
 
 test("handleBashCommand 结束后立刻 flush pending bash", async () => {
   const proto = InteractiveMode.prototype as any;

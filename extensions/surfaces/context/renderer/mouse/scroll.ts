@@ -148,7 +148,10 @@ function isScrollNavigationInput(data: string): boolean {
   );
 }
 
-function isAtTranscriptBottom(tui: any): boolean {
+/**
+ * Reports whether the context is at the bottom for the detected TUI mode.
+ */
+function isAtContextBottom(tui: any): boolean {
   // 惰性 Proxy fullscreen：官方 viewport 以 isFollowingOutput 判定是否在底部。
   if (fullscreenLazyTui(tui)) return isFullscreenAtBottom(tui);
   return true;
@@ -186,7 +189,7 @@ export function scheduleScrollButtonSync(tui: any, data: string): void {
       }
       return;
     }
-    const nextVisible = !isAtTranscriptBottom(tui);
+    const nextVisible = !isAtContextBottom(tui);
     if (nextVisible !== getScrollButtonVisible()) {
       setScrollButtonVisible(nextVisible);
       tui.requestRender?.();

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import workingMessageExtension from "../extensions/features/shell/working-message.ts";
+import workingMessageExtension from "../extensions/features/legacy/working-message.ts";
 
 function install() {
   const events = new Map<string, Function>();

@@ -1,7 +1,7 @@
 {
   "name": "pi-one-ui",
   "version": "0.1.1",
-  "description": "A single, customizable Pi UI package combining Zentui shell chrome with Claude Code-style context rendering.",
+  "description": "A single, customizable Pi UI package with surface-oriented Context and Shell rendering for Pi.",
   "type": "module",
   "license": "MIT",
   "files": [

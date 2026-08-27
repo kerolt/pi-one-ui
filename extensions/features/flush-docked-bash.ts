@@ -4,10 +4,7 @@
  * 在 handleBashCommand 收尾补一次 flush。
  */
 import { InteractiveMode } from "@earendil-works/pi-coding-agent";
-import {
-  FLUSH_DOCKED_BASH_PATCH,
-  patchRegistry,
-} from "../../tools/patch-keys.ts";
+import { FLUSH_DOCKED_BASH_PATCH, patchRegistry } from "../tools/patch-keys.ts";
 
 type Patch = {
   active: boolean;
