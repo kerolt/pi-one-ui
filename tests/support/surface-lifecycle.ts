@@ -18,6 +18,7 @@ import {
 import registerSurfaceLifecycle, {
   type SurfaceRuntimeOptions,
 } from "../../extensions/app/runtime/surface-lifecycle.ts";
+import { registerSettingsCommand } from "./settings-command.ts";
 import type { SelectorController } from "../../extensions/app/overlay/selector-controller.ts";
 import { removeSelectorBorderStyle } from "../../extensions/app/overlay/selector-border.ts";
 import {
@@ -111,15 +112,17 @@ export default function (
       removeSelectorBorderStyle();
     }
   });
-  registerSurfaceLifecycle(pi, {
+  const bindings = registerSurfaceLifecycle(pi, {
     ...options,
     manageSelectorLifecycle: false,
-    onSelectorController: (controller) => {
-      selectorController = controller;
-      options.onSelectorController?.(controller);
-    },
-    standaloneUserMessageHandler: updateUserMessages,
   });
+  selectorController = bindings.selectorController;
+  if (typeof pi.registerCommand === "function") {
+    registerSettingsCommand(pi, {
+      ...bindings.settings,
+      setUserMessagesComponent: updateUserMessages,
+    });
+  }
   pi.on("session_start", (_event, ctx) => {
     if (!isTuiContext(ctx)) return;
     activeTheme = ctx.ui.theme;

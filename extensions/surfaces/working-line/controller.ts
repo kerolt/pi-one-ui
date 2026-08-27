@@ -13,7 +13,10 @@ import {
   snapshotWorkingLineHighStyle,
   WorkingLineController,
 } from "./working-line.ts";
-import type { PolishedTuiConfig } from "../../app/config/shell.ts";
+import {
+  type PolishedTuiConfig,
+  type WorkingLineComponentPatch,
+} from "../../app/config/shell.ts";
 import type { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
 
 export type WorkingLineMessage = Parameters<
@@ -26,6 +29,9 @@ export type WorkingLineMessageEnd = Parameters<
 export type WorkingLineSurfaceContext = {
   readonly pi: ExtensionAPI;
   readonly getConfig: () => PolishedTuiConfig;
+  readonly saveComponent: (
+    patch: WorkingLineComponentPatch,
+  ) => PolishedTuiConfig;
   readonly getTheme: () => Theme;
   readonly sessionLifecycle: SessionLifecycle;
   readonly refresh: () => void;
@@ -209,7 +215,22 @@ export class WorkingLineSurfaceController {
   }
 
   /**
-   * Reconciles WorkingLine configuration changes from the settings panel.
+   * Applies a WorkingLine configuration patch and reconciles the host row.
+   *
+   * @param patch WorkingLine configuration changes to persist.
+   * @param ctx Active Pi extension context.
+   * @returns Whether the host working row accepted the change.
+   */
+  setComponent(
+    patch: WorkingLineComponentPatch,
+    ctx: ExtensionContext,
+  ): { applied: boolean; reason?: string } {
+    this.context.saveComponent(patch);
+    return this.workingLine.reconcile(ctx);
+  }
+
+  /**
+   * Reconciles WorkingLine configuration without changing persisted settings.
    *
    * @param ctx Active Pi extension context.
    * @returns Whether the host working row accepted the change.

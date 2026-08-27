@@ -13,9 +13,9 @@ import { RenderScheduler } from "./render-scheduler.ts";
 import { RuntimeStateStore } from "./runtime-state.ts";
 import registerSurfaceLifecycle, {
   type SurfaceRuntimeOptions,
-  type SurfaceRuntimeController,
 } from "./surface-lifecycle.ts";
 import type { EditorSurfaceController } from "../../surfaces/editor/controller.ts";
+import type { FooterSurfaceController } from "../../surfaces/footer/controller.ts";
 import type { WorkingLineSurfaceController } from "../../surfaces/working-line/controller.ts";
 import registerContext, {
   type ContextExtensionOptions,
@@ -44,8 +44,8 @@ export class TuiRuntime {
   private readonly renderScheduler: RenderScheduler;
   private activeUi: PiUiPort | undefined;
   private installed = false;
-  private surfaceController: SurfaceRuntimeController | undefined;
   private editorController: EditorSurfaceController | undefined;
+  private footerController: FooterSurfaceController | undefined;
   private workingLineController: WorkingLineSurfaceController | undefined;
   private selectorController: SelectorController | undefined;
   private contextController: ContextRuntimeController | undefined;
@@ -91,12 +91,12 @@ export class TuiRuntime {
       setUserMessagesComponent: (patch, ctx) =>
         this.contextController?.setUserMessagesComponent(patch, ctx),
       setWorkingLineComponent: (patch, ctx) =>
-        this.surfaceController?.setWorkingLineComponent(patch, ctx) ?? {
+        this.workingLineController?.setComponent(patch, ctx) ?? {
           applied: false,
           reason: "WorkingLine runtime is not available",
         },
       setFooterComponent: (patch, ctx) =>
-        this.surfaceController?.setFooterComponent(patch, ctx),
+        this.footerController?.setComponent(patch, ctx),
       setContextMode: (mode, ctx) => this.contextController?.setMode(mode, ctx),
       updateContextConfig: (patch, ctx) =>
         this.contextController?.updateConfig(patch, ctx),
@@ -115,18 +115,6 @@ export class TuiRuntime {
       manageSelectorLifecycle: false,
       eventCoordinator: this.coordinator,
       ownTurnSummary: false,
-      onRuntimeController: (controller) => {
-        this.surfaceController = controller;
-      },
-      onEditorController: (controller) => {
-        this.editorController = controller;
-      },
-      onWorkingLineController: (controller) => {
-        this.workingLineController = controller;
-      },
-      onSelectorController: (controller) => {
-        this.selectorController = controller;
-      },
     };
     const contextOptions: ContextExtensionOptions = {
       onRuntimeController: (controller) => {
@@ -134,9 +122,11 @@ export class TuiRuntime {
       },
     };
 
-    // This glue remains only for User Message, Selector, and other
-    // compatibility hooks that have not yet moved to their final surfaces.
-    registerSurfaceLifecycle(this.pi, surfaceOptions);
+    const surfaceBindings = registerSurfaceLifecycle(this.pi, surfaceOptions);
+    this.editorController = surfaceBindings.editorController;
+    this.footerController = surfaceBindings.footerController;
+    this.workingLineController = surfaceBindings.workingLineController;
+    this.selectorController = surfaceBindings.selectorController;
     registerHeaderSurface(this.pi);
     registerContext(this.pi, contextOptions);
     this.coordinator.on("session_start", async (_event, ctx) => {

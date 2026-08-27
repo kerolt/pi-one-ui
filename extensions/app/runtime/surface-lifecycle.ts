@@ -39,6 +39,7 @@ import {
   savePolishedEditorStylePatch,
   saveSelectorBordersComponentPatch,
   saveStarshipFooterStylePatch,
+  saveUserMessagesComponentPatch,
   saveWorkingLineComponentPatch,
   type UserMessagesComponentConfig,
   type WorkingLineComponentPatch,
@@ -83,44 +84,11 @@ function isTuiContext(ctx: ExtensionContext): boolean {
   }
 }
 
-export type SurfaceRuntimeController = {
-  setUserMessagesComponent: (
-    patch: Partial<UserMessagesComponentConfig>,
-    ctx: ExtensionContext,
-  ) => void;
-  setWorkingLineComponent: (
-    patch: WorkingLineComponentPatch,
-    ctx: ExtensionContext,
-  ) => { applied: boolean; reason?: string };
-  setFooterComponent: (
-    patch: Partial<FooterComponentConfig>,
-    ctx: ExtensionContext,
-  ) => void;
-};
-
 export type SurfaceRuntimeOptions = {
-  /**
-   * Exposes remaining surface configuration hooks to standalone callers.
-   */
-  /**
-   * Allows standalone compatibility tests to opt into the old command.
-   */
-  registerCommand?: (pi: ExtensionAPI, deps: never) => void;
   /**
    * Keeps turn-summary entry ownership available for standalone compatibility.
    */
   ownTurnSummary?: boolean;
-  onRuntimeController?: (controller: SurfaceRuntimeController) => void;
-  onEditorController?: (controller: EditorSurfaceController) => void;
-  onWorkingLineController?: (controller: WorkingLineSurfaceController) => void;
-  onSelectorController?: (controller: SelectorController) => void;
-  /**
-   * Keeps standalone User Message compatibility outside the production runtime.
-   */
-  standaloneUserMessageHandler?: (
-    patch: Partial<UserMessagesComponentConfig>,
-    ctx: ExtensionContext,
-  ) => void;
   /**
    * Lets the unified runtime own Editor and WorkingLine session installation.
    */
@@ -189,6 +157,10 @@ export default function (
   const workingLineController = new WorkingLineSurfaceController({
     pi,
     getConfig: getCurrentConfig,
+    saveComponent: (patch) => {
+      currentConfig = saveWorkingLineComponentPatch(patch);
+      return currentConfig;
+    },
     getTheme: () => activeTheme as Theme,
     sessionLifecycle,
     refresh,
@@ -314,6 +286,10 @@ export default function (
   });
   const footerController = new FooterSurfaceController({
     getConfig: getCurrentConfig,
+    saveComponent: (patch) => {
+      currentConfig = saveFooterComponentPatch(patch);
+      return currentConfig;
+    },
     state,
     sessionLifecycle,
     refresh,
@@ -321,6 +297,7 @@ export default function (
     getLiveContext: () => liveContext.get(),
     onProjectRequirementChanged: (ctx, force) =>
       reconcileProjectRefresh(ctx, force),
+    onModelLabelChanged: (ctx) => syncFooterState(ctx),
   });
 
   const applyConfiguredUi = (ctx: ExtensionContext) => {
@@ -390,53 +367,18 @@ export default function (
   });
 
   /**
-   * Delegates a live Editor configuration change to the Editor controller.
+   * Provides standalone settings support without registering a compatibility command.
+   *
+   * The production runtime consumes Surface controllers directly; tests may use
+   * these bindings to exercise the historical settings command in isolation.
    */
-  const setEditorComponent = (
-    patch: Partial<EditorComponentConfig>,
-    ctx: ExtensionContext,
-  ) => editorController.setComponent(patch, ctx);
-  const setUserMessagesComponent = (
-    patch: Partial<UserMessagesComponentConfig>,
-    ctx: ExtensionContext,
-  ) => {
-    options.standaloneUserMessageHandler?.(patch, ctx);
-    refresh();
-  };
-  const setWorkingLineComponent = (
-    patch: WorkingLineComponentPatch,
-    ctx: ExtensionContext,
-  ) => {
-    currentConfig = saveWorkingLineComponentPatch(patch);
-    return workingLineController.reconcile(ctx);
-  };
-  const setFooterComponent = (
-    patch: Partial<FooterComponentConfig>,
-    ctx: ExtensionContext,
-  ) => {
-    const previousStyle = currentConfig.components.footer.style;
-    currentConfig = saveFooterComponentPatch(patch);
-    const styleChanged =
-      currentConfig.components.footer.style !== previousStyle;
-    if (patch.style !== undefined) footerController.reconcile(ctx);
-    if (patch.modelLabel !== undefined) syncFooterState(ctx);
-    reconcileProjectRefresh(ctx, styleChanged);
-    reconcileSessionTimer();
-    refresh();
-  };
-  options.onEditorController?.(editorController);
-  options.onWorkingLineController?.(workingLineController);
-  options.onSelectorController?.(selectorController);
-  options.onRuntimeController?.({
-    setUserMessagesComponent,
-    setWorkingLineComponent,
-    setFooterComponent,
-  });
-
-  options.registerCommand?.(pi, {
+  const settings = {
     sessionLifecycle,
     getConfig: getCurrentConfig,
-    setEditorComponent,
+    setEditorComponent: (
+      patch: Partial<EditorComponentConfig>,
+      ctx: ExtensionContext,
+    ) => editorController.setComponent(patch, ctx),
     setPolished(
       patch: Partial<PolishedEditorStyleConfig>,
       _ctx: ExtensionContext,
@@ -467,14 +409,17 @@ export default function (
       );
       refresh();
     },
-    setUserMessagesComponent,
-    setWorkingLineComponent(
+    setUserMessagesComponent(
+      patch: Partial<UserMessagesComponentConfig>,
+      _ctx: ExtensionContext,
+    ) {
+      currentConfig = saveUserMessagesComponentPatch(patch);
+      refresh();
+    },
+    setWorkingLineComponent: (
       patch: WorkingLineComponentPatch,
       ctx: ExtensionContext,
-    ) {
-      currentConfig = saveWorkingLineComponentPatch(patch);
-      return workingLineController.reconcile(ctx);
-    },
+    ) => workingLineController.setComponent(patch, ctx),
     setSelectorBordersComponent(
       patch: Partial<SelectorBordersComponentConfig>,
       _ctx: ExtensionContext,
@@ -484,20 +429,10 @@ export default function (
         selectorController.reconcile();
       refresh();
     },
-    setFooterComponent(
+    setFooterComponent: (
       patch: Partial<FooterComponentConfig>,
       ctx: ExtensionContext,
-    ) {
-      const previousStyle = currentConfig.components.footer.style;
-      currentConfig = saveFooterComponentPatch(patch);
-      const styleChanged =
-        currentConfig.components.footer.style !== previousStyle;
-      if (patch.style !== undefined) footerController.reconcile(ctx);
-      if (patch.modelLabel !== undefined) syncFooterState(ctx);
-      reconcileProjectRefresh(ctx, styleChanged);
-      reconcileSessionTimer();
-      refresh();
-    },
+    ) => footerController.setComponent(patch, ctx),
     setFooterSegments(
       patch: Partial<FooterSegmentsConfig>,
       ctx: ExtensionContext,
@@ -586,7 +521,7 @@ export default function (
     requestRender() {
       refresh();
     },
-  } as never);
+  } as const;
 
   eventCoordinator.on("session_shutdown", async (_event, ctx) => {
     liveContext.clear();
@@ -678,4 +613,14 @@ export default function (
     syncInteractiveAndProjectStateWithUsage(event, ctx);
   });
   if (!options.eventCoordinator) eventCoordinator.install();
+
+  return {
+    sessionLifecycle,
+    getConfig: getCurrentConfig,
+    editorController,
+    footerController,
+    workingLineController,
+    selectorController,
+    settings,
+  };
 }

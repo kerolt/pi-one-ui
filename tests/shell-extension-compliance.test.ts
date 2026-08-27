@@ -572,20 +572,17 @@ function loadExtension(
   options: { thinkingLevel?: string; commands?: Map<string, unknown> } = {},
 ) {
   const handlers = new Map<string, Handler[]>();
-  zentui(
-    {
-      on(eventName: string, handler: Handler) {
-        handlers.set(eventName, [...(handlers.get(eventName) ?? []), handler]);
-      },
-      registerCommand(name: string, command: unknown) {
-        options.commands?.set(name, command);
-      },
-      getThinkingLevel() {
-        return options.thinkingLevel ?? "off";
-      },
-    } as never,
-    { registerCommand: registerSettingsCommand },
-  );
+  zentui({
+    on(eventName: string, handler: Handler) {
+      handlers.set(eventName, [...(handlers.get(eventName) ?? []), handler]);
+    },
+    registerCommand(name: string, command: unknown) {
+      options.commands?.set(name, command);
+    },
+    getThinkingLevel() {
+      return options.thinkingLevel ?? "off";
+    },
+  } as never);
   return handlers;
 }
 

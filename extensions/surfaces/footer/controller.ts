@@ -1,6 +1,7 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
   hasUnsupportedComponentStyle,
+  type FooterComponentConfig,
   type PolishedTuiConfig,
 } from "../../app/config/shell.ts";
 import type { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
@@ -16,6 +17,9 @@ type FooterKind = "starship" | "hidden";
 
 export type FooterControllerContext = {
   readonly getConfig: () => PolishedTuiConfig;
+  readonly saveComponent: (
+    patch: Partial<FooterComponentConfig>,
+  ) => PolishedTuiConfig;
   readonly state: FooterState;
   readonly sessionLifecycle: SessionLifecycle;
   readonly refresh: () => void;
@@ -25,6 +29,7 @@ export type FooterControllerContext = {
     ctx: ExtensionContext,
     force?: boolean,
   ) => void;
+  readonly onModelLabelChanged: (ctx: ExtensionContext) => void;
 };
 
 /**
@@ -60,6 +65,26 @@ export class FooterSurfaceController {
     const staleOwner = this.footerOwner(ctx);
     if (typeof staleOwner === "symbol") this.installedToken = staleOwner;
     this.reconcile(ctx);
+  }
+
+  /**
+   * Applies a Footer configuration patch and reconciles its host seam.
+   *
+   * @param patch Footer configuration changes to persist.
+   * @param ctx Active Pi extension context.
+   */
+  setComponent(
+    patch: Partial<FooterComponentConfig>,
+    ctx: ExtensionContext,
+  ): void {
+    const previousStyle = this.context.getConfig().components.footer.style;
+    const nextConfig = this.context.saveComponent(patch);
+    const styleChanged = nextConfig.components.footer.style !== previousStyle;
+    if (patch.style !== undefined) this.reconcile(ctx);
+    if (patch.modelLabel !== undefined) this.context.onModelLabelChanged(ctx);
+    this.context.onProjectRequirementChanged(ctx, styleChanged);
+    this.reconcileSessionTimer();
+    this.context.refresh();
   }
 
   /**
