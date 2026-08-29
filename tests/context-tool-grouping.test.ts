@@ -11,6 +11,11 @@ import {
   installToolGrouping,
   ToolGroupComponent,
 } from "../extensions/layouts/context/renderer/tool/grouping.ts";
+import {
+  ExpandedToolIoView,
+  setActiveIoViewFrame,
+  type IoViewFrameState,
+} from "../extensions/layouts/context/renderer/tool/result.ts";
 
 initTheme("dark");
 const ui = {
@@ -373,7 +378,34 @@ test("off refresh ungroups, reload rescans existing tools, and stale shutdown pr
   assert.equal(prototype.addChild, originalAdd);
 });
 
-test("pending and expanded groups bypass settled render caching", () => {
+test("pending group rendering does not schedule recursive child invalidation", async () => {
+  const hooks = installToolGrouping(() => true);
+  try {
+    const parent = new Container() as any;
+    const read = started("read", "timer-read");
+    const bash = started("bash", "timer-bash");
+    parent.addChild(read);
+    parent.addChild(bash);
+    const group = parent.children[0] as ToolGroupComponent;
+    let settledSiblingInvalidations = 0;
+    read.updateResult({ content: [], isError: false });
+    read.invalidate = () => {
+      settledSiblingInvalidations++;
+    };
+
+    assert.match(group.render(120).join("\n"), /1 running.*1 done/);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    assert.equal(
+      settledSiblingInvalidations,
+      0,
+      "group animation must not invalidate settled siblings",
+    );
+  } finally {
+    hooks.shutdown();
+  }
+});
+
+test("pending groups bypass full caching while settled expanded groups reuse it", () => {
   const hooks = installToolGrouping(() => true);
   try {
     const parent = new Container() as any;
@@ -394,12 +426,210 @@ test("pending and expanded groups bypass settled render caching", () => {
     bash.updateResult({ content: [], isError: false });
     group.setExpanded(true);
     const expanded = group.render(120);
-    assert.notStrictEqual(
+    assert.strictEqual(
       group.render(120),
       expanded,
-      "expanded child output is not memoized",
+      "settled expanded output is memoized",
     );
   } finally {
+    hooks.shutdown();
+  }
+});
+
+test("pending expanded groups reuse settled child blocks", () => {
+  const hooks = installToolGrouping(() => true);
+  hooks.setTheme({
+    fg: (_color: string, text: string) => text,
+    bg: (_color: string, text: string) => text,
+  });
+  try {
+    const parent = new Container() as any;
+    const read = tool("read", "child-cache-read");
+    const bash = tool("bash", "child-cache-bash");
+    const grep = started("grep", "child-cache-grep");
+    read.updateResult({ content: [], isError: false });
+    bash.updateResult({ content: [], isError: false });
+    parent.addChild(read);
+    parent.addChild(bash);
+    parent.addChild(grep);
+    const group = parent.children[0] as ToolGroupComponent;
+    group.setExpanded(true);
+
+    const renders = { read: 0, bash: 0, grep: 0 };
+    read.render = () => {
+      renders.read++;
+      return ["✓ Read done"];
+    };
+    bash.render = () => {
+      renders.bash++;
+      return ["✓ Bash done"];
+    };
+    grep.render = () => {
+      renders.grep++;
+      return ["⠋ Grep running"];
+    };
+
+    group.render(100);
+    assert.deepEqual(renders, { read: 1, bash: 1, grep: 1 });
+    group.render(100);
+    assert.deepEqual(
+      renders,
+      { read: 1, bash: 1, grep: 2 },
+      "only the pending child renders on the next animation frame",
+    );
+
+    grep.updateResult({ content: [], isError: false });
+    group.render(100);
+    assert.deepEqual(renders, { read: 1, bash: 1, grep: 3 });
+    group.render(100);
+    assert.deepEqual(
+      renders,
+      { read: 1, bash: 1, grep: 3 },
+      "pending to settled transition enters the full expanded cache",
+    );
+  } finally {
+    hooks.shutdown();
+  }
+});
+
+test("settled expanded cache replays fresh fullscreen IO markers", () => {
+  const hooks = installToolGrouping(() => true);
+  const theme = {
+    fg: (_color: string, text: string) => text,
+    bg: (_color: string, text: string) => text,
+    bold: (text: string) => text,
+  };
+  hooks.setTheme(theme);
+  const frame = (): IoViewFrameState => ({
+    viewIds: new Map(),
+    idToView: new Map(),
+    nextId: 0,
+  });
+  try {
+    const parent = new Container() as any;
+    const read = tool("read", "marker-read");
+    const bash = tool("bash", "marker-bash");
+    read.updateResult({ content: [], isError: false });
+    bash.updateResult({ content: [], isError: false });
+    parent.addChild(read);
+    parent.addChild(bash);
+    const group = parent.children[0] as ToolGroupComponent;
+    group.setExpanded(true);
+
+    const view = new ExpandedToolIoView(
+      theme,
+      "path: sample.ts\nline: 2",
+      "one\ntwo\nthree",
+      false,
+      1,
+      1,
+      true,
+    );
+    read.rendererState.ccstyleIoView = view;
+    read.resultRendererComponent = view;
+    read.render = (width: number) => view.render(width);
+    bash.render = () => ["✓ Bash done"];
+
+    const uninstrumented = group.render(100);
+    assert.doesNotMatch(uninstrumented.join("\n"), /\x1b_cc:v/);
+
+    const firstFrame = frame();
+    setActiveIoViewFrame(firstFrame);
+    const first = group.render(100);
+    setActiveIoViewFrame(null);
+    assert.equal(firstFrame.idToView.get(0), view);
+    assert.match(first.join("\n"), /\x1b_cc:v0:[io]\x07/);
+
+    const secondFrame = frame();
+    setActiveIoViewFrame(secondFrame);
+    const replayed = group.render(100);
+    setActiveIoViewFrame(null);
+    assert.equal(secondFrame.idToView.get(0), view);
+    assert.match(replayed.join("\n"), /\x1b_cc:v0:[io]\x07/);
+    assert.notStrictEqual(
+      replayed,
+      first,
+      "frame-local markers are attached to a fresh paint copy",
+    );
+  } finally {
+    setActiveIoViewFrame(null);
+    hooks.shutdown();
+  }
+});
+
+test("pending child cache refreshes IO hover and frame markers", () => {
+  const hooks = installToolGrouping(() => true);
+  const theme = {
+    fg: (color: string, text: string) =>
+      color === "text" ? `<text>${text}</text>` : text,
+    bg: (_color: string, text: string) => text,
+    bold: (text: string) => text,
+  };
+  hooks.setTheme(theme);
+  const frame = (): IoViewFrameState => ({
+    viewIds: new Map(),
+    idToView: new Map(),
+    nextId: 0,
+  });
+  try {
+    const parent = new Container() as any;
+    const read = tool("read", "pending-marker-read");
+    const bash = started("bash", "pending-marker-bash");
+    read.updateResult({ content: [], isError: false });
+    parent.addChild(read);
+    parent.addChild(bash);
+    const group = parent.children[0] as ToolGroupComponent;
+    group.setExpanded(true);
+
+    const view = new ExpandedToolIoView(
+      theme,
+      "path: sample.ts\nline: 2",
+      "one\ntwo\nthree",
+      false,
+      1,
+      1,
+      true,
+    );
+    let settledRenders = 0;
+    read.rendererState.ccstyleIoView = view;
+    read.resultRendererComponent = view;
+    read.render = (width: number) => {
+      settledRenders++;
+      return view.render(width);
+    };
+    bash.render = () => ["⠋ Bash running"];
+
+    group.render(100);
+    assert.equal(settledRenders, 1);
+
+    const firstFrame = frame();
+    setActiveIoViewFrame(firstFrame);
+    group.render(100);
+    setActiveIoViewFrame(null);
+    assert.equal(
+      settledRenders,
+      2,
+      "entering an instrumented frame refreshes a markerless child cache",
+    );
+
+    const secondFrame = frame();
+    setActiveIoViewFrame(secondFrame);
+    const replayed = group.render(100);
+    setActiveIoViewFrame(null);
+    assert.equal(settledRenders, 2, "settled child block is reused");
+    assert.equal(secondFrame.idToView.get(0), view);
+    assert.match(replayed.join("\n"), /\x1b_cc:v0:[io]\x07/);
+
+    view.setHoveredSection("input");
+    const hoveredFrame = frame();
+    setActiveIoViewFrame(hoveredFrame);
+    const hovered = group.render(100);
+    setActiveIoViewFrame(null);
+    assert.equal(settledRenders, 3, "IO hover invalidates the child block");
+    assert.match(hovered.join("\n"), /<text> click to show more<\/text>/);
+    assert.equal(hoveredFrame.idToView.get(0), view);
+  } finally {
+    setActiveIoViewFrame(null);
     hooks.shutdown();
   }
 });
@@ -461,17 +691,22 @@ test("settled collapsed groups reuse the last render until inputs change", () =>
     group.setExpanded(true);
     const expanded = group.render(160);
     assert.notStrictEqual(expanded, failed);
+    assert.strictEqual(
+      group.render(160),
+      expanded,
+      "expanded output is memoized",
+    );
     group.setExpanded(false);
     const collapsed = group.render(160);
-    assert.notStrictEqual(
+    assert.strictEqual(
       collapsed,
       failed,
-      "expansion changes clear settled output",
+      "collapsed and expanded cache slots survive toggles",
     );
     assert.strictEqual(
       group.render(160),
       collapsed,
-      "collapsed output is memoized again",
+      "collapsed output remains memoized",
     );
 
     parent.addChild(started("grep", "cached-grep", { pattern: "todo" }));

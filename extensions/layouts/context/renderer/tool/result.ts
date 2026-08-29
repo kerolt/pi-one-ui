@@ -270,6 +270,7 @@ export class ExpandedToolIoView {
   private maxInputLines: number;
   private cachedWidth: number | undefined;
   private cachedLines: string[] | undefined;
+  private renderRevision = 0;
   private hoveredSection: ToolIoSection | null = null;
   /** Which sections currently show the show-more affordance (after last render). */
   private truncated: { input: boolean; output: boolean } = {
@@ -342,6 +343,14 @@ export class ExpandedToolIoView {
 
   getOutputBody(): string {
     return this.outputBody.trim() ? this.outputBody : "Done";
+  }
+
+  getHoveredSection(): ToolIoSection | null {
+    return this.hoveredSection;
+  }
+
+  getRenderRevision(): number {
+    return this.renderRevision;
   }
 
   setHoveredSection(section: ToolIoSection | null): void {
@@ -534,6 +543,7 @@ export class ExpandedToolIoView {
   }
 
   invalidate(): void {
+    this.renderRevision++;
     this.cachedWidth = undefined;
     this.cachedLines = undefined;
   }
@@ -817,6 +827,72 @@ function withIoViewMarkers(
   }
   return marked;
 }
+
+const TOOL_VIEW_MARKER_RE = /\x1b_cc:v(\d+):([io])\x07/g;
+
+export type CapturedIoViewMarker = {
+  line: number;
+  view: ExpandedToolIoView;
+  section: ToolIoSection;
+};
+
+/**
+ * Removes frame-local IO markers before rendered lines enter a cross-frame cache.
+ * The captured view identities let a later frame register fresh marker ids.
+ */
+export function captureIoViewMarkers(lines: string[]): {
+  lines: string[];
+  markers: CapturedIoViewMarker[];
+} {
+  const frame = activeIoViewFrame;
+  if (!frame) {
+    return { lines, markers: [] };
+  }
+  const markers: CapturedIoViewMarker[] = [];
+  let changed = false;
+  const clean = lines.map((line, lineIndex) =>
+    line.replace(TOOL_VIEW_MARKER_RE, (marker, rawId, rawSection) => {
+      const view = frame.idToView.get(Number(rawId));
+      if (!view) {
+        return marker;
+      }
+
+      changed = true;
+      markers.push({
+        line: lineIndex,
+        view,
+        section: rawSection === "i" ? "input" : "output",
+      });
+
+      return "";
+    }),
+  );
+  return { lines: changed ? clean : lines, markers };
+}
+
+/** Re-registers cached IO views in the active frame and attaches fresh marker ids. */
+export function replayIoViewMarkers(
+  lines: string[],
+  markers: readonly CapturedIoViewMarker[],
+): string[] {
+  if (!activeIoViewFrame || markers.length === 0) {
+    return lines;
+  }
+  const replayed = lines.slice();
+  for (const marker of markers) {
+    if (marker.line < 0 || marker.line >= replayed.length) {
+      continue;
+    }
+    const id = frameViewId(marker.view);
+    if (id === null) {
+      continue;
+    }
+    replayed[marker.line] =
+      `${replayed[marker.line]}${toolViewMarker(id, marker.section)}`;
+  }
+  return replayed;
+}
+
 const ioViewInvalidators = new WeakMap<ExpandedToolIoView, () => void>();
 function rememberIoView(context: any, view: ExpandedToolIoView): void {
   if (!context || typeof context !== "object") return;

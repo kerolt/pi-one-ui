@@ -9,10 +9,7 @@ import {
   visibleWidth,
   type Component,
 } from "@earendil-works/pi-tui";
-import {
-  TOOL_LOADING_INTERVAL_MS,
-  toolLoadingIcon,
-} from "../../../../tools/tool-loading-icon.ts";
+import { toolLoadingIcon } from "../../../../tools/tool-loading-icon.ts";
 import { isToolTuiFullscreen, showMoreHintText } from "./show-more-hint.ts";
 import {
   stripAnsi,
@@ -21,6 +18,15 @@ import {
 } from "../../../../tools/ansi-text.ts";
 import { walkComponentTree } from "../../../../tools/component-tree.ts";
 import { humanizeToolLabel, toolCallSummary } from "./names.ts";
+import {
+  captureIoViewMarkers,
+  getActiveIoViewFrame,
+  isExpandedToolIoView,
+  replayIoViewMarkers,
+  type CapturedIoViewMarker,
+  type ExpandedToolIoView,
+  type ToolIoSection,
+} from "./result.ts";
 import {
   patchRegistry,
   TOOL_GROUPING_GENERATION_KEY as GENERATION_KEY,
@@ -41,7 +47,6 @@ type Patch = {
   generation: number;
   lastEnabled: boolean;
   theme?: any;
-  animationTimer: ReturnType<typeof setTimeout> | null;
 };
 
 function toolName(tool: any): string {
@@ -91,23 +96,6 @@ function statusIcon(value: ToolStatus): string {
   if (value === "success") return "✓";
   if (value === "error") return "✗";
   return toolLoadingIcon();
-}
-
-function scheduleGroupAnimation(patch: Patch): void {
-  if (patch.animationTimer || !patch.active) return;
-  patch.animationTimer = setTimeout(() => {
-    patch.animationTimer = null;
-    if (!patch.active) return;
-    for (const group of patch.groups) {
-      if (
-        (group.children as any[]).some(
-          (tool) => tool?.executionStarted && status(tool) === "pending",
-        )
-      )
-        group.invalidate();
-    }
-  }, TOOL_LOADING_INTERVAL_MS);
-  patch.animationTimer.unref?.();
 }
 
 function visibleLines(lines: string[]): string[] {
@@ -180,14 +168,73 @@ let nextGroupId = 1;
 
 type SettledGroupCache = {
   width: number;
+  expanded: boolean;
   hover: boolean;
   theme: unknown;
   fullscreen: boolean;
   children: readonly unknown[];
   args: unknown[];
   results: unknown[];
+  statuses: ToolStatus[];
+  callComponents: unknown[];
+  resultComponents: unknown[];
+  ioViews: Array<ExpandedToolIoView | undefined>;
+  ioHoveredSections: Array<ToolIoSection | null | undefined>;
+  ioRevisions: Array<number | undefined>;
+  capturedIoFrame: boolean;
   lines: string[];
+  ioMarkers: CapturedIoViewMarker[];
 };
+
+type SettledGroupCacheSlots = {
+  collapsed?: SettledGroupCache;
+  expanded?: SettledGroupCache;
+};
+
+type SettledExpandedChildCache = {
+  width: number;
+  theme: unknown;
+  fullscreen: boolean;
+  index: number;
+  total: number;
+  args: unknown;
+  result: unknown;
+  status: ToolStatus;
+  expanded: boolean;
+  callComponent: unknown;
+  resultComponent: unknown;
+  ioView: ExpandedToolIoView | undefined;
+  ioHoveredSection: ToolIoSection | null | undefined;
+  ioRevision: number | undefined;
+  capturedIoFrame: boolean;
+  lines: string[];
+  ioMarkers: CapturedIoViewMarker[];
+};
+
+function toolIoView(tool: any): ExpandedToolIoView | undefined {
+  for (const candidate of [
+    tool?.rendererState?.ccstyleIoView,
+    tool?.state?.ccstyleIoView,
+    tool?.resultRendererComponent,
+  ]) {
+    if (isExpandedToolIoView(candidate)) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
+function ioHoveredSection(
+  view: ExpandedToolIoView | undefined,
+): ToolIoSection | null | undefined {
+  return view?.getHoveredSection();
+}
+
+function ioRenderRevision(
+  view: ExpandedToolIoView | undefined,
+): number | undefined {
+  return view?.getRenderRevision();
+}
 
 export class ToolGroupComponent extends Container {
   readonly toolCallId = `ccstyle-tool-group-${nextGroupId++}`;
@@ -199,8 +246,12 @@ export class ToolGroupComponent extends Container {
   }
   private hintHovered = false;
   private readonly patch: Patch;
-  /** 仅缓存已完成且折叠的分组；pending / expanded 每帧现算。 */
-  private settledCache: SettledGroupCache | undefined;
+  /** 已完成分组按折叠/展开槽位跨帧缓存；pending 走子工具级缓存。 */
+  private settledCaches: SettledGroupCacheSlots = {};
+  private settledExpandedChildCaches = new WeakMap<
+    object,
+    SettledExpandedChildCache
+  >();
 
   constructor(patch: Patch) {
     super();
@@ -209,13 +260,13 @@ export class ToolGroupComponent extends Container {
   }
 
   addTool(tool: any): void {
-    this.settledCache = undefined;
+    this.clearAllCaches();
     this.children.push(tool);
     tool[PARENT_KEY] = this;
   }
 
   releaseTools(): any[] {
-    this.settledCache = undefined;
+    this.clearAllCaches();
     const tools = [...this.children];
     this.children.length = 0;
     this.patch.groups.delete(this);
@@ -223,14 +274,13 @@ export class ToolGroupComponent extends Container {
   }
 
   removeTool(tool: any): void {
-    this.settledCache = undefined;
+    this.clearAllCaches();
     const index = this.children.indexOf(tool);
     if (index >= 0) this.children.splice(index, 1);
     if (tool?.[PARENT_KEY] === this) delete tool[PARENT_KEY];
   }
 
   setExpanded(expanded: boolean): void {
-    if (this._expanded !== expanded) this.settledCache = undefined;
     this._expanded = expanded;
     for (const tool of this.children)
       (
@@ -239,7 +289,9 @@ export class ToolGroupComponent extends Container {
   }
 
   setHintHovered(hovered: boolean): void {
-    if (this.hintHovered !== hovered) this.settledCache = undefined;
+    if (this.hintHovered !== hovered) {
+      this.clearSettledCaches();
+    }
     this.hintHovered = hovered;
   }
 
@@ -272,53 +324,205 @@ export class ToolGroupComponent extends Container {
   }
 
   invalidate(): void {
-    this.settledCache = undefined;
+    this.clearAllCaches();
     for (const tool of this.children) tool.invalidate?.();
   }
 
+  private clearSettledCaches(): void {
+    this.settledCaches = {};
+  }
+
+  private clearAllCaches(): void {
+    this.clearSettledCaches();
+    this.settledExpandedChildCaches = new WeakMap();
+  }
+
   private settledCacheHit(width: number): string[] | undefined {
-    const cache = this.settledCache;
-    if (!cache || this._expanded) return;
+    const slot = this._expanded ? "expanded" : "collapsed";
+    const cache = this.settledCaches[slot];
+    if (!cache) {
+      return;
+    }
     if (
       cache.width !== width ||
+      cache.expanded !== this._expanded ||
       cache.hover !== this.hintHovered ||
       cache.theme !== this.patch.theme ||
-      cache.fullscreen !== isToolTuiFullscreen()
+      cache.fullscreen !== isToolTuiFullscreen() ||
+      (getActiveIoViewFrame() !== null &&
+        !cache.capturedIoFrame &&
+        cache.ioViews.some(Boolean))
     ) {
       return;
     }
     const tools = this.children as any[];
-    if (cache.children.length !== tools.length) return;
+    if (cache.children.length !== tools.length) {
+      return;
+    }
     for (let i = 0; i < tools.length; i++) {
       const tool = tools[i];
+      const ioView = toolIoView(tool);
+      const toolStatus = status(tool);
       if (
         cache.children[i] !== tool ||
         cache.args[i] !== tool?.args ||
         cache.results[i] !== tool?.result ||
-        status(tool) === "pending"
+        cache.statuses[i] !== toolStatus ||
+        cache.callComponents[i] !== tool?.callRendererComponent ||
+        cache.resultComponents[i] !== tool?.resultRendererComponent ||
+        cache.ioViews[i] !== ioView ||
+        cache.ioHoveredSections[i] !== ioHoveredSection(ioView) ||
+        cache.ioRevisions[i] !== ioRenderRevision(ioView) ||
+        toolStatus === "pending"
       ) {
         return;
       }
     }
-    return cache.lines;
+    return replayIoViewMarkers(cache.lines, cache.ioMarkers);
   }
 
   private storeSettledCache(width: number, lines: string[]): void {
-    this.settledCache = {
+    const tools = this.children as any[];
+    const ioViews = tools.map(toolIoView);
+    const captured = captureIoViewMarkers(lines);
+    const cache: SettledGroupCache = {
       width,
+      expanded: this._expanded,
       hover: this.hintHovered,
       theme: this.patch.theme,
       fullscreen: isToolTuiFullscreen(),
-      children: [...this.children],
-      args: (this.children as any[]).map((tool) => tool?.args),
-      results: (this.children as any[]).map((tool) => tool?.result),
-      lines,
+      children: [...tools],
+      args: tools.map((tool) => tool?.args),
+      results: tools.map((tool) => tool?.result),
+      statuses: tools.map(status),
+      callComponents: tools.map((tool) => tool?.callRendererComponent),
+      resultComponents: tools.map((tool) => tool?.resultRendererComponent),
+      ioViews,
+      ioHoveredSections: ioViews.map(ioHoveredSection),
+      ioRevisions: ioViews.map(ioRenderRevision),
+      capturedIoFrame: getActiveIoViewFrame() !== null,
+      lines: captured.lines,
+      ioMarkers: captured.markers,
     };
+    this.settledCaches[this._expanded ? "expanded" : "collapsed"] = cache;
+  }
+
+  private settledExpandedChildCacheHit(
+    tool: any,
+    index: number,
+    total: number,
+    width: number,
+  ): string[] | undefined {
+    const cache = this.settledExpandedChildCaches.get(tool);
+    if (!cache) {
+      return;
+    }
+    const toolStatus = status(tool);
+    const ioView = toolIoView(tool);
+    if (
+      toolStatus === "pending" ||
+      cache.width !== width ||
+      cache.theme !== this.patch.theme ||
+      cache.fullscreen !== isToolTuiFullscreen() ||
+      cache.index !== index ||
+      cache.total !== total ||
+      cache.args !== tool?.args ||
+      cache.result !== tool?.result ||
+      cache.status !== toolStatus ||
+      cache.expanded !== (tool?.expanded === true) ||
+      cache.callComponent !== tool?.callRendererComponent ||
+      cache.resultComponent !== tool?.resultRendererComponent ||
+      cache.ioView !== ioView ||
+      cache.ioHoveredSection !== ioHoveredSection(ioView) ||
+      cache.ioRevision !== ioRenderRevision(ioView) ||
+      (getActiveIoViewFrame() !== null &&
+        !cache.capturedIoFrame &&
+        ioView !== undefined)
+    ) {
+      return;
+    }
+    return replayIoViewMarkers(cache.lines, cache.ioMarkers);
+  }
+
+  private storeSettledExpandedChildCache(
+    tool: any,
+    index: number,
+    total: number,
+    width: number,
+    lines: string[],
+  ): void {
+    const ioView = toolIoView(tool);
+    const captured = captureIoViewMarkers(lines);
+    this.settledExpandedChildCaches.set(tool, {
+      width,
+      theme: this.patch.theme,
+      fullscreen: isToolTuiFullscreen(),
+      index,
+      total,
+      args: tool?.args,
+      result: tool?.result,
+      status: status(tool),
+      expanded: tool?.expanded === true,
+      callComponent: tool?.callRendererComponent,
+      resultComponent: tool?.resultRendererComponent,
+      ioView,
+      ioHoveredSection: ioHoveredSection(ioView),
+      ioRevision: ioRenderRevision(ioView),
+      capturedIoFrame: getActiveIoViewFrame() !== null,
+      lines: captured.lines,
+      ioMarkers: captured.markers,
+    });
+  }
+
+  private renderExpandedChildBlock(
+    tool: any,
+    index: number,
+    total: number,
+    width: number,
+    theme: any,
+    fg: (color: string, text: string) => string,
+  ): string[] {
+    const cached = this.settledExpandedChildCacheHit(tool, index, total, width);
+    if (cached) {
+      return cached;
+    }
+
+    const toolStatus = status(tool);
+    const color = toolStatus === "pending" ? "accent" : toolStatus;
+    const branch = index === total - 1 ? "└" : "├";
+    const continuation = index === total - 1 ? "  " : "│ ";
+    const rendered = visibleLines(tool.render(Math.max(1, width - 2)));
+    if (rendered.length) {
+      rendered[0] = stripLeadingStatusIcon(rendered[0])
+        .replace(/^ +/, "")
+        .replace(/^((?:\x1b\[[0-?]*[ -/]*[@-~])*) +/, "$1");
+    }
+    const childLines = rendered.length ? rendered : [toolSummary(tool).main];
+    const backgroundSlot = "userMessageBg";
+    const lines = childLines.map((line, lineIndex) => {
+      const content = lineIndex === 0 ? line : stripLeadingSpaces(line, 1);
+      const prefix =
+        lineIndex === 0
+          ? `${fg("dim", branch)} ${fg(color, statusIcon(toolStatus))} `
+          : fg("dim", continuation);
+      return paddedBackgroundRow(
+        theme,
+        backgroundSlot,
+        prefix + content,
+        width,
+      );
+    });
+    if (toolStatus !== "pending") {
+      this.storeSettledExpandedChildCache(tool, index, total, width, lines);
+    }
+    return lines;
   }
 
   render(width: number): string[] {
     const cached = this.settledCacheHit(width);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
     const theme = this.patch.theme;
     const fg = (color: string, text: string) =>
       theme?.fg?.(color, text) ?? text;
@@ -343,12 +547,6 @@ export class ToolGroupComponent extends Container {
       : counts.pending
         ? "pending"
         : "success";
-    if (
-      (this.children as any[]).some(
-        (tool) => tool?.executionStarted && status(tool) === "pending",
-      )
-    )
-      scheduleGroupAnimation(this.patch);
     const overallColor = overall === "pending" ? "accent" : overall;
     const nameList =
       names.size > 1 ? ` ${fg("dim", `• ${toolNameList(this.children)}`)}` : "";
@@ -363,52 +561,37 @@ export class ToolGroupComponent extends Container {
       ),
     ];
     const total = this.children.length;
-    const expandedLines: string[] = [];
     for (let index = 0; index < total; index++) {
       const tool = this.children[index];
-      const toolStatus = status(tool);
-      const color = toolStatus === "pending" ? "accent" : toolStatus;
-      const branch = index === total - 1 ? "└" : "├";
-      const continuation = index === total - 1 ? "  " : "│ ";
-      if (!this._expanded) {
-        const summary = toolSummary(tool);
+      if (this._expanded) {
         lines.push(
-          truncateToWidth(
-            ` ${fg("dim", branch)} ${fg(color, statusIcon(toolStatus))} ${fg("toolTitle", summary.main)}${fg("dim", summary.detail)}`,
+          ...this.renderExpandedChildBlock(
+            tool,
+            index,
+            total,
             width,
-            "…",
+            theme,
+            fg,
           ),
         );
         continue;
       }
-      const rendered = visibleLines(tool.render(Math.max(1, width - 2)));
-      if (rendered.length) {
-        rendered[0] = stripLeadingStatusIcon(rendered[0])
-          .replace(/^ +/, "")
-          .replace(/^((?:\x1b\[[0-?]*[ -/]*[@-~])*) +/, "$1");
-      }
-      const childLines = rendered.length ? rendered : [toolSummary(tool).main];
-      for (let lineIndex = 0; lineIndex < childLines.length; lineIndex++) {
-        const content =
-          // 续行只剥外层 Box 的 1 格 left pad，保留 Input/Output 相对缩进
-          lineIndex === 0
-            ? childLines[lineIndex]
-            : stripLeadingSpaces(childLines[lineIndex], 1);
-        const prefix =
-          lineIndex === 0
-            ? `${fg("dim", branch)} ${fg(color, statusIcon(toolStatus))} `
-            : fg("dim", continuation);
-        expandedLines.push(prefix + content);
-      }
+      const toolStatus = status(tool);
+      const color = toolStatus === "pending" ? "accent" : toolStatus;
+      const branch = index === total - 1 ? "└" : "├";
+      const summary = toolSummary(tool);
+      lines.push(
+        truncateToWidth(
+          ` ${fg("dim", branch)} ${fg(color, statusIcon(toolStatus))} ${fg("toolTitle", summary.main)}${fg("dim", summary.detail)}`,
+          width,
+          "…",
+        ),
+      );
     }
     if (this._expanded) {
-      // 展开面板统一用 user message 背景色（ccstyle 约定），不按状态区分。
-      const backgroundSlot = "userMessageBg";
-      for (const line of expandedLines) {
-        lines.push(paddedBackgroundRow(theme, backgroundSlot, line, width));
-      }
-      lines.push(paddedBackgroundRow(theme, backgroundSlot, "", width));
-    } else if (counts.pending === 0) {
+      lines.push(paddedBackgroundRow(theme, "userMessageBg", "", width));
+    }
+    if (counts.pending === 0) {
       this.storeSettledCache(width, lines);
     }
     return lines;
@@ -517,8 +700,6 @@ export function installToolGrouping(
   if (previous) {
     previous.active = false;
     previous.enabled = () => false;
-    if (previous.animationTimer) clearTimeout(previous.animationTimer);
-    previous.animationTimer = null;
     ungroup(previous);
   }
   const original = {
@@ -545,7 +726,6 @@ export function installToolGrouping(
     enabled: getEnabled,
     generation: 0,
     lastEnabled: getEnabled(),
-    animationTimer: null,
   };
   patch.installed = {
     addChild: function (this: any, component: any) {
@@ -604,8 +784,6 @@ export function installToolGrouping(
     shutdown() {
       if (!patch.active) return;
       patch.active = false;
-      if (patch.animationTimer) clearTimeout(patch.animationTimer);
-      patch.animationTimer = null;
       patch.enabled = () => false;
       ungroup(patch);
       if (prototype.addChild === patch.installed.addChild)
