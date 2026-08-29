@@ -1,4 +1,5 @@
 import {
+  type ExtensionCommandContext,
   type ExtensionContext,
   getSettingsListTheme,
 } from "@earendil-works/pi-coding-agent";
@@ -82,6 +83,26 @@ function renderTabs(theme: any, active: number, width: number): string {
     return index === active ? theme.fg("text", label) : theme.fg("dim", label);
   }).join(theme.fg("dim", " / "));
   return truncateToWidth(text, Math.max(0, width));
+}
+
+/** Adds a stable chrome frame around the settings content. */
+function renderPanelFrame(theme: any, width: number, rows: string[]): string[] {
+  const safeWidth = Math.max(1, width);
+  const border = (text: string) => theme.fg("border", text);
+  if (safeWidth === 1)
+    return [border("│"), ...rows.map(() => border("│")), border("│")];
+
+  const innerWidth = safeWidth - 2;
+  const content = rows.map(
+    (row) =>
+      `${border("│")}${truncateToWidth(row, innerWidth, "", true)}${border("│")}`,
+  );
+  if (safeWidth === 2) return [border("╭╮"), ...content, border("╰╯")];
+  return [
+    border(`╭${"─".repeat(innerWidth)}╮`),
+    ...content,
+    border(`╰${"─".repeat(innerWidth)}╯`),
+  ];
 }
 
 function sectionDescription(section: SectionId): string {
@@ -554,7 +575,7 @@ let unifiedPanelOpen = false;
  * @param deps Runtime controllers used for live updates.
  */
 export async function showOneUiPanel(
-  ctx: any,
+  ctx: ExtensionCommandContext,
   deps: UnifiedPanelDeps = {},
 ): Promise<void> {
   if (
@@ -572,9 +593,10 @@ export async function showOneUiPanel(
 
   unifiedPanelOpen = true;
   try {
+    let panelHandle: { focus: () => void } | undefined;
     await overlayManager.run(() =>
       ctx.ui.custom(
-        (tui: any, theme: any, _keybindings: any, done: () => void) => {
+        (tui, theme, _keybindings, done) => {
           let activeIndex = 0;
           let list: SettingsList;
           const createList = () => {
@@ -583,11 +605,29 @@ export async function showOneUiPanel(
               10,
               getSettingsListTheme(),
               (id, value) => {
+                // Replacing Pi's editor synchronously moves focus away from
+                // this overlay. Restore the overlay handle after the editor
+                // has been reconciled so the panel remains interactive.
+                if (id === "editorEnabled") {
+                  try {
+                    updateSetting(id, value, ctx, deps);
+                    list.updateValue(id, value);
+                  } catch (error) {
+                    ctx.ui?.notify?.(
+                      `Could not update Editor setting: ${error instanceof Error ? error.message : String(error)}`,
+                      "error",
+                    );
+                  } finally {
+                    panelHandle?.focus();
+                    tui.requestRender();
+                  }
+                  return;
+                }
                 updateSetting(id, value, ctx, deps);
                 list.updateValue(id, value);
                 tui.requestRender();
               },
-              done,
+              () => done(undefined),
             );
           };
           createList();
@@ -600,29 +640,32 @@ export async function showOneUiPanel(
           };
 
           return {
-            render: (width: number) => [
-              renderTabs(theme, activeIndex, width),
-              theme.fg("dim", "─".repeat(Math.max(0, width))),
-              theme.fg(
-                "muted",
-                `  ${sectionDescription(SECTIONS[activeIndex].id)}`,
-              ),
-              "",
-              ...list.render(width),
-              ...(SECTIONS[activeIndex].id === "editor"
-                ? renderEditorPreview(theme, width)
-                : SECTIONS[activeIndex].id === "context"
-                  ? renderContextPreview(theme, width)
-                  : []),
-              "",
-              truncateToWidth(
+            render: (width: number) => {
+              const contentWidth = Math.max(0, width - 2);
+              return renderPanelFrame(theme, width, [
+                renderTabs(theme, activeIndex, contentWidth),
+                theme.fg("dim", "─".repeat(contentWidth)),
                 theme.fg(
-                  "dim",
-                  "  Tab/Shift+Tab switch sections · Enter/Space change · Esc close",
+                  "muted",
+                  `  ${sectionDescription(SECTIONS[activeIndex].id)}`,
                 ),
-                width,
-              ),
-            ],
+                "",
+                ...list.render(contentWidth),
+                ...(SECTIONS[activeIndex].id === "editor"
+                  ? renderEditorPreview(theme, contentWidth)
+                  : SECTIONS[activeIndex].id === "context"
+                    ? renderContextPreview(theme, contentWidth)
+                    : []),
+                "",
+                truncateToWidth(
+                  theme.fg(
+                    "dim",
+                    "  Tab/Shift+Tab switch sections · Enter/Space change · Esc close",
+                  ),
+                  contentWidth,
+                ),
+              ]);
+            },
             invalidate: () => list.invalidate(),
             handleInput: (data: string) => {
               if (data === "\x1b[Z" || matchesKey(data, "shift+tab")) {
@@ -640,10 +683,18 @@ export async function showOneUiPanel(
         {
           overlay: true,
           overlayOptions: {
-            anchor: "center",
+            anchor: "top-center",
             width: "85%",
             maxHeight: "90%",
-            margin: 1,
+            margin: {
+              top: 10,
+              right: 1,
+              bottom: 1,
+              left: 1,
+            },
+          },
+          onHandle: (handle: { focus: () => void }) => {
+            panelHandle = handle;
           },
         },
       ),
