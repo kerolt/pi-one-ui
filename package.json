@@ -4,6 +4,14 @@
   "description": "A single, customizable Pi UI package with layout-oriented Context and Shell rendering for Pi.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kerolt/pi-one-ui"
+  },
+  "bugs": {
+    "url": "https://github.com/kerolt/pi-one-ui/issues"
+  },
+  "homepage": "https://github.com/kerolt/pi-one-ui#readme",
   "files": [
     "extensions",
     "themes",
