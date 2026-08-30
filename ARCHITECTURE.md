@@ -139,25 +139,28 @@ extensions/
 
 `extensions/app/config/store.ts` owns:
 
-- canonical and legacy source selection;
-- legacy materialization;
+- the canonical `pi-one-ui.json` path;
 - JSON file validation;
 - atomic writes;
 - symlink target handling;
 - file mode preservation;
 - update subscriptions.
 
-The current persisted v1 projection is intentionally retained during migration:
+The persisted v1 schema has one canonical shape:
 
 ```text
 pi-one-ui.json
-├── root/components      # existing Shell-compatible settings
-└── renderer             # existing Context-compatible settings
+├── version
+├── projectRefreshIntervalMs
+├── icons
+├── colors
+├── components
+└── renderer
 ```
 
-A future schema version may rename these sections to `surfaces.header`, `surfaces.context`, `surfaces.editor`, `surfaces.footer` and `features`. That schema migration must happen in ConfigStore, not in individual Layout implementations.
+No historical filenames, flat configuration fields or old style identifiers are accepted as configuration inputs. Future schema changes must remain centralized in ConfigStore and the config domain modules, not in individual Layout implementations.
 
-## 7. Ownership and compatibility rules
+## 7. Ownership and runtime safety rules
 
 1. One Pi UI seam has one canonical owner in the unified runtime.
 2. Standalone compatibility tests may keep an old adapter owner behind an explicit option; unified runtime options must delegate to the canonical Layout.
@@ -165,7 +168,7 @@ A future schema version may rename these sections to `surfaces.header`, `surface
 4. `dispose()` must be idempotent and generation-aware.
 5. Overlay activity must be balanced in `finally` paths.
 6. Raw input routes must be removed together with their host listener.
-7. Legacy configuration is read-only compatibility input after migration; new writes use the shared store.
+7. `pi-one-ui.json` is the only persisted configuration source; writes use the shared store.
 8. Layout implementation files may be internally large, but their public interface should remain small and deep.
 
 ## 8. Verification

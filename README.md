@@ -103,25 +103,22 @@ pi install git:github.com/kerolt/pi-one-ui
   },
   "renderer": {
     "mode": "on",
-    "diffViewMode": "auto",
-    "enableWorkingMessage": false
+    "diffViewMode": "auto"
   }
 }
 ```
 
 不同布局和渲染器的可用选项会随版本变化，建议优先使用 `/oneui` 面板进行配置。
 
-### 配置迁移与兼容
+### Canonical 配置约定
 
-`pi-one-ui` 通过统一的 `ConfigStore` 读取和写入配置，并兼容读取以下历史配置文件：
+`pi-one-ui` 只读取和写入：
 
 ```text
-~/.pi/agent/zentui.json
-~/.pi/agent/claude-code-style.json
-~/.pi/agent/pi-mine-ui.json
+~/.pi/agent/pi-one-ui.json
 ```
 
-历史配置只作为兼容输入；新的配置写入统一使用 `pi-one-ui.json`。`enableWorkingMessage` 仍可以从旧配置中读取，但统一运行时不会注册第二套 Working Message 实现，WorkingLine 是该 UI seam 的唯一 owner。
+不会自动读取、合并或迁移其他历史配置文件，也不会解析旧版扁平字段和旧 style 名称。配置文件不存在时，运行时直接使用内置默认值；首次通过 `/oneui` 修改设置时才创建文件。所有持久化修改统一写入当前 v1 的 `components` 和 `renderer` 结构。
 
 ## 上游来源与项目演进
 

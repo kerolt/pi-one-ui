@@ -61,7 +61,6 @@ export type Config = {
   enableSubagentAutocomplete: boolean;
   enableContextCommand: boolean;
   enableAgentSummary: boolean;
-  enableWorkingMessage: boolean;
   enableAliases: boolean;
 };
 
@@ -69,7 +68,7 @@ function rendererConfigFrom(record: ConfigRecord): ConfigRecord {
   const renderer = record.renderer;
   return renderer && typeof renderer === "object" && !Array.isArray(renderer)
     ? (renderer as ConfigRecord)
-    : record;
+    : {};
 }
 
 export const DIFF_VIEW_MODES: DiffViewMode[] = ["auto", "split", "unified"];
@@ -166,8 +165,6 @@ export const DEFAULT_CONFIG: Config = {
   enableSubagentAutocomplete: true,
   enableContextCommand: true,
   enableAgentSummary: true,
-  // Zentui is the sole owner of Pi's unkeyed working row in pi-one-ui.
-  enableWorkingMessage: false,
   enableAliases: true,
 };
 
@@ -218,15 +215,8 @@ export function normalizeConfig(input: unknown): Config {
     unknown
   >;
   const mode = source.mode;
-  // 旧 `enabled: boolean` 配置迁移；compact 已恢复为受支持模式，不再回退 on。
-  const migratedMode: CompactStyleMode =
-    mode === "on" || mode === "compact" || mode === "off"
-      ? mode
-      : typeof source.enabled === "boolean"
-        ? source.enabled
-          ? "on"
-          : "off"
-        : "on";
+  const normalizedMode: CompactStyleMode =
+    mode === "on" || mode === "compact" || mode === "off" ? mode : "on";
   const excludeRenderers = Array.isArray(source.excludeRenderers)
     ? [
         ...new Set(
@@ -238,7 +228,7 @@ export function normalizeConfig(input: unknown): Config {
       ]
     : [];
   return {
-    mode: migratedMode,
+    mode: normalizedMode,
     excludeRenderers,
     diffViewMode: pickEnum(
       source.diffViewMode,
@@ -257,7 +247,7 @@ export function normalizeConfig(input: unknown): Config {
       300,
     ),
     editDiffCollapsedLines: pickPositiveInt(
-      source.editDiffCollapsedLines ?? source.diffCollapsedLines,
+      source.editDiffCollapsedLines,
       DEFAULT_CONFIG.editDiffCollapsedLines,
       1,
       500,
@@ -305,7 +295,6 @@ export function normalizeConfig(input: unknown): Config {
     enableSubagentAutocomplete: source.enableSubagentAutocomplete !== false,
     enableContextCommand: source.enableContextCommand !== false,
     enableAgentSummary: source.enableAgentSummary !== false,
-    enableWorkingMessage: source.enableWorkingMessage === true,
     enableAliases: source.enableAliases !== false,
   };
 }
@@ -360,7 +349,6 @@ export function formatConfigStatus(source: Config = config): string {
     `subagentAuto=${source.enableSubagentAutocomplete ? "on" : "off"}`,
     `context=${source.enableContextCommand ? "on" : "off"}`,
     `agentSummary=${source.enableAgentSummary ? "on" : "off"}`,
-    `workingMsg=${source.enableWorkingMessage ? "on" : "off"}`,
     `aliases=${source.enableAliases ? "on" : "off"}`,
   ].join(" · ");
 }

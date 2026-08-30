@@ -341,10 +341,7 @@ export type PolishedTuiColors = {
   workingLineHigh?: ColorSpec;
 };
 
-/**
- * Canonical configuration plus a temporary flat compatibility projection used
- * by production consumers while they migrate to `components`.
- */
+/** Canonical configuration plus a derived flat runtime view for existing callers. */
 export type PolishedTuiConfig = ZentuiConfig & {
   footerFormat: string;
   responsiveFooter: boolean;
@@ -626,9 +623,7 @@ function parseEditorStyle(value: unknown): EditorStyle {
   ) {
     return value;
   }
-  if (value === "polished") return "opencode";
-  if (value === "polished-copy-friendly") return "opencode-copy-friendly";
-  return defaultConfig.editorStyle;
+  return defaultComponents.editor.style;
 }
 
 function parseEditorBorderColorMode(value: unknown): EditorBorderColorMode {
@@ -759,9 +754,9 @@ function normalizeColors(
   record: Record<string, unknown>,
 ): Partial<PolishedTuiConfig["colors"]> {
   return definedColors({
-    cwd: colorValue(record, "cwd") ?? colorValue(record, "cwdText"),
+    cwd: colorValue(record, "cwd"),
     sessionName: colorValue(record, "sessionName"),
-    gitBranch: colorValue(record, "gitBranch") ?? colorValue(record, "git"),
+    gitBranch: colorValue(record, "gitBranch"),
     gitStatus: colorValue(record, "gitStatus"),
     contextNormal: colorValue(record, "contextNormal"),
     contextWarning: colorValue(record, "contextWarning"),
@@ -962,25 +957,25 @@ function validFooterSegmentEntries(
   ) as Partial<FooterSegmentsConfig>;
 }
 
-/**
- * Applies one compatibility mutation through the shared config writer.
- */
+/** Applies one canonical mutation through the shared config writer. */
 function mutateConfig(
   path: string,
   mutate: (record: ConfigRecord) => void,
 ): PolishedTuiConfig {
+  const update = (record: ConfigRecord): void => {
+    record.version = 1;
+    mutate(record);
+  };
   const record =
     path === configPath
-      ? configStore.update(mutate)
-      : mutateConfigFile(path, mutate, "Zentui");
+      ? configStore.update(update)
+      : mutateConfigFile(path, update);
   return mergeConfig(record);
 }
 
 export function ensureConfigExists(_path = configPath): void {
-  // Intentionally left as a no-op. Zentui config is user-owned and
-  // compatibility-sensitive: runtime defaults come from `mergeConfig({})`, and
-  // the extension should not persist opinionated defaults unless the user
-  // explicitly changes a setting.
+  // Intentionally left as a no-op. Runtime defaults come from `mergeConfig({})`;
+  // persist the canonical file only after the user changes a setting.
 }
 
 function hasOwn(record: ConfigRecord, key: string): boolean {
@@ -989,17 +984,6 @@ function hasOwn(record: ConfigRecord, key: string): boolean {
 
 function recordValue(value: unknown): ConfigRecord {
   return isRecord(value) ? value : {};
-}
-
-function resolvedValue(
-  canonical: ConfigRecord,
-  canonicalKey: string,
-  legacy?: ConfigRecord,
-  legacyKey = canonicalKey,
-): unknown {
-  if (hasOwn(canonical, canonicalKey)) return canonical[canonicalKey];
-  if (legacy && hasOwn(legacy, legacyKey)) return legacy[legacyKey];
-  return undefined;
 }
 
 function parseBoolean(value: unknown, fallback: boolean): boolean {
@@ -1014,10 +998,19 @@ function parseSelectorBorderStyle(value: unknown): SelectorBorderStyle {
   return value === "zentui" ? value : "zentui";
 }
 
-function parseFooterStyle(value: unknown): FooterStyle | undefined {
+function parseFooterStyle(value: unknown): FooterStyle {
   return value === "native" || value === "starship" || value === "hidden"
     ? value
-    : undefined;
+    : defaultComponents.footer.style;
+}
+
+function parseUserMessageStyle(value: unknown): UserMessageStyle {
+  return value === "framed" ||
+    value === "framed-copy-friendly" ||
+    value === "compact" ||
+    value === "labeled"
+    ? value
+    : defaultComponents.userMessages.style;
 }
 
 function parseNonEmptyString(value: unknown, fallback: string): string {
@@ -1025,216 +1018,54 @@ function parseNonEmptyString(value: unknown, fallback: string): string {
 }
 
 function resolveContextThresholds(
-  canonical: unknown,
-  legacy: unknown,
+  value: unknown,
   defaults: ContextThresholds,
 ): ContextThresholds {
-  const canonicalRecord = recordValue(canonical);
-  const legacyRecord = recordValue(legacy);
-  return parseContextThresholds(
-    {
-      warning: resolvedValue(canonicalRecord, "warning", legacyRecord),
-      error: resolvedValue(canonicalRecord, "error", legacyRecord),
-    },
-    defaults,
-  );
+  return parseContextThresholds(value, defaults);
 }
 
-function resolvePathDisplay(
-  canonical: unknown,
-  legacy: unknown,
-): PathDisplayConfig {
-  const canonicalRecord = recordValue(canonical);
-  const legacyRecord = recordValue(legacy);
-  return parsePathDisplay({
-    mode: resolvedValue(canonicalRecord, "mode", legacyRecord),
-    depth: resolvedValue(canonicalRecord, "depth", legacyRecord),
-  });
+function resolvePathDisplay(value: unknown): PathDisplayConfig {
+  return parsePathDisplay(value);
 }
 
-function resolveGitBranch(
-  canonical: unknown,
-  legacy: unknown,
-): GitBranchConfig {
-  const canonicalRecord = recordValue(canonical);
-  const legacyRecord = recordValue(legacy);
-  return parseGitBranchConfig({
-    maxLength: resolvedValue(canonicalRecord, "maxLength", legacyRecord),
-  });
+function resolveGitBranch(value: unknown): GitBranchConfig {
+  return parseGitBranchConfig(value);
 }
 
-function resolveGitCommit(
-  canonical: unknown,
-  legacy: unknown,
-): GitCommitConfig {
-  const canonicalRecord = recordValue(canonical);
-  const legacyRecord = recordValue(legacy);
-  return normalizeGitCommitConfig({
-    hashLength: resolvedValue(canonicalRecord, "hashLength", legacyRecord),
-    onlyDetached: resolvedValue(canonicalRecord, "onlyDetached", legacyRecord),
-    showTag: resolvedValue(canonicalRecord, "showTag", legacyRecord),
-  });
+function resolveGitCommit(value: unknown): GitCommitConfig {
+  return normalizeGitCommitConfig(recordValue(value));
 }
 
-function resolveGitMetrics(
-  canonical: unknown,
-  legacy: unknown,
-): GitMetricsConfig {
-  const canonicalRecord = recordValue(canonical);
-  const legacyRecord = recordValue(legacy);
-  return normalizeGitMetricsConfig({
-    onlyNonzero: resolvedValue(canonicalRecord, "onlyNonzero", legacyRecord),
-    ignoreSubmodules: resolvedValue(
-      canonicalRecord,
-      "ignoreSubmodules",
-      legacyRecord,
-    ),
-  });
+function resolveGitMetrics(value: unknown): GitMetricsConfig {
+  return normalizeGitMetricsConfig(recordValue(value));
 }
 
-function resolveExtensionStatuses(
-  canonical: unknown,
-  legacy: unknown,
-): ExtensionStatusesConfig {
-  const canonicalRecord = recordValue(canonical);
-  const legacyRecord = recordValue(legacy);
-  return normalizeExtensionStatuses({
-    defaultPlacement: resolvedValue(
-      canonicalRecord,
-      "defaultPlacement",
-      legacyRecord,
-    ),
-    placements: resolvedValue(canonicalRecord, "placements", legacyRecord),
-    colorModes: resolvedValue(canonicalRecord, "colorModes", legacyRecord),
-  });
+function resolveExtensionStatuses(value: unknown): ExtensionStatusesConfig {
+  return normalizeExtensionStatuses(recordValue(value));
 }
 
 const FOOTER_SEGMENT_KEYS = Object.keys(defaultFooterSegments) as Array<
   keyof FooterSegmentsConfig
 >;
 
-function resolveFooterSegments(
-  canonical: unknown,
-  legacy: unknown,
-): FooterSegmentsConfig {
-  const canonicalRecord = recordValue(canonical);
-  const legacyRecord = recordValue(legacy);
+function resolveFooterSegments(value: unknown): FooterSegmentsConfig {
+  const record = recordValue(value);
   return Object.fromEntries(
     FOOTER_SEGMENT_KEYS.map((key) => [
       key,
-      parseBoolean(
-        resolvedValue(canonicalRecord, key, legacyRecord),
-        defaultFooterSegments[key],
-      ),
+      parseBoolean(record[key], defaultFooterSegments[key]),
     ]),
   ) as FooterSegmentsConfig;
-}
-
-function legacyCopyFriendly(record: ConfigRecord): boolean {
-  return record.copyFriendly === true;
-}
-
-function resolveEditorStyle(
-  editor: ConfigRecord,
-  polished: ConfigRecord,
-  features: ConfigRecord,
-): EditorStyle {
-  const rawStyle = editor.style;
-  if (
-    rawStyle === "opencode" ||
-    rawStyle === "opencode-copy-friendly" ||
-    rawStyle === "accent-rail" ||
-    rawStyle === "minimalist"
-  ) {
-    return rawStyle;
-  }
-  if (rawStyle === "polished-copy-friendly") return "opencode-copy-friendly";
-  if (rawStyle === "polished") {
-    return hasOwn(polished, "copyFriendly") && legacyCopyFriendly(polished)
-      ? "opencode-copy-friendly"
-      : "opencode";
-  }
-  if (hasOwn(polished, "copyFriendly")) {
-    return legacyCopyFriendly(polished) ? "opencode-copy-friendly" : "opencode";
-  }
-  return legacyCopyFriendly(features) ? "opencode-copy-friendly" : "opencode";
-}
-
-function resolveFooterStyle(
-  footer: ConfigRecord,
-  features: ConfigRecord,
-): FooterStyle {
-  const explicit = parseFooterStyle(footer.style);
-  if (explicit) return explicit;
-  if (typeof footer.enabled === "boolean")
-    return footer.enabled ? "starship" : "native";
-  if (typeof features.statusLine === "boolean") {
-    return features.statusLine ? "starship" : "native";
-  }
-  return defaultComponents.footer.style;
-}
-
-function resolveUserMessagesSelection(
-  userMessages: ConfigRecord,
-  framed: ConfigRecord,
-  features: ConfigRecord,
-): Pick<UserMessagesComponentConfig, "enabled" | "style"> {
-  const normalEnabled = parseBoolean(
-    resolvedValue(userMessages, "enabled", features, "editor"),
-    defaultComponents.userMessages.enabled,
-  );
-  const rawStyle = userMessages.style;
-  if (
-    rawStyle === "compact" ||
-    rawStyle === "labeled" ||
-    rawStyle === "framed-copy-friendly"
-  ) {
-    return { style: rawStyle, enabled: normalEnabled };
-  }
-  if (rawStyle === "framed" || hasOwn(framed, "copyFriendly")) {
-    return {
-      style: legacyCopyFriendly(framed) ? "framed-copy-friendly" : "framed",
-      enabled: normalEnabled,
-    };
-  }
-  return {
-    style: legacyCopyFriendly(features) ? "framed-copy-friendly" : "framed",
-    enabled: normalEnabled,
-  };
 }
 
 function resolveWorkingLineMessages(
   messages: ConfigRecord,
 ): WorkingLineMessagesConfig {
-  const preset = () => [...PI_WORKING_LINE_MESSAGES];
-  const hasCanonicalCustom = hasOwn(messages, "custom");
-  const custom = hasCanonicalCustom
-    ? parseBoolean(messages.custom, true)
-    : messages.mode !== "native";
-  if (hasCanonicalCustom) {
-    return {
-      custom,
-      values: hasOwn(messages, "values")
-        ? normalizeWorkingLineMessages(messages.values)
-        : preset(),
-    };
-  }
-  const legacyValues = normalizeWorkingLineMessages(messages.values);
-  if (messages.mode === "append") {
-    return {
-      custom,
-      values: normalizeWorkingLineMessages([...preset(), ...legacyValues]),
-    };
-  }
-  if (messages.mode === "replace" || messages.mode === "native") {
-    return {
-      custom,
-      values: legacyValues.length > 0 ? legacyValues : preset(),
-    };
-  }
   return {
-    custom,
-    values: hasOwn(messages, "values") ? legacyValues : preset(),
+    custom: parseBoolean(messages.custom, true),
+    values: hasOwn(messages, "values")
+      ? normalizeWorkingLineMessages(messages.values)
+      : [...PI_WORKING_LINE_MESSAGES],
   };
 }
 
@@ -1243,18 +1074,12 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
   const editor = recordValue(components.editor);
   const editorStyles = recordValue(editor.styles);
   const opencode = recordValue(editorStyles.opencode);
-  const polished = recordValue(editorStyles.polished);
   const opencodeCopyFriendly = recordValue(
     editorStyles["opencode-copy-friendly"],
-  );
-  const polishedCopyFriendly = recordValue(
-    editorStyles["polished-copy-friendly"],
   );
   const accentRail = recordValue(editorStyles["accent-rail"]);
   const minimalist = recordValue(editorStyles.minimalist);
   const userMessages = recordValue(components.userMessages);
-  const userMessageStyles = recordValue(userMessages.styles);
-  const framed = recordValue(userMessageStyles.framed);
   const workingLine = recordValue(components.workingLine);
   const workingLineMessages = recordValue(workingLine.messages);
   const workingLineSegments = recordValue(workingLine.segments);
@@ -1262,82 +1087,35 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
   const footer = recordValue(components.footer);
   const footerStyles = recordValue(footer.styles);
   const starship = recordValue(footerStyles.starship);
-  const features = recordValue(config.features);
-  const colorSources = recordValue(config.colorSources);
-
-  const minimalistThresholds = resolveContextThresholds(
-    minimalist.contextThresholds,
-    config.contextThresholds,
-    defaultMinimalistStyle.contextThresholds,
-  );
-  const footerThresholds = resolveContextThresholds(
-    starship.contextThresholds,
-    config.contextThresholds,
-    defaultStarshipStyle.contextThresholds,
-  );
-  const compactFormat = resolvedValue(
-    starship,
-    "compactFormat",
-    config,
-    "compactFooterFormat",
-  );
-  const metadataFormat = hasOwn(opencode, "metadataFormat")
-    ? opencode.metadataFormat
-    : resolvedValue(polished, "metadataFormat", config, "editorMetadataFormat");
-  const lowRailMetadataFormat = hasOwn(opencodeCopyFriendly, "metadataFormat")
-    ? opencodeCopyFriendly.metadataFormat
-    : hasOwn(polishedCopyFriendly, "metadataFormat")
-      ? polishedCopyFriendly.metadataFormat
-      : metadataFormat;
-  const userMessagesSelection = resolveUserMessagesSelection(
-    userMessages,
-    framed,
-    features,
-  );
 
   return {
     editor: {
-      enabled: parseBoolean(
-        resolvedValue(editor, "enabled", features, "editor"),
-        defaultComponents.editor.enabled,
-      ),
-      style: resolveEditorStyle(editor, polished, features),
+      enabled: parseBoolean(editor.enabled, defaultComponents.editor.enabled),
+      style: parseEditorStyle(editor.style),
       colorSource: parseColorSource(
-        resolvedValue(editor, "colorSource", colorSources, "editor"),
+        editor.colorSource,
         defaultComponents.editor.colorSource,
       ),
-      borderColorMode: parseEditorBorderColorMode(
-        resolvedValue(
-          editor,
-          "borderColorMode",
-          config,
-          "editorBorderColorMode",
-        ),
-      ),
+      borderColorMode: parseEditorBorderColorMode(editor.borderColorMode),
       modelLabel: parseEditorModelLabel(
-        resolvedValue(editor, "modelLabel", config, "editorModelLabel"),
+        editor.modelLabel,
         defaultComponents.editor.modelLabel,
       ),
       viewportIndicators: parseBoolean(
-        resolvedValue(
-          editor,
-          "viewportIndicators",
-          features,
-          "viewportIndicators",
-        ),
+        editor.viewportIndicators,
         defaultComponents.editor.viewportIndicators,
       ),
       styles: {
         opencode: {
           metadataFormat: parseNonEmptyString(
-            metadataFormat,
+            opencode.metadataFormat,
             DEFAULT_EDITOR_METADATA_FORMAT,
           ),
           completionMenu: parseCompletionMenuStyle(opencode.completionMenu),
         },
         "opencode-copy-friendly": {
           metadataFormat: parseNonEmptyString(
-            lowRailMetadataFormat,
+            opencodeCopyFriendly.metadataFormat,
             DEFAULT_EDITOR_METADATA_FORMAT,
           ),
           completionMenu: parseCompletionMenuStyle(
@@ -1390,20 +1168,21 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
             minimalist.showGit,
             defaultMinimalistStyle.showGit,
           ),
-          contextThresholds: minimalistThresholds,
+          contextThresholds: resolveContextThresholds(
+            minimalist.contextThresholds,
+            defaultMinimalistStyle.contextThresholds,
+          ),
         },
       },
     },
     userMessages: {
-      enabled: userMessagesSelection.enabled,
-      style: userMessagesSelection.style,
+      enabled: parseBoolean(
+        userMessages.enabled,
+        defaultComponents.userMessages.enabled,
+      ),
+      style: parseUserMessageStyle(userMessages.style),
       colorSource: parseColorSource(
-        resolvedValue(
-          userMessages,
-          "colorSource",
-          colorSources,
-          "userMessages",
-        ),
+        userMessages.colorSource,
         defaultComponents.userMessages.colorSource,
       ),
       styles: {
@@ -1431,19 +1210,9 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
           ? workingLine.spinner
           : defaultComponents.workingLine.spinner,
       spinnerIntervalMs: isValidWorkingLineIntervalMs(
-        resolvedValue(
-          workingLine,
-          "spinnerIntervalMs",
-          workingLine,
-          "intervalMs",
-        ),
+        workingLine.spinnerIntervalMs,
       )
-        ? (resolvedValue(
-            workingLine,
-            "spinnerIntervalMs",
-            workingLine,
-            "intervalMs",
-          ) as number)
+        ? workingLine.spinnerIntervalMs
         : defaultComponents.workingLine.spinnerIntervalMs,
       animateSpinnerColor: parseBoolean(
         workingLine.animateSpinnerColor,
@@ -1484,74 +1253,53 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
     },
     selectorBorders: {
       enabled: parseBoolean(
-        resolvedValue(selectorBorders, "enabled", features, "editor"),
+        selectorBorders.enabled,
         defaultComponents.selectorBorders.enabled,
       ),
-      style: parseSelectorBorderStyle(resolvedValue(selectorBorders, "style")),
+      style: parseSelectorBorderStyle(selectorBorders.style),
       colorSource: parseColorSource(
-        resolvedValue(selectorBorders, "colorSource", colorSources, "editor"),
+        selectorBorders.colorSource,
         defaultComponents.selectorBorders.colorSource,
       ),
     },
     footer: {
-      style: resolveFooterStyle(footer, features),
+      style: parseFooterStyle(footer.style),
       colorSource: parseColorSource(
-        resolvedValue(footer, "colorSource", colorSources, "starship"),
+        footer.colorSource,
         defaultComponents.footer.colorSource,
       ),
       modelLabel: parseEditorModelLabel(
-        resolvedValue(footer, "modelLabel", config, "editorModelLabel"),
+        footer.modelLabel,
         defaultComponents.footer.modelLabel,
       ),
       styles: {
         starship: {
           format:
-            typeof resolvedValue(starship, "format", config, "footerFormat") ===
-            "string"
-              ? (resolvedValue(
-                  starship,
-                  "format",
-                  config,
-                  "footerFormat",
-                ) as string)
+            typeof starship.format === "string"
+              ? starship.format
               : defaultStarshipStyle.format,
           responsive: parseBoolean(
-            resolvedValue(starship, "responsive", config, "responsiveFooter"),
+            starship.responsive,
             defaultStarshipStyle.responsive,
           ),
           compactFormat: parseNonEmptyString(
-            compactFormat,
+            starship.compactFormat,
             defaultStarshipStyle.compactFormat,
           ),
-          compactMaxLines: parseCompactFooterMaxLines(
-            resolvedValue(
-              starship,
-              "compactMaxLines",
-              config,
-              "compactFooterMaxLines",
-            ),
+          compactMaxLines: parseCompactFooterMaxLines(starship.compactMaxLines),
+          separator: parseSeparatorStyle(starship.separator),
+          contextStyle: parseContextStyle(starship.contextStyle),
+          contextThresholds: resolveContextThresholds(
+            starship.contextThresholds,
+            defaultStarshipStyle.contextThresholds,
           ),
-          separator: parseSeparatorStyle(
-            resolvedValue(starship, "separator", config, "separator"),
-          ),
-          contextStyle: parseContextStyle(
-            resolvedValue(starship, "contextStyle", config, "contextStyle"),
-          ),
-          contextThresholds: footerThresholds,
-          pathDisplay: resolvePathDisplay(
-            starship.pathDisplay,
-            config.pathDisplay,
-          ),
-          segments: resolveFooterSegments(
-            starship.segments,
-            config.footerSegments,
-          ),
-          gitBranch: resolveGitBranch(starship.gitBranch, config.gitBranch),
-          gitCommit: resolveGitCommit(starship.gitCommit, config.gitCommit),
-          gitMetrics: resolveGitMetrics(starship.gitMetrics, config.gitMetrics),
+          pathDisplay: resolvePathDisplay(starship.pathDisplay),
+          segments: resolveFooterSegments(starship.segments),
+          gitBranch: resolveGitBranch(starship.gitBranch),
+          gitCommit: resolveGitCommit(starship.gitCommit),
+          gitMetrics: resolveGitMetrics(starship.gitMetrics),
           extensionStatuses: resolveExtensionStatuses(
             starship.extensionStatuses,
-            config.extensionStatuses,
           ),
         },
       },
@@ -1559,7 +1307,7 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
   };
 }
 
-function compatibilityView(config: ZentuiConfig): PolishedTuiConfig {
+function derivedRuntimeView(config: ZentuiConfig): PolishedTuiConfig {
   const starship = config.components.footer.styles.starship;
   const minimalist = config.components.editor.styles.minimalist;
   return {
@@ -1610,8 +1358,6 @@ const knownComponentStyleIds: Record<
     "opencode-copy-friendly",
     "accent-rail",
     "minimalist",
-    "polished",
-    "polished-copy-friendly",
   ]),
   userMessages: new Set([
     "framed",
@@ -1660,13 +1406,10 @@ export function mergeConfig(parsed: unknown): PolishedTuiConfig {
     colors: {
       ...defaultConfig.colors,
       ...colors,
-      ...(colors.editorGitBranch === undefined && colors.gitBranch !== undefined
-        ? { editorGitBranch: colors.gitBranch }
-        : {}),
     },
     components: resolveComponents(config),
   };
-  const view = compatibilityView(canonical);
+  const view = derivedRuntimeView(canonical);
   const unsupported = new Set<ComponentStyleOwner>();
   for (const owner of [
     "editor",
@@ -1765,7 +1508,6 @@ function restoreUnknownSelectedStyleIds(
 function saveComponentsMutation(
   update: (components: ComponentsConfig) => void,
   path: string,
-  cleanupRaw?: (record: ConfigRecord) => void,
   replacedStyle?: ComponentStyleOwner,
 ): PolishedTuiConfig {
   return mutateConfig(path, (record) => {
@@ -1775,37 +1517,7 @@ function saveComponentsMutation(
     const normalized = resolveComponents({ components });
     record.components = overlayKnown(record.components, normalized);
     restoreUnknownSelectedStyleIds(record, preservedStyles, replacedStyle);
-    cleanupRaw?.(record);
   });
-}
-
-function deleteLegacyEditorCopyFriendly(record: ConfigRecord): void {
-  const components = record.components;
-  if (!isRecord(components)) return;
-  const editor = components.editor;
-  if (!isRecord(editor)) return;
-  const styles = editor.styles;
-  if (!isRecord(styles)) return;
-  const polished = styles.polished;
-  if (isRecord(polished)) delete polished.copyFriendly;
-}
-
-function deleteLegacyFooterEnabled(record: ConfigRecord): void {
-  const components = record.components;
-  if (!isRecord(components)) return;
-  const footer = components.footer;
-  if (isRecord(footer)) delete footer.enabled;
-}
-
-function deleteLegacyMessageCopyFriendly(record: ConfigRecord): void {
-  const components = record.components;
-  if (!isRecord(components)) return;
-  const userMessages = components.userMessages;
-  if (!isRecord(userMessages)) return;
-  const styles = userMessages.styles;
-  if (!isRecord(styles)) return;
-  const framed = styles.framed;
-  if (isRecord(framed)) delete framed.copyFriendly;
 }
 
 function applyEditorComponentPatch(
@@ -1851,7 +1563,6 @@ export function saveEditorComponentPatch(
   return saveComponentsMutation(
     (components) => applyEditorComponentPatch(components.editor, patch),
     path,
-    patch.style !== undefined ? deleteLegacyEditorCopyFriendly : undefined,
     patch.style !== undefined ? "editor" : undefined,
   );
 }
@@ -1941,7 +1652,6 @@ export function saveUserMessagesComponentPatch(
         component.colorSource = patch.colorSource;
     },
     path,
-    patch.style !== undefined ? deleteLegacyMessageCopyFriendly : undefined,
     patch.style !== undefined ? "userMessages" : undefined,
   );
 }
@@ -1950,49 +1660,38 @@ export function saveWorkingLineComponentPatch(
   patch: WorkingLineComponentPatch,
   path = configPath,
 ): PolishedTuiConfig {
-  return saveComponentsMutation(
-    (components) => {
-      const component = components.workingLine;
-      if (patch.enabled !== undefined) component.enabled = patch.enabled;
-      if (patch.turnSummary !== undefined)
-        component.turnSummary = patch.turnSummary;
-      if (patch.spinner !== undefined) component.spinner = patch.spinner;
-      if (patch.spinnerIntervalMs !== undefined)
-        component.spinnerIntervalMs = patch.spinnerIntervalMs;
-      if (patch.animateSpinnerColor !== undefined)
-        component.animateSpinnerColor = patch.animateSpinnerColor;
-      if (patch.textIntervalMs !== undefined)
-        component.textIntervalMs = patch.textIntervalMs;
-      if (patch.textAnimation !== undefined)
-        component.textAnimation = patch.textAnimation;
-      if (patch.colorSource !== undefined)
-        component.colorSource = patch.colorSource;
-      if (patch.messages?.custom !== undefined)
-        component.messages.custom = patch.messages.custom;
-      if (patch.messages?.values !== undefined) {
-        component.messages.values = normalizeWorkingLineMessages([
-          ...patch.messages.values,
-        ]);
-      }
-      if (patch.segments?.tool !== undefined)
-        component.segments.tool = patch.segments.tool;
-      if (patch.segments?.elapsed !== undefined)
-        component.segments.elapsed = patch.segments.elapsed;
-      if (patch.segments?.thought !== undefined)
-        component.segments.thought = patch.segments.thought;
-      if (patch.segments?.tokens !== undefined)
-        component.segments.tokens = patch.segments.tokens;
-    },
-    path,
-    (record) => {
-      const workingLine = recordValue(
-        recordValue(record.components).workingLine,
-      );
-      delete workingLine.intervalMs;
-      const messages = recordValue(workingLine.messages);
-      delete messages.mode;
-    },
-  );
+  return saveComponentsMutation((components) => {
+    const component = components.workingLine;
+    if (patch.enabled !== undefined) component.enabled = patch.enabled;
+    if (patch.turnSummary !== undefined)
+      component.turnSummary = patch.turnSummary;
+    if (patch.spinner !== undefined) component.spinner = patch.spinner;
+    if (patch.spinnerIntervalMs !== undefined)
+      component.spinnerIntervalMs = patch.spinnerIntervalMs;
+    if (patch.animateSpinnerColor !== undefined)
+      component.animateSpinnerColor = patch.animateSpinnerColor;
+    if (patch.textIntervalMs !== undefined)
+      component.textIntervalMs = patch.textIntervalMs;
+    if (patch.textAnimation !== undefined)
+      component.textAnimation = patch.textAnimation;
+    if (patch.colorSource !== undefined)
+      component.colorSource = patch.colorSource;
+    if (patch.messages?.custom !== undefined)
+      component.messages.custom = patch.messages.custom;
+    if (patch.messages?.values !== undefined) {
+      component.messages.values = normalizeWorkingLineMessages([
+        ...patch.messages.values,
+      ]);
+    }
+    if (patch.segments?.tool !== undefined)
+      component.segments.tool = patch.segments.tool;
+    if (patch.segments?.elapsed !== undefined)
+      component.segments.elapsed = patch.segments.elapsed;
+    if (patch.segments?.thought !== undefined)
+      component.segments.thought = patch.segments.thought;
+    if (patch.segments?.tokens !== undefined)
+      component.segments.tokens = patch.segments.tokens;
+  }, path);
 }
 
 export function saveSelectorBordersComponentPatch(
@@ -2008,7 +1707,6 @@ export function saveSelectorBordersComponentPatch(
         component.colorSource = patch.colorSource;
     },
     path,
-    undefined,
     patch.style !== undefined ? "selectorBorders" : undefined,
   );
 }
@@ -2029,7 +1727,6 @@ export function saveFooterComponentPatch(
         component.modelLabel = patch.modelLabel;
     },
     path,
-    patch.style !== undefined ? deleteLegacyFooterEnabled : undefined,
     patch.style !== undefined ? "footer" : undefined,
   );
 }
@@ -2128,7 +1825,6 @@ export function saveUiFeaturesPatch(
       }
     },
     path,
-    valid.statusLine !== undefined ? deleteLegacyFooterEnabled : undefined,
     valid.statusLine !== undefined ? "footer" : undefined,
   );
 }

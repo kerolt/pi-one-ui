@@ -21,7 +21,7 @@ export function applyPreset(preset: Preset): void {
     saveUserMessagesComponentPatch({ enabled: false });
     saveWorkingLineComponentPatch({ enabled: false });
     saveFooterComponentPatch({ style: "native" });
-    updateRendererConfig({ mode: "off", enableWorkingMessage: false });
+    updateRendererConfig({ mode: "off" });
     return;
   }
 
@@ -31,6 +31,5 @@ export function applyPreset(preset: Preset): void {
   saveFooterComponentPatch({ style: "starship" });
   updateRendererConfig({
     mode: preset === "compact" ? "compact" : "on",
-    enableWorkingMessage: false,
   });
 }

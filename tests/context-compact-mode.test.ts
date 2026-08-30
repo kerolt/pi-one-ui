@@ -212,11 +212,11 @@ test("buildMessageSummary: duration first, read dedup by path, counts, first-see
   );
 });
 
-test("config normalize keeps the unified renderer defaults and legacy values", () => {
+test("config normalize keeps canonical renderer modes and defaults", () => {
   assert.equal(normalizeConfig({ mode: "compact" }).mode, "compact");
+  assert.equal(normalizeConfig({ mode: "off" }).mode, "off");
   assert.equal(normalizeConfig({}).mode, "on");
-  assert.equal(normalizeConfig({ enabled: false }).mode, "off");
-  assert.equal(normalizeConfig({ enabled: true }).mode, "on");
+  assert.equal(normalizeConfig({ enabled: false }).mode, "on");
   assert.equal(normalizeConfig({ mode: "legacy" }).mode, "on");
   assert.equal(normalizeConfig({}).writeDiffCollapsedLines, 0);
   assert.equal(

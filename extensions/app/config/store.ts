@@ -19,20 +19,12 @@ export type ConfigRecord = Record<string, unknown>;
 
 export type ConfigStorePaths = {
   canonical: string;
-  legacyUnified: string;
-  legacyShell: string;
-  legacyRenderer: string;
 };
 
-/**
- * Returns canonical and legacy configuration locations for an agent directory.
- */
+/** Returns the canonical configuration location for an agent directory. */
 export function configPaths(agentDir = getAgentDir()): ConfigStorePaths {
   return {
     canonical: join(agentDir, "pi-one-ui.json"),
-    legacyUnified: join(agentDir, "pi-mine-ui.json"),
-    legacyShell: join(agentDir, "zentui.json"),
-    legacyRenderer: join(agentDir, "claude-code-style.json"),
   };
 }
 
@@ -138,7 +130,7 @@ function configReadError(path: string, error: unknown): Error {
 }
 
 /**
- * Builds the compatibility error used when a config write is unsafe.
+ * Builds the safety error used when a config write is unsafe.
  */
 function configWriteError(path: string, label: string, error: unknown): Error {
   const detail = error instanceof Error ? ` (${error.message})` : "";
@@ -147,79 +139,15 @@ function configWriteError(path: string, label: string, error: unknown): Error {
   );
 }
 
-type SelectedConfig = {
-  record: ConfigRecord;
-  writePath: string;
-  mode?: number;
-  materialize: boolean;
-};
-
-/**
- * Reads an optional config source and turns corruption into an explicit error.
- */
-function optionalConfig(
-  path: string,
-): { record: ConfigRecord; writePath: string; mode: number } | undefined {
-  const state = readConfigFileState(path);
-  if (state.kind === "missing") return undefined;
-  if (state.kind === "corrupt") throw configReadError(path, state.error);
-  return state;
-}
-
-/**
- * Selects the active source and the destination used by a later update.
- */
-function selectUnifiedConfig(paths: ConfigStorePaths): SelectedConfig {
-  const canonical = optionalConfig(paths.canonical);
-  if (canonical) return { ...canonical, materialize: false };
-
-  const legacyUnified = optionalConfig(paths.legacyUnified);
-  if (legacyUnified)
-    return {
-      ...legacyUnified,
-      writePath: paths.canonical,
-      materialize: true,
-    };
-
-  const shell = optionalConfig(paths.legacyShell);
-  const renderer = optionalConfig(paths.legacyRenderer);
-  if (!shell && !renderer) {
-    return {
-      record: {},
-      writePath: paths.canonical,
-      materialize: false,
-    };
-  }
-
-  return {
-    record: {
-      ...(shell?.record ?? {}),
-      version: 1,
-      renderer: renderer?.record ?? {},
-    },
-    writePath: paths.canonical,
-    mode: shell?.mode ?? renderer?.mode,
-    materialize: true,
-  };
-}
-
-/**
- * Read the one raw unified record used by all configuration domains.
- * Legacy sources are best-effort materialized through the same atomic writer;
- * the in-memory record remains usable if the agent directory is read-only.
- */
+/** Reads the raw canonical record used by every configuration domain. */
 export function readUnifiedConfigRecord(
   paths: ConfigStorePaths = defaultConfigPaths,
 ): ConfigRecord {
-  const selected = selectUnifiedConfig(paths);
-  if (selected.materialize) {
-    try {
-      writeConfigAtomically(selected.writePath, selected.record, selected.mode);
-    } catch {
-      // Keep using the selected legacy record in memory when migration cannot be written.
-    }
-  }
-  return selected.record;
+  const state = readConfigFileState(paths.canonical);
+  if (state.kind === "missing") return {};
+  if (state.kind === "corrupt")
+    throw configReadError(paths.canonical, state.error);
+  return state.record;
 }
 
 /**
@@ -247,22 +175,18 @@ export type ConfigStoreListener = (record: ConfigRecord) => void;
 
 /**
  * Process-wide raw configuration store. Domain config modules own parsing and
- * selectors; this module owns source selection, migration and persistence.
+ * selectors; this module owns canonical persistence.
  */
 export class ConfigStore {
   readonly paths: ConfigStorePaths;
   private readonly listeners = new Set<ConfigStoreListener>();
 
-  /**
-   * Creates a store for canonical and legacy paths.
-   */
+  /** Creates a store for the canonical path. */
   constructor(paths: ConfigStorePaths = defaultConfigPaths) {
     this.paths = paths;
   }
 
-  /**
-   * Reads the current canonical or legacy-backed raw configuration record.
-   */
+  /** Reads the current canonical raw configuration record. */
   read(): ConfigRecord {
     return readUnifiedConfigRecord(this.paths);
   }
@@ -271,11 +195,18 @@ export class ConfigStore {
    * Mutates and atomically persists the active raw configuration record.
    */
   update(mutate: (record: ConfigRecord) => void): ConfigRecord {
-    const selected = selectUnifiedConfig(this.paths);
-    mutate(selected.record);
-    writeConfigAtomically(selected.writePath, selected.record, selected.mode);
-    for (const listener of this.listeners) listener(selected.record);
-    return selected.record;
+    const state = readConfigFileState(this.paths.canonical);
+    if (state.kind === "corrupt")
+      throw configReadError(this.paths.canonical, state.error);
+
+    mutate(state.record);
+    writeConfigAtomically(
+      state.writePath,
+      state.record,
+      state.kind === "valid" ? state.mode : undefined,
+    );
+    for (const listener of this.listeners) listener(state.record);
+    return state.record;
   }
 
   /**

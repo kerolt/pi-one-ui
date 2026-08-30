@@ -647,7 +647,6 @@ afterAll(() => {
 });
 
 afterEach(() => {
-  rmSync(join(isolatedAgentDir.path, "zentui.json"), { force: true });
   rmSync(join(isolatedAgentDir.path, "pi-one-ui.json"), { force: true });
   restoreDescriptor(
     UserMessageComponent.prototype,
@@ -863,13 +862,13 @@ describe("Pi docs compliance", () => {
   });
   it("installs enabled copy-friendly framed messages while the editor is disabled", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
           editor: { enabled: false },
           userMessages: { enabled: true, style: "framed-copy-friendly" },
           selectorBorders: { enabled: true },
-          footer: { enabled: false },
+          footer: { style: "native" },
         },
       }),
     );
@@ -908,13 +907,13 @@ describe("Pi docs compliance", () => {
 
   it("installs only the editor and footer when message and selector layouts are disabled", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
           editor: { enabled: true },
           userMessages: { enabled: false },
           selectorBorders: { enabled: false },
-          footer: { enabled: true },
+          footer: { style: "starship" },
         },
       }),
     );
@@ -950,7 +949,7 @@ describe("Pi docs compliance", () => {
   });
 
   it("ignores stale fixed-editor config during startup without rewriting or installing widgets", async () => {
-    const path = join(isolatedAgentDir.path, "zentui.json");
+    const path = join(isolatedAgentDir.path, "pi-one-ui.json");
     const original = `${JSON.stringify(
       {
         fixedEditor: { enabled: true, mouseScroll: false },
@@ -1502,10 +1501,10 @@ describe("Pi docs compliance", () => {
   it("applies editor style changes at render time without replacing an opaque wrapper chain", async () => {
     initTheme(undefined, false);
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         projectRefreshIntervalMs: 0,
-        features: { statusLine: false },
+        components: { footer: { style: "native" } },
       }),
     );
     const commands = new Map<string, unknown>();
@@ -1580,10 +1579,10 @@ describe("Pi docs compliance", () => {
     try {
       initTheme(undefined, false);
       writeFileSync(
-        join(isolatedAgentDir.path, "zentui.json"),
+        join(isolatedAgentDir.path, "pi-one-ui.json"),
         JSON.stringify({
           projectRefreshIntervalMs: 0,
-          features: { statusLine: false },
+          components: { footer: { style: "native" } },
         }),
       );
       const commands = new Map<string, unknown>();
@@ -1705,11 +1704,13 @@ describe("Pi docs compliance", () => {
       vi.useFakeTimers();
       try {
         writeFileSync(
-          join(isolatedAgentDir.path, "zentui.json"),
+          join(isolatedAgentDir.path, "pi-one-ui.json"),
           JSON.stringify({
-            components: { editor: { style: "minimalist" } },
+            components: {
+              editor: { style: "minimalist" },
+              footer: { style: "native" },
+            },
             projectRefreshIntervalMs: 5_000,
-            features: { statusLine: false },
           }),
         );
         const handlers = loadExtension();
@@ -1953,7 +1954,7 @@ describe("Pi docs compliance", () => {
     );
 
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
           editor: { enabled: false },
@@ -1986,7 +1987,7 @@ describe("Pi docs compliance", () => {
 
   it("fails open for explicit unsupported component style IDs", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
           editor: { enabled: true, style: "future-editor" },
@@ -2173,7 +2174,7 @@ describe("Pi docs compliance", () => {
   );
 
   it("routes removed commands through the ordinary usage warning without mutation", async () => {
-    const path = join(isolatedAgentDir.path, "zentui.json");
+    const path = join(isolatedAgentDir.path, "pi-one-ui.json");
     writeFileSync(
       path,
       JSON.stringify({ components: { editor: { style: "minimalist" } } }),
@@ -3437,7 +3438,7 @@ describe("Pi docs compliance", () => {
 
   it("renders editor and footer model labels from independent canonical owners", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
           editor: { modelLabel: "name" },
@@ -3522,7 +3523,7 @@ describe("Pi docs compliance", () => {
 
   it("keeps the production footer visible while the minimalist editor decorates", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: { editor: { style: "minimalist" } },
         projectRefreshIntervalMs: 0,
@@ -3622,7 +3623,7 @@ describe("Pi docs compliance", () => {
 
   it("updates session names through a wrapped minimalist editor", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: { editor: { style: "minimalist" } },
         projectRefreshIntervalMs: 0,
@@ -3687,7 +3688,7 @@ describe("Pi docs compliance", () => {
 
   it("keeps the production footer for unsupported wrapped minimalist output", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: { editor: { style: "minimalist" } },
         projectRefreshIntervalMs: 0,
@@ -3752,11 +3753,13 @@ describe("Pi docs compliance", () => {
       "[core]\n\trepositoryformatversion = 0\n\tbare = false\n",
     );
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
-        components: { editor: { style: "minimalist" } },
+        components: {
+          editor: { style: "minimalist" },
+          footer: { style: "native" },
+        },
         projectRefreshIntervalMs: 0,
-        features: { statusLine: false },
       }),
     );
     const handlers = loadExtension();
@@ -3798,11 +3801,13 @@ describe("Pi docs compliance", () => {
 
   it("ticks only a decorated minimalist turn and freezes or stops on lifecycle changes", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
-        components: { editor: { style: "minimalist" } },
+        components: {
+          editor: { style: "minimalist" },
+          footer: { style: "native" },
+        },
         projectRefreshIntervalMs: 0,
-        features: { statusLine: false },
       }),
     );
     const commands = new Map<string, unknown>();
@@ -3870,11 +3875,13 @@ describe("Pi docs compliance", () => {
 
   it("stops minimalist timer and project work after a genuinely late editor takeover", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
-        components: { editor: { style: "minimalist" } },
+        components: {
+          editor: { style: "minimalist" },
+          footer: { style: "native" },
+        },
         projectRefreshIntervalMs: 5_000,
-        features: { statusLine: false },
       }),
     );
     const handlers = loadExtension();
@@ -3928,10 +3935,10 @@ describe("Pi docs compliance", () => {
 
   it("does not start turn intervals in polished or non-TUI sessions", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         projectRefreshIntervalMs: 0,
-        features: { statusLine: false },
+        components: { footer: { style: "native" } },
       }),
     );
     const polishedHandlers = loadExtension();
@@ -7456,7 +7463,7 @@ describe("three-state Footer lifecycle", () => {
 
   it("installs Hidden as an owned zero-row component without Starship timers or subscriptions", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         projectRefreshIntervalMs: 0,
         components: { footer: { style: "hidden" } },
@@ -7475,7 +7482,7 @@ describe("three-state Footer lifecycle", () => {
 
   it("does not replace an unrelated Footer on initial Native reconciliation", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({ components: { footer: { style: "native" } } }),
     );
     const setFooter = vi.fn();
@@ -7492,7 +7499,7 @@ describe("three-state Footer lifecycle", () => {
     vi.useFakeTimers();
     try {
       writeFileSync(
-        join(isolatedAgentDir.path, "zentui.json"),
+        join(isolatedAgentDir.path, "pi-one-ui.json"),
         JSON.stringify({
           projectRefreshIntervalMs: 0,
           components: {
@@ -7570,7 +7577,7 @@ describe("three-state Footer lifecycle", () => {
     vi.useFakeTimers();
     try {
       writeFileSync(
-        join(isolatedAgentDir.path, "zentui.json"),
+        join(isolatedAgentDir.path, "pi-one-ui.json"),
         JSON.stringify({
           projectRefreshIntervalMs: 0,
           components: {
@@ -7637,7 +7644,7 @@ describe("three-state Footer lifecycle", () => {
 
   it("preserves an owned Hidden Footer when a live Native transition fails", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         projectRefreshIntervalMs: 0,
         components: { footer: { style: "hidden" } },
@@ -7732,7 +7739,7 @@ describe("three-state Footer lifecycle", () => {
     "installs and restores the fullscreen Accent Rail layout patch with the owned outer editor",
     async () => {
       writeFileSync(
-        join(isolatedAgentDir.path, "zentui.json"),
+        join(isolatedAgentDir.path, "pi-one-ui.json"),
         JSON.stringify({
           projectRefreshIntervalMs: 0,
           components: {
@@ -7821,7 +7828,7 @@ describe("three-state Footer lifecycle", () => {
 
   it("marks only the outer editor when wrapping a third-party factory", async () => {
     writeFileSync(
-      join(isolatedAgentDir.path, "zentui.json"),
+      join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         projectRefreshIntervalMs: 0,
         components: { editor: { enabled: true, style: "accent-rail" } },

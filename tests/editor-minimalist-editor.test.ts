@@ -148,12 +148,9 @@ describe("minimalist editor frame", () => {
     );
   });
 
-  it.each([
-    ["bold purple", "syntaxKeyword"],
-    ["success", "success"],
-  ] as const)(
-    "preserves an explicit legacy gitBranch color %s",
-    (gitBranch, expectedColor) => {
+  it.each(["bold purple", "success"] as const)(
+    "ignores the removed gitBranch fallback color %s",
+    (gitBranch) => {
       const calls: Array<{ color: string; text: string }> = [];
       renderMinimalistFrame({
         width: 80,
@@ -165,7 +162,10 @@ describe("minimalist editor frame", () => {
           colors: mergeConfig({ colors: { gitBranch } }).colors,
         }),
       });
-      expect(calls).toContainEqual({ color: expectedColor, text: "main" });
+      expect(calls).toContainEqual({
+        color: "syntaxKeyword",
+        text: "main",
+      });
     },
   );
 
@@ -271,15 +271,15 @@ describe("minimalist editor frame", () => {
     }
   });
 
-  it("preserves custom terminal colors and legacy branch provenance", () => {
-    const legacyColors = mergeConfig({
+  it("uses only the canonical editor branch color", () => {
+    const colorsWithoutEditorBranch = mergeConfig({
       colors: {
         gitBranch: "cyan",
         editorModel: "bright-purple",
         editorThinkingHigh: "yellow",
       },
     }).colors;
-    const legacyOutput = renderMinimalistFrame({
+    const fallbackOutput = renderMinimalistFrame({
       width: 120,
       editorLines: ["draft"],
       inputText: "draft",
@@ -292,12 +292,12 @@ describe("minimalist editor frame", () => {
       uiTheme: theme(),
       config: config({
         colorSources: { ...defaultConfig.colorSources, editor: "terminal" },
-        colors: legacyColors,
+        colors: colorsWithoutEditorBranch,
       }),
     }).join("\n");
-    expect(legacyOutput).toContain("\x1b[95mmodel-x\x1b[0m");
-    expect(legacyOutput).toContain("\x1b[33mhigh\x1b[0m");
-    expect(legacyOutput).toContain("\x1b[36mmain\x1b[0m");
+    expect(fallbackOutput).toContain("\x1b[95mmodel-x\x1b[0m");
+    expect(fallbackOutput).toContain("\x1b[33mhigh\x1b[0m");
+    expect(fallbackOutput).toContain("\x1b[1;34mmain\x1b[0m");
 
     const canonicalOutput = renderMinimalistFrame({
       width: 80,
