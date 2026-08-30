@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-30
+
 ### Added
 
 - Added a maintained English README with bidirectional language navigation.
@@ -32,5 +34,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/kerolt/pi-one-ui/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/kerolt/pi-one-ui/compare/v0.2.1...v0.2.2
