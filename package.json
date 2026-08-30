@@ -23,6 +23,8 @@
     "extensions",
     "themes",
     "README.md",
+    "README.en.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {

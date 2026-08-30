@@ -4,6 +4,8 @@
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A522.19-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/github/license/kerolt/pi-one-ui?style=flat-square)](./LICENSE)
 
+简体中文 | [English](./README.en.md)
+
 `pi-one-ui` 是一个面向 [Pi](https://pi.dev) 的统一 TUI 扩展包。项目的初衷是希望打造一个简单美观的 TUI 界面，最初通过源码级融合，将：
 
 - [pi-zentui](https://github.com/lmilojevicc/pi-zentui)`pi-zentui` 的终端外壳能力
@@ -210,6 +212,8 @@ npm run pack:check
 
 ## 发布
 
+用户可见变更和升级说明统一记录在 [CHANGELOG.md](./CHANGELOG.md)。开发中的变更先写入 `Unreleased`，正式发版时再归档到对应版本。
+
 项目使用 GitHub Actions 进行持续集成和 npm 发布：
 
 - [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)：在 Pull Request 和 `main` 分支提交时执行完整验证。
@@ -228,9 +232,9 @@ npm run verify
 npm run pack:check
 
 # 按 SemVer 升级版本
-npm version patch   # Bug 修复，例如 0.2.1 -> 0.2.2
-# npm version minor # 新增兼容功能
-# npm version major # 破坏性变更
+npm version patch   # 向后兼容的修复，例如 0.2.1 -> 0.2.2
+# npm version minor # 0.x 阶段的新功能或破坏性变更
+# npm version major # 进入稳定 1.x 后的破坏性变更
 
 # 推送版本 commit 和 tag
 git push origin main --follow-tags
