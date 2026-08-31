@@ -413,6 +413,13 @@ function saveNotice(ctx: any, label: string, value: string): void {
   );
 }
 
+function notifyUpdateError(ctx: any, error: unknown): void {
+  ctx.ui?.notify?.(
+    `Could not update /oneui setting: ${error instanceof Error ? error.message : String(error)}`,
+    "error",
+  );
+}
+
 /**
  * Persists one panel setting and reconciles its owning runtime layout.
  *
@@ -605,27 +612,19 @@ export async function showOneUiPanel(
               10,
               getSettingsListTheme(),
               (id, value) => {
-                // Replacing Pi's editor synchronously moves focus away from
-                // this overlay. Restore the overlay handle after the editor
-                // has been reconciled so the panel remains interactive.
-                if (id === "editorEnabled") {
-                  try {
-                    updateSetting(id, value, ctx, deps);
-                    list.updateValue(id, value);
-                  } catch (error) {
-                    ctx.ui?.notify?.(
-                      `Could not update Editor setting: ${error instanceof Error ? error.message : String(error)}`,
-                      "error",
-                    );
-                  } finally {
+                try {
+                  updateSetting(id, value, ctx, deps);
+                  list.updateValue(id, value);
+                } catch (error) {
+                  notifyUpdateError(ctx, error);
+                  createList();
+                  list.selectItem(id);
+                } finally {
+                  if (id === "editorEnabled" || id === "editorStyle") {
                     panelHandle?.focus();
-                    tui.requestRender();
                   }
-                  return;
+                  tui.requestRender();
                 }
-                updateSetting(id, value, ctx, deps);
-                list.updateValue(id, value);
-                tui.requestRender();
               },
               () => done(undefined),
             );
@@ -687,7 +686,7 @@ export async function showOneUiPanel(
             width: "85%",
             maxHeight: "90%",
             margin: {
-              top: 10,
+              top: 6,
               right: 1,
               bottom: 1,
               left: 1,

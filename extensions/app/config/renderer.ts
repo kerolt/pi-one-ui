@@ -371,17 +371,18 @@ function loadConfig(): Config {
 /**
  * Persists the in-memory renderer projection through the shared store.
  */
-export function saveConfig() {
+export function saveConfig(next: Config = config) {
   configStore.update((record) => {
     record.version = 1;
-    record.renderer = config;
+    record.renderer = next;
   });
 }
 
-/** 运行时配置写入的唯一入口：合并 + 规范化 + 持久化。 */
+/** 运行时配置写入的唯一入口：规范化并持久化成功后再提交到活动配置。 */
 export function updateConfig(partial: Partial<Config>): void {
-  Object.assign(config, normalizeConfig({ ...config, ...partial }));
-  saveConfig();
+  const next = normalizeConfig({ ...config, ...partial });
+  saveConfig(next);
+  Object.assign(config, next);
 }
 
 /** 整体替换配置（default export 的 configOverride 注入路径；就地覆盖，不持久化）。 */
