@@ -127,7 +127,6 @@ extensions/
 │   ├── aliases.ts
 │   ├── context-inspector/       # /context command and token breakdown
 │   ├── flush-docked-bash.ts
-│   ├── legacy/                  # Standalone compatibility implementations
 │   ├── session-reference/
 │   └── subagent-autocomplete.ts
 ├── services/                    # Project, Git, runtime, package and session data
