@@ -181,14 +181,14 @@ After changing the source, run the following command in Pi:
 | --- | --- |
 | `npm install` | Install dependencies |
 | `npm run format` | Format source, tests, and configuration files |
-| `npm run format:check` | Check formatting without modifying files |
-| `npm run lint` | Run Biome checks |
+| `npm run check` | Check formatting and import organization |
+| `npm run fix` | Fix formatting and organize imports |
 | `npm run typecheck` | Run TypeScript type checking |
 | `npm test` | Run all tests |
 | `npm run test:node` | Run Node.js test runner tests |
 | `npm run test:vitest` | Run Vitest tests |
 | `npm run pack:check` | Preview the npm package contents |
-| `npm run verify` | Run formatting, lint, type checking, and all tests |
+| `npm run verify` | Run Biome checks, type checking, and all tests |
 
 Before submitting changes, run at least:
 

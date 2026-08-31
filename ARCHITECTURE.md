@@ -7,7 +7,7 @@
 The two upstream projects remain read-only references:
 
 | Directory | Upstream | Snapshot |
-|---|---|---|
+| --- | --- | --- |
 | `vendor/pi-zentui` | `pi-zentui` | `0.21.0`, commit `5341b38` |
 | `vendor/pi-cc-extensions` | `pi-cc-extensions` | `0.8.67`, commit `dba37e5` |
 
@@ -85,7 +85,7 @@ A Layout should not independently register a second handler for every shared lif
 ## 4. Layout ownership
 
 | Layout / seam | Canonical owner | Pi seam |
-|---|---|---|
+| --- | --- | --- |
 | Header | Header | `ctx.ui.setHeader()` |
 | Conversation content | Context | message/entry renderers and context patches |
 | User Message | Context | `UserMessageComponent.prototype.render` |
@@ -174,8 +174,7 @@ No historical filenames, flat configuration fields or old style identifiers are 
 ## 8. Verification
 
 ```bash
-npm run format:check
-npm run lint
+npm run check
 npm run typecheck
 npm test
 npm run pack:check

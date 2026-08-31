@@ -181,14 +181,14 @@ npm run pi:install-local
 | ---------------------- | ---------------------------------- |
 | `npm install`          | 安装依赖                           |
 | `npm run format`       | 格式化源码、测试和配置文件         |
-| `npm run format:check` | 检查格式但不修改文件               |
-| `npm run lint`         | 运行 Biome 检查                    |
+| `npm run check`        | 检查格式和 import organization     |
+| `npm run fix`          | 修复格式并整理 imports             |
 | `npm run typecheck`    | 执行 TypeScript 类型检查           |
 | `npm test`             | 运行全部测试                       |
 | `npm run test:node`    | 运行 Node.js test runner 测试      |
 | `npm run test:vitest`  | 运行 Vitest 测试                   |
 | `npm run pack:check`   | 预览 npm 实际打包内容              |
-| `npm run verify`       | 执行格式、lint、类型检查和全部测试 |
+| `npm run verify`       | 执行 Biome check、类型检查和全部测试 |
 
 提交修改前建议至少运行：
 
