@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Unified the test suite on Vitest and reorganized tests into domain-oriented directories.
+
+### Fixed
+
+- Keep `/oneui` open and focused during in-place Editor changes, restore effective values after persistence failures, and position the panel closer to the top.
+- Reduced global tool expansion latency and preserved pi-subagents' dedicated live progress renderer instead of wrapping and grouping it as a generic tool.
+
 ## [0.3.0] - 2026-08-30
 
 ### Added

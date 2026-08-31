@@ -39,6 +39,7 @@ Header → Context → WorkingLine → Editor → Footer
 | Session reference | Searches previous Pi sessions or SubAgents and injects their useful context | `@` completion |
 | Subagent autocomplete | Completes SubAgent names and delegation hints | `@` completion |
 | Tool / Diff renderer | Provides unified rendering for tool calls, results, collapsed content, and Edit/Write diffs | Automatic |
+| Subagent live renderer | Preserves pi-subagents' dedicated progress cards and keeps them out of generic tool groups | Automatic |
 | Markdown enhancement | Adds Mermaid, admonitions, URL linking, and related rendering improvements | Automatic |
 | Built-in themes | Provides CC Dark and CC Light themes | `/theme` |
 | Compatibility aliases | Optionally provides common command aliases | `/clear`, `/exit` |
@@ -82,7 +83,7 @@ The configuration file is located at:
 ~/.pi/agent/pi-one-ui.json
 ```
 
-Using the `/oneui` settings panel is recommended. The current configuration uses the v1 structure, for example:
+Using the `/oneui` settings panel is recommended. The panel uses a top-centered layout, stays open while Editor enablement or style changes are applied, restores focus after Editor replacement, and restores the effective list value when persistence fails. The current configuration uses the v1 structure, for example:
 
 ```json
 {
@@ -184,9 +185,7 @@ After changing the source, run the following command in Pi:
 | `npm run check` | Check formatting and import organization |
 | `npm run fix` | Fix formatting and organize imports |
 | `npm run typecheck` | Run TypeScript type checking |
-| `npm test` | Run all tests |
-| `npm run test:node` | Run Node.js test runner tests |
-| `npm run test:vitest` | Run Vitest tests |
+| `npm test` | Run all tests with Vitest |
 | `npm run pack:check` | Preview the npm package contents |
 | `npm run verify` | Run Biome checks, type checking, and all tests |
 
@@ -199,14 +198,15 @@ npm run pack:check
 
 ### Test organization
 
-Tests are grouped by domain:
+All tests run through Vitest and are organized into domain directories:
 
-- `tests/context-*`: Context content, tools, diffs, thinking, and mouse interaction.
-- `tests/working-line-*`: WorkingLine and turn summaries.
-- `tests/editor-*`: Editor, completion, metadata, transfer, and Accent Rail.
-- `tests/footer-*`: Footer rendering, formatting, layout, and status.
-- `tests/services-*`: Git, runtime, project, session, and telemetry data.
-- `tests/shell-*`: Remaining layout lifecycle glue and standalone compatibility.
+- `tests/config/`: canonical configuration, storage, and compatibility boundaries.
+- `tests/context/`: Context content, tools, diffs, thinking, and mouse interaction.
+- `tests/header/`, `tests/working-line/`, `tests/editor/`, and `tests/footer/`: Layout behavior and lifecycle coverage.
+- `tests/runtime/`, `tests/overlay/`, and `tests/integration/`: runtime infrastructure, overlays, and the composed entry point.
+- `tests/services/`: Git, runtime, project, session, and telemetry data.
+- `tests/shell/`: remaining layout lifecycle glue and standalone compatibility.
+- `tests/support/` and `tests/fixtures/`: shared test helpers and fixtures.
 
 Changes involving the TUI lifecycle should specifically cover reloads, session tree rebuilds, compaction, regular/fullscreen TUI modes, headless mode, overlays, and third-party patch ownership.
 

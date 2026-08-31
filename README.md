@@ -39,6 +39,7 @@ Header → Context → WorkingLine → Editor → Footer
 | Session reference     | 搜索并注入历史 Pi session 或 SubAgent 的有效上下文                     | `@` 补全          |
 | Subagent autocomplete | 提供 SubAgent 名称补全和委派提示                                       | `@` 补全          |
 | Tool / Diff renderer  | 工具调用、结果、折叠内容和 Edit/Write diff 的统一展示                  | 自动生效          |
+| Subagent live renderer | 保留 pi-subagents 专用进度卡，并避免纳入通用工具分组                    | 自动生效          |
 | Markdown enhancement  | 支持 Mermaid、提示框和 URL 链接化等增强渲染                            | 自动生效          |
 | Built-in themes       | 提供 CC Dark 和 CC Light 主题                                          | `/theme`          |
 | Compatibility aliases | 可选提供常用命令别名                                                   | `/clear`、`/exit` |
@@ -82,7 +83,7 @@ pi install git:github.com/kerolt/pi-one-ui
 ~/.pi/agent/pi-one-ui.json
 ```
 
-推荐通过 `/oneui` 设置面板修改配置。当前配置仍使用 v1 结构，例如：
+推荐通过 `/oneui` 设置面板修改配置。面板采用更靠近顶部的居中布局；切换 Editor 启用状态或样式时会保持打开并在 Editor 替换后恢复焦点，持久化失败时则恢复列表中的有效旧值。当前配置仍使用 v1 结构，例如：
 
 ```json
 {
@@ -184,9 +185,7 @@ npm run pi:install-local
 | `npm run check`        | 检查格式和 import organization     |
 | `npm run fix`          | 修复格式并整理 imports             |
 | `npm run typecheck`    | 执行 TypeScript 类型检查           |
-| `npm test`             | 运行全部测试                       |
-| `npm run test:node`    | 运行 Node.js test runner 测试      |
-| `npm run test:vitest`  | 运行 Vitest 测试                   |
+| `npm test`             | 使用 Vitest 运行全部测试           |
 | `npm run pack:check`   | 预览 npm 实际打包内容              |
 | `npm run verify`       | 执行 Biome check、类型检查和全部测试 |
 
@@ -199,14 +198,15 @@ npm run pack:check
 
 ### 测试组织
 
-测试按照功能领域划分：
+所有测试统一由 Vitest 执行，并按照功能领域组织在子目录中：
 
-- `tests/context-*`：Context 内容区、Tool、Diff、Thinking 和鼠标交互。
-- `tests/working-line-*`：WorkingLine 和 turn summary。
-- `tests/editor-*`：Editor、completion、metadata、transfer 和 Accent Rail。
-- `tests/footer-*`：Footer、Footer format/layout/status。
-- `tests/services-*`：Git、runtime、project、session 和 telemetry。
-- `tests/shell-*`：剩余布局生命周期 glue 和 standalone compatibility。
+- `tests/config/`：canonical 配置、存储和兼容性边界。
+- `tests/context/`：Context 内容区、Tool、Diff、Thinking 和鼠标交互。
+- `tests/header/`、`tests/working-line/`、`tests/editor/`、`tests/footer/`：各 Layout 的行为和生命周期。
+- `tests/runtime/`、`tests/overlay/`、`tests/integration/`：运行时基础设施、Overlay 和组合入口。
+- `tests/services/`：Git、runtime、project、session 和 telemetry。
+- `tests/shell/`：剩余布局生命周期 glue 和 standalone compatibility。
+- `tests/support/`、`tests/fixtures/`：共享测试工具和 fixtures。
 
 涉及 TUI 生命周期的修改，应特别覆盖 reload、session tree rebuild、compact、regular/fullscreen TUI、headless mode、overlay 和第三方 patch ownership 等场景。
 
