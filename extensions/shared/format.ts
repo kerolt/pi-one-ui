@@ -10,14 +10,14 @@ import type {
   PathDisplayMode,
 } from "../app/config/shell.ts";
 import type { GitCommitInfo, GitMetricsInfo } from "../services/git-data.ts";
+import type { PackageVersionResult } from "../services/package-data.ts";
+import type { RuntimeInfo } from "../services/runtime-data.ts";
 import type { IconMode } from "./icons.ts";
 import {
   resolveOsIcon,
   resolvePackageIcon,
   resolveRuntimeSymbol,
 } from "./icons.ts";
-import type { PackageVersionResult } from "../services/package-data.ts";
-import type { RuntimeInfo } from "../services/runtime-data.ts";
 import { renderStyleForSource } from "./style.ts";
 
 /**

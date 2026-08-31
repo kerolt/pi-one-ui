@@ -2,11 +2,11 @@ import { stripVTControlCharacters } from "node:util";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
-import { renderAccentRailEditorFrame } from "../extensions/layouts/editor/accent-rail-editor";
 import {
   defaultConfig,
   type PolishedTuiConfig,
 } from "../extensions/app/config/shell";
+import { renderAccentRailEditorFrame } from "../extensions/layouts/editor/accent-rail-editor";
 
 function theme(calls: Array<{ color: string; text: string }> = []): Theme {
   return {

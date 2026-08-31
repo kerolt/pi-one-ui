@@ -1,16 +1,16 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import type { ZentuiConfig } from "../../app/config/shell.ts";
+import {
+  renderStyleForSourceOrFallback,
+  type SourceStyleFallback,
+} from "../../shared/style.ts";
 import {
   applyOwnedLayoutBackground,
   fillTerminalLine,
   renderCompletionRows,
 } from "./completion-menu.ts";
-import type { ZentuiConfig } from "../../app/config/shell.ts";
 import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
-import {
-  renderStyleForSourceOrFallback,
-  type SourceStyleFallback,
-} from "../../shared/style.ts";
 
 export const ACCENT_RAIL_CHROME_WIDTH = 2;
 

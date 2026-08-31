@@ -1,3 +1,5 @@
+import { normalizeWorkingLineMessages } from "../../layouts/working-line/working-line.ts";
+import { PI_WORKING_LINE_MESSAGES } from "../../layouts/working-line/working-line-messages.ts";
 import {
   ICON_GLYPH_KEYS,
   type IconGlyphs,
@@ -8,13 +10,11 @@ import {
   resolveConfiguredIcons,
 } from "../../shared/icons.ts";
 import { isSupportedColorSpec } from "../../shared/style.ts";
-import { normalizeWorkingLineMessages } from "../../layouts/working-line/working-line.ts";
-import { PI_WORKING_LINE_MESSAGES } from "../../layouts/working-line/working-line-messages.ts";
 import {
-  configPath as defaultConfigPath,
-  configStore,
-  mutateConfigFile,
   type ConfigRecord,
+  configStore,
+  configPath as defaultConfigPath,
+  mutateConfigFile,
 } from "./store.ts";
 
 export type ColorSpec = string;

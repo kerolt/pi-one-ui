@@ -14,6 +14,11 @@ import {
   visibleWidth,
 } from "@earendil-works/pi-tui";
 import {
+  renderEditorSettingsPreview,
+  renderUserMessageSettingsPreview,
+  SETTINGS_PREVIEW_MAX_WIDTH,
+} from "../../extensions/app/commands/settings-previews.ts";
+import {
   type AccentRailEditorStyleConfig,
   type ColorSource,
   type CompactFooterMaxLines,
@@ -54,25 +59,20 @@ import {
   type WorkingLineSpinner,
   type WorkingLineTextAnimation,
 } from "../../extensions/app/config/shell.ts";
-import { sanitizeExtensionStatusText } from "../../extensions/layouts/footer/extension-status.ts";
-import { isIconMode } from "../../extensions/shared/icons.ts";
 import type { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle.ts";
-import {
-  renderEditorSettingsPreview,
-  renderUserMessageSettingsPreview,
-  SETTINGS_PREVIEW_MAX_WIDTH,
-} from "../../extensions/app/commands/settings-previews.ts";
-import {
-  EDITOR_BORDER_STYLE,
-  renderChromeBorder,
-  safeThemeFg,
-} from "../../extensions/shared/style.ts";
+import { sanitizeExtensionStatusText } from "../../extensions/layouts/footer/extension-status.ts";
 import {
   buildWorkingLinePreviewFrames,
   normalizeWorkingLineMessages,
   remapWorkingLineTextTick,
   type WorkingLineFrames,
 } from "../../extensions/layouts/working-line/working-line.ts";
+import { isIconMode } from "../../extensions/shared/icons.ts";
+import {
+  EDITOR_BORDER_STYLE,
+  renderChromeBorder,
+  safeThemeFg,
+} from "../../extensions/shared/style.ts";
 
 const colorSourceValues: ColorSource[] = ["theme", "terminal"];
 const extensionStatusPlacementValues: ExtensionStatusPlacement[] = [

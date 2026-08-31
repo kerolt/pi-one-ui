@@ -1,52 +1,52 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { CompactThinkingController } from "../thinking/compact-thinking.ts";
 import {
-  installToolGrouping,
-  type ToolGroupingHooks,
-} from "./tool/grouping.ts";
-import {
-  installCompactMode,
-  refreshCompactModeComponents,
-  type CompactModeHooks,
-  type CompactThinkingQuery,
-} from "./compact-mode.ts";
-import {
-  installDefaultMode,
-  installToolExpandedBackground,
-  type DefaultModeHooks,
-} from "./default-mode.ts";
+  type CompactStyleMode,
+  type Config,
+  config,
+  normalizeConfig,
+  setConfig,
+  updateConfig,
+} from "../../../app/config/renderer.ts";
 import { isLazyProxyTui } from "../../../tools/fullscreen-detect.ts";
 import {
   GLOBAL_COMPACTION_RENDER_PATCH,
   patchRegistry,
 } from "../../../tools/patch-keys.ts";
+import type { CompactThinkingController } from "../thinking/compact-thinking.ts";
 import {
-  config,
-  normalizeConfig,
-  setConfig,
-  updateConfig,
-  type CompactStyleMode,
-  type Config,
-} from "../../../app/config/renderer.ts";
+  type CompactModeHooks,
+  type CompactThinkingQuery,
+  installCompactMode,
+  refreshCompactModeComponents,
+} from "./compact-mode.ts";
+import {
+  type DefaultModeHooks,
+  installDefaultMode,
+  installToolExpandedBackground,
+} from "./default-mode.ts";
+import { setHoveredToolGroup, setHoveredToolIo } from "./mouse/hover.ts";
 import {
   installToolMouseInteraction,
   resetToolHoverState,
   scheduleSessionRender,
-  teardownToolMouseInteraction,
   TOOL_MOUSE_DISABLE,
+  teardownToolMouseInteraction,
 } from "./mouse/interaction.ts";
 import { getToolMouseTui } from "./mouse/scroll.ts";
-import { setHoveredToolGroup, setHoveredToolIo } from "./mouse/hover.ts";
-import { clearAllAnimations } from "./tool/result.ts";
 import {
   installWriteOverride,
   WriteExecutionMetadataStore,
 } from "./tool/diff/index.ts";
 import {
+  installToolGrouping,
+  type ToolGroupingHooks,
+} from "./tool/grouping.ts";
+import {
   installMessageDisplayRendering,
   refreshMessageDisplays,
   setMessageDisplayTheme,
 } from "./tool/message-display.ts";
+import { clearAllAnimations } from "./tool/result.ts";
 
 /**
  * Claude Code Style for pi — 装配入口。
@@ -277,10 +277,10 @@ export {
   preservesOriginalRenderer,
   shouldRenderRichDiff,
 } from "./default-mode.ts";
+export { installToolMouseInteraction } from "./mouse/interaction.ts";
 export {
   ExpandedToolIoView,
   ExpandedToolResultText,
   formatToolInputArgs,
   SHOW_MORE_LABEL,
 } from "./tool/result.ts";
-export { installToolMouseInteraction } from "./mouse/interaction.ts";

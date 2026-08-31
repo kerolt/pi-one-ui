@@ -26,7 +26,7 @@ export function ownerFor(slot: UiSlot): UiOwner {
 
 export {
   LAYOUT_OWNERSHIP,
-  LayoutRegistry,
   type LayoutId,
   type LayoutOwner,
+  LayoutRegistry,
 } from "./ownership/layout-registry.ts";

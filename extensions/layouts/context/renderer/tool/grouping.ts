@@ -3,36 +3,36 @@ import {
   ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
 import {
+  type Component,
   Container,
   Spacer,
   truncateToWidth,
   visibleWidth,
-  type Component,
 } from "@earendil-works/pi-tui";
-import { toolLoadingIcon } from "../../../../tools/tool-loading-icon.ts";
-import { isToolTuiFullscreen, showMoreHintText } from "./show-more-hint.ts";
 import {
   stripAnsi,
   stripBackgroundAnsi,
   stripLeadingStatusIcon,
 } from "../../../../tools/ansi-text.ts";
 import { walkComponentTree } from "../../../../tools/component-tree.ts";
-import { humanizeToolLabel, toolCallSummary } from "./names.ts";
 import {
-  captureIoViewMarkers,
-  getActiveIoViewFrame,
-  isExpandedToolIoView,
-  replayIoViewMarkers,
-  type CapturedIoViewMarker,
-  type ExpandedToolIoView,
-  type ToolIoSection,
-} from "./result.ts";
-import {
-  patchRegistry,
   TOOL_GROUPING_GENERATION_KEY as GENERATION_KEY,
   TOOL_GROUPING_PARENT_KEY as PARENT_KEY,
   TOOL_GROUPING_PATCH_KEY as PATCH_KEY,
+  patchRegistry,
 } from "../../../../tools/patch-keys.ts";
+import { toolLoadingIcon } from "../../../../tools/tool-loading-icon.ts";
+import { humanizeToolLabel, toolCallSummary } from "./names.ts";
+import {
+  type CapturedIoViewMarker,
+  captureIoViewMarkers,
+  type ExpandedToolIoView,
+  getActiveIoViewFrame,
+  isExpandedToolIoView,
+  replayIoViewMarkers,
+  type ToolIoSection,
+} from "./result.ts";
+import { isToolTuiFullscreen, showMoreHintText } from "./show-more-hint.ts";
 
 const NON_GROUPABLE = new Set(["edit", "write", "apply_patch"]);
 

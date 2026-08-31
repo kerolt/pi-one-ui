@@ -1,5 +1,5 @@
 export {
   applyStartupHeader,
+  default,
   renderHeaderLines,
 } from "./startup-header.ts";
-export { default } from "./startup-header.ts";

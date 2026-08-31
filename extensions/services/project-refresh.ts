@@ -3,10 +3,10 @@ import { dirname, join, resolve } from "node:path";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import type { SessionLifecycle } from "../app/runtime/session-lifecycle.ts";
 import { readGitStatus } from "./git-data.ts";
-import type { FooterState } from "./session-state.ts";
-import { applyProjectRefreshToState } from "./project-state.ts";
 import { readPackageVersionResult } from "./package-data.ts";
+import { applyProjectRefreshToState } from "./project-state.ts";
 import { readRuntimeInfo } from "./runtime-data.ts";
+import type { FooterState } from "./session-state.ts";
 
 export type StopProjectRefreshInterval = () => void;
 

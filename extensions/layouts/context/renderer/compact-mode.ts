@@ -17,41 +17,22 @@
  */
 import {
   AssistantMessageComponent,
-  ToolExecutionComponent,
   type Theme,
+  ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
 import {
-  truncateToWidth,
-  visibleWidth,
   Box,
   Spacer,
+  truncateToWidth,
+  visibleWidth,
 } from "@earendil-works/pi-tui";
 import { config, getToolDisplayConfig } from "../../../app/config/renderer.ts";
-import { toolLoadingIcon } from "../../../tools/tool-loading-icon.ts";
-import { sanitizeToolResultText } from "../../../tools/tool-result-sanitize.ts";
-import { refreshContextComponent } from "./context-refresh.ts";
-import { getMessageDisplayTheme } from "./tool/message-display.ts";
-import { showMoreHintText } from "./tool/show-more-hint.ts";
-import {
-  countEditDiffStats,
-  countWriteDiffStats,
-  isRichDiffComponent,
-} from "./tool/diff/diff-renderer.ts";
-import { renderRichToolResult } from "./tool/diff/index.ts";
-import type { WriteExecutionMetadataStore } from "./tool/diff/write-execution.ts";
-import { isToolCallHovered } from "./mouse/hover.ts";
-import {
-  insetComponent,
-  renderExpandedToolResult,
-  scheduleAnimation,
-} from "./tool/result.ts";
-import { oneLine } from "../../../tools/format.ts";
-import { paddedBackgroundRow } from "./tool/grouping.ts";
 import {
   hasVisibleText,
   stripBackgroundAnsi,
 } from "../../../tools/ansi-text.ts";
 import { walkComponentTree } from "../../../tools/component-tree.ts";
+import { oneLine } from "../../../tools/format.ts";
 import {
   ASSISTANT_REENTRY_DESCRIPTION,
   ASSISTANT_REENTRY_KEY,
@@ -61,9 +42,28 @@ import {
   ASSISTANT_TOGGLE_ROUND_KEY,
   COMPACT_MODE_PATCH_KEY,
   COMPACT_THINKING_PATCH_KEY,
-  patchRegistry,
   PROTOTYPE_ORIGINAL_KEY,
+  patchRegistry,
 } from "../../../tools/patch-keys.ts";
+import { toolLoadingIcon } from "../../../tools/tool-loading-icon.ts";
+import { sanitizeToolResultText } from "../../../tools/tool-result-sanitize.ts";
+import { refreshContextComponent } from "./context-refresh.ts";
+import { isToolCallHovered } from "./mouse/hover.ts";
+import {
+  countEditDiffStats,
+  countWriteDiffStats,
+  isRichDiffComponent,
+} from "./tool/diff/diff-renderer.ts";
+import { renderRichToolResult } from "./tool/diff/index.ts";
+import type { WriteExecutionMetadataStore } from "./tool/diff/write-execution.ts";
+import { paddedBackgroundRow } from "./tool/grouping.ts";
+import { getMessageDisplayTheme } from "./tool/message-display.ts";
+import {
+  insetComponent,
+  renderExpandedToolResult,
+  scheduleAnimation,
+} from "./tool/result.ts";
+import { showMoreHintText } from "./tool/show-more-hint.ts";
 
 /** compact 渲染层对 compact-thinking 的只读查询面（不建第二套计时器）。 */
 export type CompactThinkingQuery = {

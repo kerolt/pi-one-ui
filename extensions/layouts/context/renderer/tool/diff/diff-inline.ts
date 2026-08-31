@@ -1,9 +1,9 @@
-import { normalizeCodeWhitespace } from "./diff-text.ts";
 import type {
   DiffLineEntry,
   DiffMetaEntry,
   ParsedDiffEntry,
 } from "./diff-parse.ts";
+import { normalizeCodeWhitespace } from "./diff-text.ts";
 
 export interface DiffSpan {
   start: number;

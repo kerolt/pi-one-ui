@@ -4,15 +4,15 @@ import {
   type ToolDisplayConfig,
 } from "../../../../../app/config/renderer.ts";
 import { showMoreHintText } from "../show-more-hint.ts";
-import {
-  buildCollapsedDiffHintText,
-  clampRenderedLineToWidth,
-  clampRenderedLinesToWidth,
-} from "./line-width-safety.ts";
-import { stabilizeBackgroundResets, type DiffTheme } from "./diff-palette.ts";
-import { countDiffLineEntries, type ParsedDiffEntry } from "./diff-parse.ts";
 import type { SplitDiffRow } from "./diff-inline.ts";
 import type { RenderedRow } from "./diff-layout.ts";
+import { type DiffTheme, stabilizeBackgroundResets } from "./diff-palette.ts";
+import { countDiffLineEntries, type ParsedDiffEntry } from "./diff-parse.ts";
+import {
+  buildCollapsedDiffHintText,
+  clampRenderedLinesToWidth,
+  clampRenderedLineToWidth,
+} from "./line-width-safety.ts";
 
 const DIFF_WIDTH_OPS = {
   measure: visibleWidth,

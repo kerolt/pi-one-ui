@@ -7,13 +7,13 @@ import {
   mergeConfig,
   type PolishedTuiConfig,
 } from "../extensions/app/config/shell";
-import { installFooter } from "../extensions/layouts/footer/footer";
-import { emptyGitStatus } from "../extensions/services/git-data";
 import {
   formatElapsedDuration,
   type MinimalistEditorMetadata,
   renderMinimalistFrame,
 } from "../extensions/layouts/editor/minimalist-editor";
+import { installFooter } from "../extensions/layouts/footer/footer";
+import { emptyGitStatus } from "../extensions/services/git-data";
 import { createInitialState } from "../extensions/services/session-state";
 
 function theme(): Theme {

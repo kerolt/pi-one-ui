@@ -3,28 +3,34 @@ import type {
   ExtensionContext,
   Theme,
 } from "@earendil-works/pi-coding-agent";
-import type { AccentRailLayoutPatchDiagnostic } from "../../extensions/layouts/editor/accent-rail-layout-patch.ts";
 import {
   ensureConfigExists,
   hasUnsupportedComponentStyle,
   loadConfig,
+  mergeConfig,
+  type PolishedTuiConfig,
   saveEditorComponentPatch,
   saveFooterComponentPatch,
   saveWorkingLineComponentPatch,
-  type PolishedTuiConfig,
-  mergeConfig,
 } from "../../extensions/app/config/shell.ts";
 import {
-  configStore,
   type ConfigRecord,
+  configStore,
 } from "../../extensions/app/config/store.ts";
+import type { AccentRailLayoutPatchDiagnostic } from "../../extensions/layouts/editor/accent-rail-layout-patch.ts";
 import { EditorLayoutController } from "../../extensions/layouts/editor/controller.ts";
 import { FooterLayoutController } from "../../extensions/layouts/footer/controller.ts";
+
 export { activeFooterReferences } from "../../extensions/layouts/footer/data.ts";
+
+import { SelectorController } from "../../extensions/app/overlay/selector-controller.ts";
+import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
+import { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle.ts";
 import {
-  SessionStateService,
-  syncState,
-} from "../../extensions/services/session-state.ts";
+  WorkingLineLayoutController,
+  type WorkingLineMessage,
+  type WorkingLineMessageEnd,
+} from "../../extensions/layouts/working-line/controller.ts";
 import {
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
@@ -34,15 +40,11 @@ import {
   ProjectRefreshService,
   type ScheduleProjectRefreshOptions,
 } from "../../extensions/services/project-refresh.ts";
-import { SelectorController } from "../../extensions/app/overlay/selector-controller.ts";
-import { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle.ts";
-import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
-import { resolveFooterTelemetry } from "../../extensions/services/telemetry.ts";
 import {
-  WorkingLineLayoutController,
-  type WorkingLineMessage,
-  type WorkingLineMessageEnd,
-} from "../../extensions/layouts/working-line/controller.ts";
+  SessionStateService,
+  syncState,
+} from "../../extensions/services/session-state.ts";
+import { resolveFooterTelemetry } from "../../extensions/services/telemetry.ts";
 
 function isTuiContext(ctx: ExtensionContext): boolean {
   try {

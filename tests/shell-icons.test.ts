@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultConfig } from "../extensions/app/config/shell";
+import { runtimeMetadata } from "../extensions/services/runtime-data";
 import {
   ASCII_DEFAULT_ICONS,
   ICON_GLYPH_KEYS,
@@ -9,7 +10,6 @@ import {
   resolveOsIcon,
   resolveRuntimeSymbol,
 } from "../extensions/shared/icons";
-import { runtimeMetadata } from "../extensions/services/runtime-data";
 
 describe("icon tables", () => {
   it("keeps nerd defaults byte-identical to historical defaultConfig icons", () => {

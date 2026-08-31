@@ -3,17 +3,17 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
 import {
-  defaultConfig,
-  type EditorStyle,
-  type PolishedTuiConfig,
-  type UserMessageStyle,
-} from "../extensions/app/config/shell";
-import {
   renderEditorSettingsPreview,
   renderUserMessageSettingsPreview,
   SETTINGS_PREVIEW_MAX_ROWS,
   SETTINGS_PREVIEW_MAX_WIDTH,
 } from "../extensions/app/commands/settings-previews";
+import {
+  defaultConfig,
+  type EditorStyle,
+  type PolishedTuiConfig,
+  type UserMessageStyle,
+} from "../extensions/app/config/shell";
 
 function theme(offset = 0): Theme {
   return {

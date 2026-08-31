@@ -1,69 +1,69 @@
 import {
+  type Component,
   Text,
   truncateToWidth,
   visibleWidth,
-  type Component,
 } from "@earendil-works/pi-tui";
 import { sanitizeToolResultText } from "../../../../../tools/tool-result-sanitize.ts";
 import { showMoreHintText } from "../show-more-hint.ts";
-import { splitWriteContentLines } from "./diff-text.ts";
 import {
-  collectDiffStats,
-  getLineNumberWidth,
-  type DiffLineEntry,
-  type DiffStats,
-  type ParsedDiffEntry,
-} from "./diff-parse.ts";
-import {
-  buildInlineHighlightMap,
-  buildSplitRows,
-  type DiffSpan,
-  type SplitDiffRow,
-} from "./diff-inline.ts";
-import { resolveDiffPalette, type DiffTheme } from "./diff-palette.ts";
-import {
-  createCodeLineHighlighter,
-  resolveLanguageFromPath,
-  type CodeLineHighlighter,
-} from "./diff-highlight.ts";
-import {
-  canRenderSplitLayout,
-  renderCompact,
-  renderSplit,
-  renderUnified,
-  type DiffRenderContext,
-  type RenderedRow,
-} from "./diff-layout.ts";
+  createDiffRenderCache,
+  type DiffRenderOptions,
+  type DisplayConfigInput,
+  displayConfigCacheKey,
+  RICH_DIFF_COMPONENT,
+  resolveDiffIndicatorMode,
+  resolveLiveDisplayConfig,
+} from "./diff-component.ts";
 import {
   renderDiffFrameLine,
   renderSingleDiffRow,
   renderWriteHeader,
 } from "./diff-header.ts";
 import {
+  type CodeLineHighlighter,
+  createCodeLineHighlighter,
+  resolveLanguageFromPath,
+} from "./diff-highlight.ts";
+import {
+  buildInlineHighlightMap,
+  buildSplitRows,
+  type DiffSpan,
+  type SplitDiffRow,
+} from "./diff-inline.ts";
+import {
+  canRenderSplitLayout,
+  type DiffRenderContext,
+  type RenderedRow,
+  renderCompact,
+  renderSplit,
+  renderUnified,
+} from "./diff-layout.ts";
+import {
   applyLineLimit,
-  clampDiffLineToWidth,
   clampDiffLinesToWidth,
+  clampDiffLineToWidth,
   resolveDiffDisplayLimit,
   resolveDiffProcessBudget,
   resolveWriteCollapsedLimit,
   takeEntriesForLineBudget,
   takeSplitRowsForBudget,
 } from "./diff-limits.ts";
+import { type DiffTheme, resolveDiffPalette } from "./diff-palette.ts";
 import {
-  RICH_DIFF_COMPONENT,
-  createDiffRenderCache,
-  displayConfigCacheKey,
-  resolveDiffIndicatorMode,
-  resolveLiveDisplayConfig,
-  type DiffRenderOptions,
-  type DisplayConfigInput,
-} from "./diff-component.ts";
+  collectDiffStats,
+  type DiffLineEntry,
+  type DiffStats,
+  getLineNumberWidth,
+  type ParsedDiffEntry,
+} from "./diff-parse.ts";
 import {
   buildDiffSummaryText,
+  type DiffPresentationMode,
   normalizeDiffRenderWidth,
   resolveDiffPresentationMode,
-  type DiffPresentationMode,
 } from "./diff-presentation.ts";
+import { splitWriteContentLines } from "./diff-text.ts";
 
 type WriteDiffOperationKind = "context" | "remove" | "add";
 

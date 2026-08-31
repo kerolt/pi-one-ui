@@ -1,6 +1,6 @@
-import { withFileMutationQueue } from "@earendil-works/pi-coding-agent";
 import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
+import { withFileMutationQueue } from "@earendil-works/pi-coding-agent";
 
 export const MAX_COMPARABLE_WRITE_BYTES = 512_000;
 export const MAX_WRITE_METADATA_ENTRIES = 100;

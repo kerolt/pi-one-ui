@@ -1,24 +1,24 @@
-import { test } from "node:test";
 import assert from "node:assert/strict";
+import { test } from "node:test";
 import {
   BranchSummaryMessageComponent,
   CompactionSummaryMessageComponent,
   getMarkdownTheme,
   initTheme,
-  SkillInvocationMessageComponent,
   type ParsedSkillBlock,
+  SkillInvocationMessageComponent,
 } from "@earendil-works/pi-coding-agent";
+import {
+  config,
+  DEFAULT_CONFIG,
+  normalizeConfig,
+  setConfig,
+} from "../extensions/app/config/renderer.ts";
 import {
   installMessageDisplayRendering,
   refreshMessageDisplays,
   setMessageDisplayTheme,
 } from "../extensions/layouts/context/renderer/tool/message-display.ts";
-import {
-  config,
-  DEFAULT_CONFIG,
-  setConfig,
-  normalizeConfig,
-} from "../extensions/app/config/renderer.ts";
 
 function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");

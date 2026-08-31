@@ -3,16 +3,16 @@ import {
   SettingsSelectorComponent,
   type Theme,
 } from "@earendil-works/pi-coding-agent";
-import type { ZentuiConfig } from "../config/shell.ts";
-import {
-  installPrototypePatch,
-  removePrototypePatch,
-} from "../ownership/prototype-patch-registry.ts";
 import {
   EDITOR_BORDER_STYLE,
   renderChromeBorder,
   renderEditorBorder,
 } from "../../shared/style.ts";
+import type { ZentuiConfig } from "../config/shell.ts";
+import {
+  installPrototypePatch,
+  removePrototypePatch,
+} from "../ownership/prototype-patch-registry.ts";
 
 type PatchableSelectorPrototype = {
   render: (width: number) => string[];

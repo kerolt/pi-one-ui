@@ -1,3 +1,4 @@
+import { ansi256ToRgb } from "../../../../../tools/ansi-color.ts";
 import {
   ANSI_SGR_PATTERN,
   expandSgrReset,
@@ -5,10 +6,9 @@ import {
   readSgrColorSequence,
   toSgrParams,
 } from "./ansi-utils.ts";
-import { ansi256ToRgb } from "../../../../../tools/ansi-color.ts";
-import { fitToWidth } from "./diff-text.ts";
-import { mergeSpans, type DiffSpan } from "./diff-inline.ts";
+import { type DiffSpan, mergeSpans } from "./diff-inline.ts";
 import type { DiffLineKind } from "./diff-parse.ts";
+import { fitToWidth } from "./diff-text.ts";
 
 export interface DiffTheme {
   fg(color: string, text: string): string;

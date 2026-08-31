@@ -1,37 +1,37 @@
 import { visibleWidth } from "@earendil-works/pi-tui";
+import type { DiffIndicatorMode } from "../../../../../app/config/renderer.ts";
+import { formatMetaEntryRows } from "./diff-header.ts";
+import {
+  type CodeLineHighlighter,
+  highlightDiffLine,
+} from "./diff-highlight.ts";
+import {
+  type DiffSpan,
+  getCellLineNumber,
+  type SplitDiffRow,
+} from "./diff-inline.ts";
+import {
+  ANSI_BG_RESET,
+  applyLineBackgroundToWrappedRows,
+  colorizeSegment,
+  type DiffPalette,
+  type DiffTheme,
+  readThemeAnsi,
+  stabilizeBackgroundResets,
+} from "./diff-palette.ts";
+import {
+  type DiffLineEntry,
+  type DiffLineKind,
+  type DiffMetaEntry,
+  formatLineNumberLabel,
+  getCompactLineRenderContent,
+  type ParsedDiffEntry,
+} from "./diff-parse.ts";
 import {
   fitToWidth,
   normalizeCodeWhitespace,
   wrapToWidth,
 } from "./diff-text.ts";
-import {
-  ANSI_BG_RESET,
-  applyLineBackgroundToWrappedRows,
-  colorizeSegment,
-  readThemeAnsi,
-  stabilizeBackgroundResets,
-  type DiffPalette,
-  type DiffTheme,
-} from "./diff-palette.ts";
-import {
-  highlightDiffLine,
-  type CodeLineHighlighter,
-} from "./diff-highlight.ts";
-import {
-  formatLineNumberLabel,
-  getCompactLineRenderContent,
-  type DiffLineEntry,
-  type DiffLineKind,
-  type DiffMetaEntry,
-  type ParsedDiffEntry,
-} from "./diff-parse.ts";
-import {
-  getCellLineNumber,
-  type DiffSpan,
-  type SplitDiffRow,
-} from "./diff-inline.ts";
-import { formatMetaEntryRows } from "./diff-header.ts";
-import type { DiffIndicatorMode } from "../../../../../app/config/renderer.ts";
 
 export interface RenderedRow {
   text: string;

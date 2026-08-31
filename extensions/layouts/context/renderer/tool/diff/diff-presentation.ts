@@ -1,6 +1,6 @@
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import { pluralize } from "./diff-text.ts";
 import type { ToolDisplayConfig } from "../../../../../app/config/renderer.ts";
+import { pluralize } from "./diff-text.ts";
 
 export interface DiffSummaryStats {
   added: number;

@@ -2,6 +2,27 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { SeparatorStyle, ZentuiConfig } from "../../app/config/shell.ts";
 import { FOOTER_FORMAT_ALIASES } from "../../app/config/shell.ts";
+import type { LiveContextOverride } from "../../services/live-context.ts";
+import {
+  type FooterState,
+  modelLabelFor,
+} from "../../services/session-state.ts";
+import {
+  buildContextDisplayLabel,
+  buildSessionDurationLabel,
+  contextColorTier,
+  formatCwdLabel,
+  formatGitBranchText,
+  formatGitCommitSegment,
+  formatGitMetricsSegment,
+  formatOsLabel,
+  formatPackageVersionSegment,
+  formatRuntimeSegment,
+  formatTimeLabel,
+  formatUsernameHostLabel,
+} from "../../shared/format.ts";
+import { resolveRuntimeSymbol } from "../../shared/icons.ts";
+import { renderStyleForSource } from "../../shared/style.ts";
 import { sanitizeEditorMetadataText } from "../editor/editor-metadata-format.ts";
 import {
   collectExtensionStatusSegments,
@@ -22,27 +43,6 @@ import {
   packCompactChunks,
   reflowFullFooter,
 } from "./footer-layout.ts";
-import {
-  buildContextDisplayLabel,
-  buildSessionDurationLabel,
-  contextColorTier,
-  formatCwdLabel,
-  formatGitBranchText,
-  formatGitCommitSegment,
-  formatGitMetricsSegment,
-  formatOsLabel,
-  formatPackageVersionSegment,
-  formatRuntimeSegment,
-  formatTimeLabel,
-  formatUsernameHostLabel,
-} from "../../shared/format.ts";
-import { resolveRuntimeSymbol } from "../../shared/icons.ts";
-import type { LiveContextOverride } from "../../services/live-context.ts";
-import {
-  type FooterState,
-  modelLabelFor,
-} from "../../services/session-state.ts";
-import { renderStyleForSource } from "../../shared/style.ts";
 
 const separatorText: Record<SeparatorStyle, string> = {
   pipe: " | ",

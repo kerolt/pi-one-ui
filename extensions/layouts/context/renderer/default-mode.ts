@@ -7,10 +7,11 @@
 import { ToolExecutionComponent } from "@earendil-works/pi-coding-agent";
 import { Text, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import {
+  type CompactStyleMode,
   config,
   getToolDisplayConfig,
-  type CompactStyleMode,
 } from "../../../app/config/renderer.ts";
+import { oneLine } from "../../../tools/format.ts";
 import {
   COMPONENT_TOOL_RENDER_MODE,
   GLOBAL_TOOL_RENDER_PATCH,
@@ -18,6 +19,13 @@ import {
   TOOL_EXPANDED_BACKGROUND_PATCH,
 } from "../../../tools/patch-keys.ts";
 import { isToolCallHovered } from "./mouse/hover.ts";
+import { countWriteDiffStats } from "./tool/diff/diff-renderer.ts";
+import {
+  renderRichToolResult,
+  type WriteExecutionMetadataStore,
+} from "./tool/diff/index.ts";
+import { getMessageDisplayTheme } from "./tool/message-display.ts";
+import { humanizeToolLabel, toolCallSummary } from "./tool/names.ts";
 import {
   countLines,
   hasExpandableDetail,
@@ -30,21 +38,13 @@ import {
   renderExpandedToolResult,
   resolveToolVisualState,
   scheduleAnimation,
-  settledIcon,
   setToolVisualState,
+  settledIcon,
   textFromResult,
   toolIconColor,
   toolViewportWidth,
 } from "./tool/result.ts";
-import { oneLine } from "../../../tools/format.ts";
 import { showMoreHintText } from "./tool/show-more-hint.ts";
-import { countWriteDiffStats } from "./tool/diff/diff-renderer.ts";
-import {
-  renderRichToolResult,
-  type WriteExecutionMetadataStore,
-} from "./tool/diff/index.ts";
-import { getMessageDisplayTheme } from "./tool/message-display.ts";
-import { humanizeToolLabel, toolCallSummary } from "./tool/names.ts";
 
 // 成功勾：亮绿 truecolor（与 message-display 一致）
 const BRIGHT_GREEN = "\x1b[38;2;80;220;100m";

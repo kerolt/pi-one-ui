@@ -1,11 +1,11 @@
 import type { AssistantMessage, Usage } from "@earendil-works/pi-ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
 import {
   calculateLiveContextTokens,
   LiveContextController,
   liveContextFromMessage,
 } from "../extensions/services/live-context";
-import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
 
 function usage(patch: Partial<Usage> = {}): Usage {
   return {

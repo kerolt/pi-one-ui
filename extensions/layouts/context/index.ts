@@ -4,7 +4,6 @@ import type {
   Theme,
 } from "@earendil-works/pi-coding-agent";
 import { config } from "../../app/config/renderer.ts";
-import { configStore, type ConfigRecord } from "../../app/config/store.ts";
 import {
   hasUnsupportedComponentStyle,
   loadConfig,
@@ -13,27 +12,25 @@ import {
   type UserMessagesComponentConfig,
   type ZentuiConfig,
 } from "../../app/config/shell.ts";
+import { type ConfigRecord, configStore } from "../../app/config/store.ts";
+// shell
+import piAliases from "../../features/aliases.ts";
+import context from "../../features/context-inspector/index.ts";
+import { installFlushDockedBash } from "../../features/flush-docked-bash.ts";
+import sessionReference from "../../features/session-reference/index.ts";
+// feature
+import agentAutocomplete from "../../features/subagent-autocomplete.ts";
 import {
   installUserMessageStyle,
   removeUserMessageStyle,
 } from "./message/user-message.ts";
-
-// shell
-import piAliases from "../../features/aliases.ts";
-import { installFlushDockedBash } from "../../features/flush-docked-bash.ts";
-
-// feature
-import agentAutocomplete from "../../features/subagent-autocomplete.ts";
-import agentSummary from "./summary/index.ts";
-import context from "../../features/context-inspector/index.ts";
-import sessionReference from "../../features/session-reference/index.ts";
-import { installCompactThinking } from "./thinking/compact-thinking.ts";
-
 // renderer
 import registerContextRenderer, {
   getCompactThinkingConfig,
 } from "./renderer/index.ts";
 import markdownEnhance from "./renderer/markdown-enhance.ts";
+import agentSummary from "./summary/index.ts";
+import { installCompactThinking } from "./thinking/compact-thinking.ts";
 
 export type ContextRuntimeController = {
   setMode: (mode: "on" | "compact" | "off", ctx: ExtensionContext) => void;

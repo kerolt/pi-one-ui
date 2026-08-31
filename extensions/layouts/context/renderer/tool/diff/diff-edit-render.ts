@@ -1,29 +1,32 @@
-import { Text, type Component } from "@earendil-works/pi-tui";
 import type { EditToolDetails } from "@earendil-works/pi-coding-agent";
+import { type Component, Text } from "@earendil-works/pi-tui";
 import { sanitizeToolResultText } from "../../../../../tools/tool-result-sanitize.ts";
 import {
-  getLineNumberWidth,
-  parseDiff,
-  type ParsedDiff,
-} from "./diff-parse.ts";
-import { buildInlineHighlightMap, buildSplitRows } from "./diff-inline.ts";
-import { resolveDiffPalette, type DiffTheme } from "./diff-palette.ts";
-import {
-  createCodeLineHighlighter,
-  resolveLanguageFromPath,
-} from "./diff-highlight.ts";
-import {
-  canRenderSplitLayout,
-  renderCompact,
-  renderSplit,
-  renderUnified,
-  type DiffRenderContext,
-} from "./diff-layout.ts";
+  createDiffRenderCache,
+  type DiffRenderOptions,
+  type DisplayConfigInput,
+  displayConfigCacheKey,
+  RICH_DIFF_COMPONENT,
+  resolveDiffIndicatorMode,
+  resolveLiveDisplayConfig,
+} from "./diff-component.ts";
 import {
   renderDiffFrameLine,
   renderHeaderRows,
   renderSingleDiffRow,
 } from "./diff-header.ts";
+import {
+  createCodeLineHighlighter,
+  resolveLanguageFromPath,
+} from "./diff-highlight.ts";
+import { buildInlineHighlightMap, buildSplitRows } from "./diff-inline.ts";
+import {
+  canRenderSplitLayout,
+  type DiffRenderContext,
+  renderCompact,
+  renderSplit,
+  renderUnified,
+} from "./diff-layout.ts";
 import {
   applyLineLimit,
   clampDiffLinesToWidth,
@@ -32,15 +35,12 @@ import {
   takeEntriesForLineBudget,
   takeSplitRowsForBudget,
 } from "./diff-limits.ts";
+import { type DiffTheme, resolveDiffPalette } from "./diff-palette.ts";
 import {
-  RICH_DIFF_COMPONENT,
-  createDiffRenderCache,
-  displayConfigCacheKey,
-  resolveDiffIndicatorMode,
-  resolveLiveDisplayConfig,
-  type DiffRenderOptions,
-  type DisplayConfigInput,
-} from "./diff-component.ts";
+  getLineNumberWidth,
+  type ParsedDiff,
+  parseDiff,
+} from "./diff-parse.ts";
 import {
   buildDiffSummaryText,
   normalizeDiffRenderWidth,

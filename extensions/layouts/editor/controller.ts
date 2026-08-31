@@ -6,17 +6,17 @@ import {
   hasUnsupportedComponentStyle,
   type PolishedTuiConfig,
 } from "../../app/config/shell.ts";
-import { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
 import type { RenderScheduler } from "../../app/runtime/render-scheduler.ts";
+import type { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
 import type { FooterState } from "../footer/index.ts";
 import {
+  type AccentRailLayoutPatchDiagnostic,
   installHostAccentRailLayoutPatch,
   retainAccentRailLayoutPatchInstallation,
-  type AccentRailLayoutPatchDiagnostic,
 } from "./accent-rail-layout-patch.ts";
 import {
-  replaceEditorComponentWithExpandedText,
   type EditorTransferFailureReason,
+  replaceEditorComponentWithExpandedText,
 } from "./editor-transfer.ts";
 import {
   createEditorFactory,
@@ -24,10 +24,10 @@ import {
   type EditorFactoryRuntime,
 } from "./factory.ts";
 import {
+  type EditorFactory,
   getZentuiEditorBaseFactory,
   isOwnedEditorFactory,
   isZentuiEditorFactory,
-  type EditorFactory,
 } from "./ownership.ts";
 
 export type EditorChangeResult = { ok: true } | { ok: false; reason: string };

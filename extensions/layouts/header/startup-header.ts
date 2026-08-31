@@ -1,8 +1,9 @@
-import { VERSION, type AppKeybinding } from "@earendil-works/pi-coding-agent";
-import { getKeybindings } from "@earendil-works/pi-tui";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { type AppKeybinding, VERSION } from "@earendil-works/pi-coding-agent";
+import { getKeybindings } from "@earendil-works/pi-tui";
 import { config } from "../../app/config/renderer.ts";
 import { ansi16ToRgb, ansi256ToRgb } from "../../tools/ansi-color.ts";
+
 type Rgb = [number, number, number];
 type StyledPart = {
   raw: string;

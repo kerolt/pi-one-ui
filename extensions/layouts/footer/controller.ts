@@ -1,15 +1,15 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
-  hasUnsupportedComponentStyle,
   type FooterComponentConfig,
+  hasUnsupportedComponentStyle,
   type PolishedTuiConfig,
 } from "../../app/config/shell.ts";
 import type { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
-import { buildSessionDurationLabel } from "../../shared/format.ts";
 import type { LiveContextOverride } from "../../services/live-context.ts";
 import type { FooterState } from "../../services/session-state.ts";
-import { installFooter, installHiddenFooter } from "./footer.ts";
+import { buildSessionDurationLabel } from "../../shared/format.ts";
 import { activeFooterReferences } from "./data.ts";
+import { installFooter, installHiddenFooter } from "./footer.ts";
 
 const ZENTUI_FOOTER_OWNER = Symbol.for("pi-zentui.footer-owner");
 

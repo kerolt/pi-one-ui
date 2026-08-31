@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import {
   existsSync,
   mkdtempSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";

@@ -1,17 +1,17 @@
+import { inspect } from "node:util";
 import {
   Text,
   truncateToWidth,
   visibleWidth,
   wrapTextWithAnsi,
 } from "@earendil-works/pi-tui";
-import { inspect } from "node:util";
 import { config } from "../../../../app/config/renderer.ts";
-import { showMoreHintText } from "./show-more-hint.ts";
 import {
   TOOL_LOADING_INTERVAL_MS,
   toolLoadingIcon,
 } from "../../../../tools/tool-loading-icon.ts";
 import { sanitizeToolResultText } from "../../../../tools/tool-result-sanitize.ts";
+import { showMoreHintText } from "./show-more-hint.ts";
 
 const TOOL_VIEWPORT_WIDTH_RATIO = 0.8;
 

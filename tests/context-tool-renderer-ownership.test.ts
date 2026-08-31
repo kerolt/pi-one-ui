@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  ToolExecutionComponent,
   initTheme,
   type ToolDefinition,
+  ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
 import { Text, visibleWidth } from "@earendil-works/pi-tui";
+
 type AnyToolDefinition = ToolDefinition<any, any, any>;
+
 import claudeCodeStyleExtension, {
   ExpandedToolIoView,
   humanizeMcpToolName,

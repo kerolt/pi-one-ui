@@ -1,25 +1,25 @@
 import { resolve } from "node:path";
 import {
-  SessionManager,
   type ExtensionAPI,
   type SessionInfo,
+  SessionManager,
 } from "@earendil-works/pi-coding-agent";
 import {
-  Text,
   type AutocompleteItem,
   type AutocompleteProvider,
   type AutocompleteSuggestions,
   fuzzyFilter,
+  Text,
 } from "@earendil-works/pi-tui";
 import {
-  SESSION_REFERENCE_CUSTOM_TYPE,
-  SESSION_REFERENCE_PREFIX,
   buildReferenceContentFromSections,
   extractSessionReferenceIds,
   formatReferenceSession,
-  sessionTitle,
   type ReferenceSessionInfo,
   type ReferenceSource,
+  SESSION_REFERENCE_CUSTOM_TYPE,
+  SESSION_REFERENCE_PREFIX,
+  sessionTitle,
 } from "./session.ts";
 
 const MAX_SESSION_SUGGESTIONS = 3;

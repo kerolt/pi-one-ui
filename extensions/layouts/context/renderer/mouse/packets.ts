@@ -1,12 +1,13 @@
-import type { ExpandedToolIoView, ToolIoSection } from "../tool/result.ts";
 import { walkComponentTree } from "../../../../tools/component-tree.ts";
+import type { ExpandedToolIoView, ToolIoSection } from "../tool/result.ts";
+
 export {
   stripTerminalSequences,
   stripTerminalSequencesPreservingLayout,
 } from "../../../../tools/ansi-text.ts";
 export {
-  parseSgrMousePackets,
   isSgrLeftPress,
+  parseSgrMousePackets,
   type SgrMousePacket,
 } from "../../../../tools/sgr-mouse.ts";
 

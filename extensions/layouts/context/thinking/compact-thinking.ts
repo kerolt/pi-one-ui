@@ -12,31 +12,30 @@ import {
   type Theme,
 } from "@earendil-works/pi-coding-agent";
 import {
+  Box,
+  type Component,
   getKeybindings,
+  Markdown,
+  Spacer,
+  Text,
   truncateToWidth,
   visibleWidth,
   wrapTextWithAnsi,
 } from "@earendil-works/pi-tui";
 import {
-  Box,
-  Markdown,
-  Spacer,
-  Text,
-  type Component,
-} from "@earendil-works/pi-tui";
-import { isToolTuiFullscreen } from "../renderer/tool/show-more-hint.ts";
+  COMPACT_THINKING_OWNER,
+  COMPACT_THINKING_PATCH_KEY,
+  PROTOTYPE_ORIGINAL_KEY,
+  patchRegistry,
+} from "../../../tools/patch-keys.ts";
 import {
   animateCompactThinkingText,
   formatThoughtDuration,
   styleCompactThinkingText,
 } from "../renderer/compact-mode.ts";
 import { refreshMountedContext } from "../renderer/context-refresh.ts";
-import {
-  COMPACT_THINKING_OWNER,
-  COMPACT_THINKING_PATCH_KEY,
-  patchRegistry,
-  PROTOTYPE_ORIGINAL_KEY,
-} from "../../../tools/patch-keys.ts";
+import { isToolTuiFullscreen } from "../renderer/tool/show-more-hint.ts";
+
 // 保持导出兼容：渲染函数已并入 renderer/compact-mode.ts，这里 re-export。
 export {
   animateCompactThinkingText,

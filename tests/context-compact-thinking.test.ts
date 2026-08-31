@@ -3,11 +3,11 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import type { AssistantMessage } from "@earendil-works/pi-ai";
 import {
   AssistantMessageComponent,
   initTheme,
 } from "@earendil-works/pi-coding-agent";
-import type { AssistantMessage } from "@earendil-works/pi-ai";
 
 import { config as ccstyleConfig } from "../extensions/app/config/renderer.ts";
 import {

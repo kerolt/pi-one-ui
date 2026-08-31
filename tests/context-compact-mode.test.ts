@@ -6,8 +6,8 @@ import test from "node:test";
 import type { AssistantMessage } from "@earendil-works/pi-ai";
 import {
   AssistantMessageComponent,
-  ToolExecutionComponent,
   initTheme,
+  ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
 
@@ -16,7 +16,6 @@ import {
   formatConfigStatus,
   normalizeConfig,
 } from "../extensions/app/config/renderer.ts";
-import { installCompactThinking } from "../extensions/layouts/context/thinking/compact-thinking.ts";
 import {
   buildMessageSummary,
   installCompactMode,
@@ -26,16 +25,17 @@ import {
 } from "../extensions/layouts/context/renderer/compact-mode.ts";
 import { refreshMountedContext } from "../extensions/layouts/context/renderer/context-refresh.ts";
 import claudeCodeStyleExtension from "../extensions/layouts/context/renderer/index.ts";
+import { WriteExecutionMetadataStore } from "../extensions/layouts/context/renderer/tool/diff/write-execution.ts";
 import {
   getMessageDisplayTheme,
   setMessageDisplayTheme,
 } from "../extensions/layouts/context/renderer/tool/message-display.ts";
-import { WriteExecutionMetadataStore } from "../extensions/layouts/context/renderer/tool/diff/write-execution.ts";
+import { toolCallSummary } from "../extensions/layouts/context/renderer/tool/names.ts";
 import {
   invalidateIoView,
   isExpandedToolIoView,
 } from "../extensions/layouts/context/renderer/tool/result.ts";
-import { toolCallSummary } from "../extensions/layouts/context/renderer/tool/names.ts";
+import { installCompactThinking } from "../extensions/layouts/context/thinking/compact-thinking.ts";
 
 initTheme("dark");
 

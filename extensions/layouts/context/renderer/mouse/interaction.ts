@@ -1,53 +1,67 @@
+import { config } from "../../../../app/config/renderer.ts";
+import { inputRouter } from "../../../../app/overlay/input-router.ts";
+import { overlayManager } from "../../../../app/overlay/overlay-manager.ts";
 import {
   hasActiveTextPreview,
   showTextPreview,
 } from "../../../../features/context-inspector/index.ts";
-import { ThinkingPreviewBlock } from "../../thinking/compact-thinking.ts";
-import { inputRouter } from "../../../../app/overlay/input-router.ts";
-import { overlayManager } from "../../../../app/overlay/overlay-manager.ts";
+import { isLazyProxyTui } from "../../../../tools/fullscreen-detect.ts";
 import {
   patchRegistry,
   TOOL_MOUSE_OWNER_KEY,
 } from "../../../../tools/patch-keys.ts";
-import { ToolGroupComponent } from "../tool/grouping.ts";
+import { ThinkingPreviewBlock } from "../../thinking/compact-thinking.ts";
 import {
   isCompactAssistantComponent,
   setHoveredCompactAssistant,
 } from "../compact-mode.ts";
+import { ToolGroupComponent } from "../tool/grouping.ts";
 import { isMessageDisplayComponent } from "../tool/message-display.ts";
-import { config } from "../../../../app/config/renderer.ts";
-import { isLazyProxyTui } from "../../../../tools/fullscreen-detect.ts";
-import { setToolTuiFullscreen } from "../tool/show-more-hint.ts";
 import {
   type ExpandedToolIoView,
   getActiveIoViewFrame,
-  isExpandedToolIoView,
   type IoViewFrameState,
+  isExpandedToolIoView,
   setActiveIoViewFrame,
   type ToolIoSection,
 } from "../tool/result.ts";
+import { setToolTuiFullscreen } from "../tool/show-more-hint.ts";
 import {
-  collectToolComponents,
-  extractToolFramePlacements,
-  isSgrLeftPress,
-  isToolExecutionComponent,
-  parseSgrMousePackets,
-  stripTerminalSequences,
-  stripTerminalSequencesPreservingLayout,
-  toolFrameMarker,
-  type FrameToolPlacement,
-  type SgrMousePacket,
-} from "./packets.ts";
+  applyFullscreenHover,
+  cachedFullscreenComponentAtRow,
+  type FullscreenHoverTarget,
+  setHoveredMessageDisplay,
+  setHoveredThinking,
+  setHoveredToolCallId,
+  setHoveredToolGroup,
+  setHoveredToolIo,
+  sharedToolHoverState,
+} from "./hover.ts";
 import {
+  collapsedHintHitbox,
   collectFullscreenToolCards,
   componentAtLocalRow,
-  collapsedHintHitbox,
   fullscreenContentWidth,
   fullscreenLeafAt,
   isScrollbarColumnAt,
 } from "./layout.ts";
 import {
+  collectToolComponents,
+  extractToolFramePlacements,
+  type FrameToolPlacement,
+  isSgrLeftPress,
+  isToolExecutionComponent,
+  parseSgrMousePackets,
+  type SgrMousePacket,
+  stripTerminalSequences,
+  stripTerminalSequencesPreservingLayout,
+  toolFrameMarker,
+} from "./packets.ts";
+import {
   fullscreenLazyTui,
+  getScrollButtonVisible,
+  getScrollButtonWidget,
+  getToolMouseTui,
   hideScrollButton,
   isScrollBottomInput,
   renderScrollButton,
@@ -57,23 +71,9 @@ import {
   setScrollButtonVisible,
   setScrollButtonWidget,
   setToolMouseTui,
-  getScrollButtonVisible,
-  getScrollButtonWidget,
-  getToolMouseTui,
   toolMouseInteractionActive,
   updateScrollButtonFromInput,
 } from "./scroll.ts";
-import {
-  applyFullscreenHover,
-  cachedFullscreenComponentAtRow,
-  sharedToolHoverState,
-  setHoveredToolCallId,
-  setHoveredToolGroup,
-  setHoveredThinking,
-  setHoveredMessageDisplay,
-  setHoveredToolIo,
-  type FullscreenHoverTarget,
-} from "./hover.ts";
 
 type FrameToolRender = {
   component: any;
@@ -1024,12 +1024,12 @@ export function scheduleSessionRender(refresh?: () => void): void {
   }, 0);
 }
 
-// toolMouseTui 跨模块读取一律走 getToolMouseTui()（jiti 转译下 let 绑定可能是快照）；
-// 此 re-export 仅保留兼容旧导入，新代码请用 getToolMouseTui。
-export { toolMouseTui } from "./scroll.ts";
 export {
   hoveredToolCallId,
   isToolCallHovered,
   setHoveredToolGroup,
   setHoveredToolIo,
 } from "./hover.ts";
+// toolMouseTui 跨模块读取一律走 getToolMouseTui()（jiti 转译下 let 绑定可能是快照）；
+// 此 re-export 仅保留兼容旧导入，新代码请用 getToolMouseTui。
+export { toolMouseTui } from "./scroll.ts";

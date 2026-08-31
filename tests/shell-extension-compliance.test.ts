@@ -20,32 +20,32 @@ import {
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import {
-  discoverAccentRailLayoutPatchTargetFromEntrypoint,
-  ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR,
-} from "../extensions/layouts/editor/accent-rail-layout-patch";
-import {
   defaultConfig,
   type ExtensionStatusPlacement,
   type PolishedTuiConfig,
   type SeparatorStyle,
 } from "../extensions/app/config/shell";
-import { installFooter as installFooterProduction } from "../extensions/layouts/footer/footer";
-import { emptyGitStatus } from "../extensions/services/git-data";
-import zentui, { activeFooterReferences } from "./support/layout-lifecycle";
-import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../extensions/app/ownership/prototype-patch-registry";
 import {
   installSelectorBorderStyle as installSelectorBorderStyleProduction,
   patchSelectorBorderStyle as patchSelectorBorderStyleProduction,
 } from "../extensions/app/overlay/selector-border";
+import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../extensions/app/ownership/prototype-patch-registry";
 import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
-import { registerSettingsCommand } from "./support/settings-command";
-import { createInitialState } from "../extensions/services/session-state";
+import { installUserMessageStyle as installUserMessageStyleProduction } from "../extensions/layouts/context/message/user-message";
+import { sanitizeUserMessageSourceText } from "../extensions/layouts/context/message/user-message-osc";
+import {
+  discoverAccentRailLayoutPatchTargetFromEntrypoint,
+  ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR,
+} from "../extensions/layouts/editor/accent-rail-layout-patch";
 import {
   PolishedEditor as PolishedEditorProduction,
   WrappedPolishedEditor as WrappedPolishedEditorProduction,
 } from "../extensions/layouts/editor/ui";
-import { installUserMessageStyle as installUserMessageStyleProduction } from "../extensions/layouts/context/message/user-message";
-import { sanitizeUserMessageSourceText } from "../extensions/layouts/context/message/user-message-osc";
+import { installFooter as installFooterProduction } from "../extensions/layouts/footer/footer";
+import { emptyGitStatus } from "../extensions/services/git-data";
+import { createInitialState } from "../extensions/services/session-state";
+import zentui, { activeFooterReferences } from "./support/layout-lifecycle";
+import { registerSettingsCommand } from "./support/settings-command";
 
 const localPiTuiEntry = createRequire(import.meta.url).resolve(
   "@earendil-works/pi-tui",

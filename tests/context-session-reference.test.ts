@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 import { Buffer } from "node:buffer";
+import test from "node:test";
 import {
-  SESSION_REFERENCE_CUSTOM_TYPE,
   buildReferenceContent,
   extractSessionReferenceIds,
+  SESSION_REFERENCE_CUSTOM_TYPE,
   sessionTitle,
   truncateUtf8,
 } from "../extensions/features/session-reference/session.ts";

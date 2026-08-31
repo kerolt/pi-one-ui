@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { Container, VStack } from "@earendil-works/pi-tui";
 import { describe, expect, it, vi } from "vitest";
+import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
 import {
   type AccentRailLayoutPatchInstallation,
   adjustAccentRailLayoutNode,
@@ -21,7 +22,6 @@ import {
   retainAccentRailLayoutPatchInstallation,
   ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR,
 } from "../extensions/layouts/editor/accent-rail-layout-patch";
-import { SessionLifecycle } from "../extensions/app/runtime/session-lifecycle";
 
 const LAYOUT_NODE = Symbol.for("@earendil-works/pi-tui/layout-node");
 const localPiTuiEntry = createRequire(import.meta.url).resolve(

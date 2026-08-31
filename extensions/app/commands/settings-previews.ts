@@ -1,12 +1,12 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { renderUserMessageStyle } from "../../layouts/context/message/user-message-styles.ts";
 import { renderAccentRailEditorFrame } from "../../layouts/editor/accent-rail-editor.ts";
-import type { PolishedTuiConfig } from "../config/shell.ts";
 import { sanitizeEditorMetadataText } from "../../layouts/editor/editor-metadata-format.ts";
 import { renderMinimalistFrame } from "../../layouts/editor/minimalist-editor.ts";
-import { safeThemeFg } from "../../shared/style.ts";
 import { renderPolishedEditorFrame } from "../../layouts/editor/ui.ts";
-import { renderUserMessageStyle } from "../../layouts/context/message/user-message-styles.ts";
+import { safeThemeFg } from "../../shared/style.ts";
+import type { PolishedTuiConfig } from "../config/shell.ts";
 
 export const SETTINGS_PREVIEW_MAX_WIDTH = 72;
 export const SETTINGS_PREVIEW_MAX_ROWS = 10;

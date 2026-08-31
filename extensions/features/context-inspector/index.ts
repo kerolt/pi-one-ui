@@ -2,10 +2,10 @@ import {
   type BuildSystemPromptOptions,
   type ExtensionAPI,
   type ExtensionCommandContext,
-  type ToolInfo,
   estimateTokens,
   formatSkillsForPrompt,
   getMarkdownTheme,
+  type ToolInfo,
 } from "@earendil-works/pi-coding-agent";
 import {
   Key,
@@ -13,9 +13,9 @@ import {
   matchesKey,
   visibleWidth,
 } from "@earendil-works/pi-tui";
-import { mouseBaseButton, parseSgrMousePacket } from "../../tools/sgr-mouse.ts";
-import { padLine } from "../../tools/format.ts";
 import { overlayManager } from "../../app/overlay/overlay-manager.ts";
+import { padLine } from "../../tools/format.ts";
+import { mouseBaseButton, parseSgrMousePacket } from "../../tools/sgr-mouse.ts";
 
 export type ContextPart = {
   label: string;

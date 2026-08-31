@@ -10,6 +10,7 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { formatDuration } from "../../../tools/format.ts";
+
 export { formatDuration };
 
 /** 工具分类。 */

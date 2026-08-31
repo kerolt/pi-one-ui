@@ -1,16 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  truncateToWidth,
+  visibleWidth,
+  wrapTextWithAnsi,
+} from "@earendil-works/pi-tui";
+import {
   ExpandedToolIoView,
   ExpandedToolResultText,
   formatToolInputArgs,
   SHOW_MORE_LABEL,
 } from "../extensions/layouts/context/renderer/index.ts";
-import {
-  truncateToWidth,
-  visibleWidth,
-  wrapTextWithAnsi,
-} from "@earendil-works/pi-tui";
 
 function expectedExpandedLines(
   text: string,

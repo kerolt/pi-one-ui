@@ -12,23 +12,23 @@ import {
   truncateToWidth,
   visibleWidth,
 } from "@earendil-works/pi-tui";
-import {
-  ACCENT_RAIL_CHROME_WIDTH,
-  renderAccentRailEditorFrame,
-} from "./accent-rail-editor.ts";
-import { renderCompletionPalette } from "./completion-menu.ts";
 import type { EditorStyle, ZentuiConfig } from "../../app/config/shell.ts";
-import { renderEditorMetadataFormat } from "./editor-metadata-format.ts";
-import {
-  type MinimalistEditorMetadata,
-  renderMinimalistFrame,
-} from "./minimalist-editor.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   EDITOR_BORDER_FALLBACK,
   renderStyleForSourceOrFallback,
   safeThemeFg,
 } from "../../shared/style.ts";
+import {
+  ACCENT_RAIL_CHROME_WIDTH,
+  renderAccentRailEditorFrame,
+} from "./accent-rail-editor.ts";
+import { renderCompletionPalette } from "./completion-menu.ts";
+import { renderEditorMetadataFormat } from "./editor-metadata-format.ts";
+import {
+  type MinimalistEditorMetadata,
+  renderMinimalistFrame,
+} from "./minimalist-editor.ts";
 
 const LEGACY_SPLIT_POLISHED_FRAME = Symbol.for("pi-zentui.polished-frame");
 

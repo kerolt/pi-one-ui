@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  ToolExecutionComponent,
   initTheme,
+  ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
 import { Container } from "@earendil-works/pi-tui";
 import claudeCodeStyleExtension from "../extensions/layouts/context/renderer/index.ts";

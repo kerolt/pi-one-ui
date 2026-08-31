@@ -3,44 +3,19 @@ import type {
   ExtensionContext,
   Theme,
 } from "@earendil-works/pi-coding-agent";
-import { showOneUiPanel, type TuiPanelRuntime } from "../panel.ts";
-import {
-  createPiExtensionPort,
-  type PiExtensionPort,
-} from "../host/pi-extension-port.ts";
-import { createPiUiPort, type PiUiPort } from "../host/pi-ui-port.ts";
-import { LayoutRegistry } from "../ownership/layout-registry.ts";
-import registerHeaderLayout from "../../layouts/header/index.ts";
-import { EventCoordinator } from "./event-coordinator.ts";
-import { RenderScheduler } from "./render-scheduler.ts";
-import { RuntimeStateStore } from "./runtime-state.ts";
-import { EditorLayoutController } from "../../layouts/editor/controller.ts";
-import { FooterLayoutController } from "../../layouts/footer/controller.ts";
-import {
-  WorkingLineLayoutController,
-  type WorkingLineMessage,
-  type WorkingLineMessageEnd,
-} from "../../layouts/working-line/controller.ts";
 import registerContext, {
   type ContextExtensionOptions,
   type ContextRuntimeController,
 } from "../../layouts/context/index.ts";
 import type { AccentRailLayoutPatchDiagnostic } from "../../layouts/editor/accent-rail-layout-patch.ts";
+import { EditorLayoutController } from "../../layouts/editor/controller.ts";
+import { FooterLayoutController } from "../../layouts/footer/controller.ts";
+import registerHeaderLayout from "../../layouts/header/index.ts";
 import {
-  ensureConfigExists,
-  hasUnsupportedComponentStyle,
-  loadConfig,
-  mergeConfig,
-  saveEditorComponentPatch,
-  saveFooterComponentPatch,
-  saveWorkingLineComponentPatch,
-  type PolishedTuiConfig,
-} from "../config/shell.ts";
-import { configStore, type ConfigRecord } from "../config/store.ts";
-import {
-  SessionStateService,
-  syncState,
-} from "../../services/session-state.ts";
+  WorkingLineLayoutController,
+  type WorkingLineMessage,
+  type WorkingLineMessageEnd,
+} from "../../layouts/working-line/controller.ts";
 import {
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
@@ -50,9 +25,34 @@ import {
   ProjectRefreshService,
   type ScheduleProjectRefreshOptions,
 } from "../../services/project-refresh.ts";
-import { SelectorController } from "../overlay/selector-controller.ts";
-import { SessionLifecycle } from "./session-lifecycle.ts";
+import {
+  SessionStateService,
+  syncState,
+} from "../../services/session-state.ts";
 import { resolveFooterTelemetry } from "../../services/telemetry.ts";
+import {
+  ensureConfigExists,
+  hasUnsupportedComponentStyle,
+  loadConfig,
+  mergeConfig,
+  type PolishedTuiConfig,
+  saveEditorComponentPatch,
+  saveFooterComponentPatch,
+  saveWorkingLineComponentPatch,
+} from "../config/shell.ts";
+import { type ConfigRecord, configStore } from "../config/store.ts";
+import {
+  createPiExtensionPort,
+  type PiExtensionPort,
+} from "../host/pi-extension-port.ts";
+import { createPiUiPort, type PiUiPort } from "../host/pi-ui-port.ts";
+import { SelectorController } from "../overlay/selector-controller.ts";
+import { LayoutRegistry } from "../ownership/layout-registry.ts";
+import { showOneUiPanel, type TuiPanelRuntime } from "../panel.ts";
+import { EventCoordinator } from "./event-coordinator.ts";
+import { RenderScheduler } from "./render-scheduler.ts";
+import { RuntimeStateStore } from "./runtime-state.ts";
+import { SessionLifecycle } from "./session-lifecycle.ts";
 
 export type TuiRuntimeContext = {
   readonly extensions: PiExtensionPort;

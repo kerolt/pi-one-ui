@@ -1,17 +1,17 @@
-import { ThinkingPreviewBlock } from "../../thinking/compact-thinking.ts";
-import { setHoveredCompactAssistant } from "../compact-mode.ts";
 import {
   patchRegistry,
   TOOL_HOVER_STATE_KEY,
 } from "../../../../tools/patch-keys.ts";
+import type { ThinkingPreviewBlock } from "../../thinking/compact-thinking.ts";
+import { setHoveredCompactAssistant } from "../compact-mode.ts";
+import type { ToolGroupComponent } from "../tool/grouping.ts";
 import {
-  isExpandedToolIoView,
-  invalidateIoView,
   type ExpandedToolIoView,
+  invalidateIoView,
+  isExpandedToolIoView,
   type ToolIoSection,
 } from "../tool/result.ts";
-import type { ToolGroupComponent } from "../tool/grouping.ts";
-import { componentAtLocalRow, type ComponentRowHit } from "./layout.ts";
+import { type ComponentRowHit, componentAtLocalRow } from "./layout.ts";
 import { setScrollButtonHovered } from "./scroll.ts";
 
 type SharedToolHoverState = { toolCallId: string | null };

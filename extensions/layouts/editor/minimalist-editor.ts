@@ -2,7 +2,6 @@ import { basename, isAbsolute, relative, sep } from "node:path";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { ZentuiConfig } from "../../app/config/shell.ts";
-import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
 import {
   buildContextGauge,
   contextColorTier,
@@ -10,6 +9,7 @@ import {
   formatCwdLabel,
   formatElapsedDuration,
 } from "../../shared/format.ts";
+import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
 
 export { formatElapsedDuration } from "../../shared/format.ts";
 

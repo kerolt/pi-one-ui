@@ -2,19 +2,19 @@ import {
   getLanguageFromPath,
   highlightCode,
 } from "@earendil-works/pi-coding-agent";
-import { sanitizeAnsiForThemedOutput } from "./ansi-utils.ts";
 import { sanitizeToolResultText } from "../../../../../tools/tool-result-sanitize.ts";
-import { MAX_HL_CHARS, shikiHighlightCache } from "./shiki-highlight.ts";
-import { normalizeCodeWhitespace } from "./diff-text.ts";
+import { sanitizeAnsiForThemedOutput } from "./ansi-utils.ts";
+import type { DiffSpan } from "./diff-inline.ts";
 import {
   applyInlineSpanHighlight,
-  getLineBackground,
-  resolveShikiTheme,
   type DiffPalette,
   type DiffTheme,
+  getLineBackground,
+  resolveShikiTheme,
 } from "./diff-palette.ts";
 import type { DiffLineEntry, ParsedDiffEntry } from "./diff-parse.ts";
-import type { DiffSpan } from "./diff-inline.ts";
+import { normalizeCodeWhitespace } from "./diff-text.ts";
+import { MAX_HL_CHARS, shikiHighlightCache } from "./shiki-highlight.ts";
 
 export type CodeLineHighlighter = (
   line: string,

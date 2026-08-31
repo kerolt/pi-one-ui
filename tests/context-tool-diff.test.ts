@@ -1,31 +1,30 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import test from "node:test";
 import { stripVTControlCharacters } from "node:util";
-import { visibleWidth } from "@earendil-works/pi-tui";
-
 import {
-  ToolExecutionComponent,
   initTheme,
+  ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
-import { shouldRenderRichDiff } from "../extensions/layouts/context/renderer/index.ts";
-import { config } from "../extensions/app/config/renderer.ts";
+import { visibleWidth } from "@earendil-works/pi-tui";
+import { config, normalizeConfig } from "../extensions/app/config/renderer.ts";
 import { installDefaultMode } from "../extensions/layouts/context/renderer/default-mode.ts";
+import { shouldRenderRichDiff } from "../extensions/layouts/context/renderer/index.ts";
 import {
   renderEditDiffResult,
   renderWriteDiffResult,
 } from "../extensions/layouts/context/renderer/tool/diff/diff-renderer.ts";
-import { normalizeConfig } from "../extensions/app/config/renderer.ts";
 
 initTheme("dark");
+
 import {
   DEFAULT_TOOL_DISPLAY_CONFIG,
   installWriteOverride,
   renderRichToolResult,
-  WriteExecutionMetadataStore,
   type ToolDisplayConfig,
+  WriteExecutionMetadataStore,
 } from "../extensions/layouts/context/renderer/tool/diff/index.ts";
 import {
   executeWriteWithMetadata,

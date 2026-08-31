@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { shouldHighlightCodeBlock } from "../extensions/layouts/context/renderer/tool/diff/diff-renderer.ts";
 import {
   MAX_HL_CHARS,
   ShikiHighlightCache,
 } from "../extensions/layouts/context/renderer/tool/diff/shiki-highlight.ts";
-import { shouldHighlightCodeBlock } from "../extensions/layouts/context/renderer/tool/diff/diff-renderer.ts";
 import { sanitizeToolResultText } from "../extensions/tools/tool-result-sanitize.ts";
 
 const settle = () => new Promise<void>((resolve) => setImmediate(resolve));

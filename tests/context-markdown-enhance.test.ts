@@ -1,5 +1,5 @@
-import { test } from "node:test";
 import assert from "node:assert";
+import { test } from "node:test";
 import { default as enhance } from "../extensions/layouts/context/renderer/markdown-enhance.ts";
 
 const transformers: Array<(md: string, ctx?: object) => string> = [];

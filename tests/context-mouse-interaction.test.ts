@@ -1,18 +1,17 @@
 import assert from "node:assert/strict";
-import test from "node:test";
-
-import { existsSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import test from "node:test";
 
 import {
-  ToolExecutionComponent,
   initTheme,
+  ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
 import {
+  type Component,
   Container,
   visibleWidth,
-  type Component,
 } from "@earendil-works/pi-tui";
 import { createJiti } from "jiti";
 import claudeCodeStyleExtension, {

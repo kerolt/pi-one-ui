@@ -16,13 +16,14 @@
  * This file re-exports the stable public symbols so external importers
  * (diff/index.ts, compact-mode.ts, tests) keep working unchanged.
  */
-export { shouldHighlightCodeBlock } from "./diff-highlight.ts";
+
 export type { DisplayConfigInput } from "./diff-component.ts";
 export { isRichDiffComponent } from "./diff-component.ts";
 export {
   countEditDiffStats,
   renderEditDiffResult,
 } from "./diff-edit-render.ts";
+export { shouldHighlightCodeBlock } from "./diff-highlight.ts";
 export {
   countWriteDiffStats,
   renderWriteDiffResult,

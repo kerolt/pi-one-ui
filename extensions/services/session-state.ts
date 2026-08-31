@@ -10,8 +10,8 @@ import {
   getUsageTotals,
   invalidateUsageTotalsCache,
 } from "../shared/format.ts";
-import { emptyGitStatus } from "./git-data.ts";
 import type { GitStatusSummary } from "./git-data.ts";
+import { emptyGitStatus } from "./git-data.ts";
 import type { PackageVersionResult } from "./package-data.ts";
 import type { RuntimeInfo } from "./runtime-data.ts";
 import type { FooterTelemetry } from "./telemetry.ts";

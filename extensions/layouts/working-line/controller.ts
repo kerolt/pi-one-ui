@@ -3,21 +3,21 @@ import type {
   ExtensionContext,
   Theme,
 } from "@earendil-works/pi-coding-agent";
+import type {
+  PolishedTuiConfig,
+  WorkingLineComponentPatch,
+} from "../../app/config/shell.ts";
+import type { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
 import {
   InteractionMetricsTracker,
-  TURN_SUMMARY_ENTRY_TYPE,
   type MetricsUpdateResult,
+  TURN_SUMMARY_ENTRY_TYPE,
 } from "./interaction-summary.ts";
 import {
   AgentDurationClock,
   snapshotWorkingLineHighStyle,
   WorkingLineController,
 } from "./working-line.ts";
-import {
-  type PolishedTuiConfig,
-  type WorkingLineComponentPatch,
-} from "../../app/config/shell.ts";
-import type { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
 
 export type WorkingLineMessage = Parameters<
   InteractionMetricsTracker["messageUpdate"]

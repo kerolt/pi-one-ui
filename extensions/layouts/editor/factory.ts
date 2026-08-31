@@ -6,15 +6,15 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
 import type { PolishedTuiConfig } from "../../app/config/shell.ts";
-import { modelLabelFor, type FooterState } from "../footer/index.ts";
+import { type FooterState, modelLabelFor } from "../footer/index.ts";
 import { markAccentRailLayoutEditor } from "./accent-rail-layout-patch.ts";
-import { PolishedEditor, WrappedPolishedEditor } from "./ui.ts";
 import {
+  type EditorFactory,
   markEditorFactory,
   markWrappedEditorFactory,
-  type EditorFactory,
   type ZentuiEditorFactory,
 } from "./ownership.ts";
+import { PolishedEditor, WrappedPolishedEditor } from "./ui.ts";
 
 export type EditorFactoryRuntime = {
   readonly ownerToken: symbol;

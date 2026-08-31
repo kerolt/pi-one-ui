@@ -4,10 +4,6 @@ import type {
   Theme,
 } from "@earendil-works/pi-coding-agent";
 import {
-  configStore,
-  type ConfigRecord,
-} from "../../extensions/app/config/store.ts";
-import {
   type AccentRailEditorStyleConfig,
   type ContextStyle,
   type EditorComponentConfig,
@@ -21,8 +17,8 @@ import {
   hasUnsupportedComponentStyle,
   type IconMode,
   loadConfig,
-  mergeConfig,
   type MinimalistConfig,
+  mergeConfig,
   type PathDisplayConfig,
   type PolishedCopyFriendlyEditorStyleConfig,
   type PolishedEditorStyleConfig,
@@ -47,14 +43,18 @@ import {
   type WorkingLineComponentPatch,
   type ZentuiConfig,
 } from "../../extensions/app/config/shell.ts";
-import registerLayoutLifecycle from "./standalone-layout-runtime.ts";
-import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
-import { registerSettingsCommand } from "./settings-command.ts";
+import {
+  type ConfigRecord,
+  configStore,
+} from "../../extensions/app/config/store.ts";
 import { removeSelectorBorderStyle } from "../../extensions/app/overlay/selector-border.ts";
+import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
 import {
   installUserMessageStyle,
   removeUserMessageStyle,
 } from "../../extensions/layouts/context/message/user-message.ts";
+import { registerSettingsCommand } from "./settings-command.ts";
+import registerLayoutLifecycle from "./standalone-layout-runtime.ts";
 
 /**
  * Reports whether a context can install standalone User Message compatibility.

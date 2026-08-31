@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { LayoutRegistry } from "../extensions/app/ownership/layout-registry.ts";
 import {
   EventCoordinator,
   RUNTIME_EVENTS,
 } from "../extensions/app/runtime/event-coordinator.ts";
 import { RenderScheduler } from "../extensions/app/runtime/render-scheduler.ts";
 import { RuntimeStateStore } from "../extensions/app/runtime/runtime-state.ts";
-import { LayoutRegistry } from "../extensions/app/ownership/layout-registry.ts";
 
 test("EventCoordinator installs each runtime event once and dispatches in order", async () => {
   const registrations: Array<{

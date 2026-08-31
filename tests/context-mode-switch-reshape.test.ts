@@ -7,8 +7,8 @@ import test from "node:test";
 import type { AssistantMessage } from "@earendil-works/pi-ai";
 import {
   AssistantMessageComponent,
-  ToolExecutionComponent,
   initTheme,
+  ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
 
 import { config } from "../extensions/app/config/renderer.ts";

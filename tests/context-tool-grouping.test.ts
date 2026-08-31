@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import type { AssistantMessage } from "@earendil-works/pi-ai";
 import {
   AssistantMessageComponent,
-  ToolExecutionComponent,
   initTheme,
+  ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
-import type { AssistantMessage } from "@earendil-works/pi-ai";
 import { Container, Spacer } from "@earendil-works/pi-tui";
 import {
   installToolGrouping,
@@ -13,8 +13,8 @@ import {
 } from "../extensions/layouts/context/renderer/tool/grouping.ts";
 import {
   ExpandedToolIoView,
-  setActiveIoViewFrame,
   type IoViewFrameState,
+  setActiveIoViewFrame,
 } from "../extensions/layouts/context/renderer/tool/result.ts";
 
 initTheme("dark");

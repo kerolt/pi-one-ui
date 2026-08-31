@@ -1,18 +1,18 @@
 import {
   getKeybindings,
+  type Keybinding,
   matchesKey,
   truncateToWidth,
   visibleWidth,
-  type Keybinding,
 } from "@earendil-works/pi-tui";
 import { config } from "../../../../app/config/renderer.ts";
 import { isLazyProxyTui } from "../../../../tools/fullscreen-detect.ts";
-import { parseSgrMousePackets } from "./packets.ts";
 import {
   patchRegistry,
   SCROLL_BUTTON_STATE_SLOT,
   TOOL_MOUSE_TUI_SLOT,
 } from "../../../../tools/patch-keys.ts";
+import { parseSgrMousePackets } from "./packets.ts";
 
 const ZENTUI_PAGE_UP_INPUT =
   /^\x1b\[5;9(?::[12])?~$|^\x1b\[57421;9(?::[12])?u$|^\x1b\[1;6A$/;
