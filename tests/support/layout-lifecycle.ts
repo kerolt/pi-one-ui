@@ -4,43 +4,9 @@ import type {
   Theme,
 } from "@earendil-works/pi-coding-agent";
 import {
-  type AccentRailEditorStyleConfig,
-  type ContextStyle,
-  type EditorComponentConfig,
-  type ExtensionStatusColorMode,
-  type ExtensionStatusPlacement,
-  type FooterComponentConfig,
-  type FooterSegmentsConfig,
-  type GitBranchConfig,
-  type GitCommitConfig,
-  type GitMetricsConfig,
   hasUnsupportedComponentStyle,
-  type IconMode,
   loadConfig,
-  type MinimalistConfig,
   mergeConfig,
-  type PathDisplayConfig,
-  type PolishedCopyFriendlyEditorStyleConfig,
-  type PolishedEditorStyleConfig,
-  type PolishedTuiConfig,
-  type SelectorBordersComponentConfig,
-  type SeparatorStyle,
-  saveAccentRailEditorStylePatch,
-  saveEditorComponentPatch,
-  saveExtensionStatusColorMode,
-  saveExtensionStatusDefaultPlacement,
-  saveExtensionStatusPlacement,
-  saveFooterComponentPatch,
-  saveIconsModePatch,
-  saveMinimalistEditorStylePatch,
-  savePolishedCopyFriendlyEditorStylePatch,
-  savePolishedEditorStylePatch,
-  saveSelectorBordersComponentPatch,
-  saveStarshipFooterStylePatch,
-  saveUserMessagesComponentPatch,
-  saveWorkingLineComponentPatch,
-  type UserMessagesComponentConfig,
-  type WorkingLineComponentPatch,
   type ZentuiConfig,
 } from "../../extensions/app/config/shell.ts";
 import {
@@ -53,7 +19,6 @@ import {
   installUserMessageStyle,
   removeUserMessageStyle,
 } from "../../extensions/layouts/context/message/user-message.ts";
-import { registerSettingsCommand } from "./settings-command.ts";
 import registerLayoutLifecycle from "./standalone-layout-runtime.ts";
 
 /**
@@ -67,197 +32,9 @@ function isTuiContext(ctx: ExtensionContext): boolean {
   return ctx.hasUI && (mode === undefined || mode === "tui");
 }
 
-type LayoutBindings = ReturnType<typeof registerLayoutLifecycle>;
 type TestLayoutOptions = {
   ownTurnSummary?: boolean;
 };
-
-/**
- * Builds the test-only settings dependencies without shipping a settings hook.
- *
- * @param bindings Layout controllers and services from the lifecycle harness.
- * @param setUserMessagesComponent Standalone User Message compatibility setter.
- * @returns Dependencies consumed by the historical settings command tests.
- */
-function createSettingsDeps(
-  bindings: LayoutBindings,
-  setUserMessagesComponent: (
-    patch: Partial<UserMessagesComponentConfig>,
-    ctx: ExtensionContext,
-  ) => void,
-) {
-  const refresh = () => bindings.editorController.requestRender();
-  const reloadAfterSave = (): void => {
-    bindings.reloadConfig();
-  };
-  const applyFooterDependencyConfigChange = (
-    ctx: ExtensionContext,
-    save: () => PolishedTuiConfig,
-  ) => {
-    const before = bindings.footerController.installedFooterReferences();
-    save();
-    reloadAfterSave();
-    const after = bindings.footerController.installedFooterReferences();
-    if (
-      before.size !== after.size ||
-      [...before].some((name) => !after.has(name))
-    ) {
-      bindings.footerController.reconcileSessionTimer();
-      bindings.projectRefreshService.reconcile(ctx, true);
-    }
-  };
-
-  return {
-    sessionLifecycle: bindings.sessionLifecycle,
-    getConfig: bindings.getConfig,
-    setEditorComponent: (
-      patch: Partial<EditorComponentConfig>,
-      ctx: ExtensionContext,
-    ) => bindings.editorController.setComponent(patch, ctx),
-    setPolished(
-      patch: Partial<PolishedEditorStyleConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      savePolishedEditorStylePatch(patch);
-      reloadAfterSave();
-      refresh();
-    },
-    setPolishedCopyFriendly(
-      patch: Partial<PolishedCopyFriendlyEditorStyleConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      savePolishedCopyFriendlyEditorStylePatch(patch);
-      reloadAfterSave();
-      refresh();
-    },
-    setAccentRail(
-      patch: Partial<AccentRailEditorStyleConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      saveAccentRailEditorStylePatch(patch);
-      reloadAfterSave();
-      refresh();
-    },
-    setMinimalist(patch: Partial<MinimalistConfig>, ctx: ExtensionContext) {
-      saveMinimalistEditorStylePatch(patch);
-      reloadAfterSave();
-      bindings.editorController.reconcileTimers();
-      bindings.projectRefreshService.reconcile(
-        ctx,
-        patch.pathDisplay !== undefined || patch.showGit !== undefined,
-      );
-      refresh();
-    },
-    setUserMessagesComponent,
-    setWorkingLineComponent: (
-      patch: WorkingLineComponentPatch,
-      ctx: ExtensionContext,
-    ) => bindings.workingLineController.setComponent(patch, ctx),
-    setSelectorBordersComponent(
-      patch: Partial<SelectorBordersComponentConfig>,
-      _ctx: ExtensionContext,
-    ) {
-      saveSelectorBordersComponentPatch(patch);
-      reloadAfterSave();
-      if (patch.enabled !== undefined || patch.style !== undefined)
-        bindings.selectorController.reconcile();
-      refresh();
-    },
-    setFooterComponent: (
-      patch: Partial<FooterComponentConfig>,
-      ctx: ExtensionContext,
-    ) => bindings.footerController.setComponent(patch, ctx),
-    setFooterSegments(
-      patch: Partial<FooterSegmentsConfig>,
-      ctx: ExtensionContext,
-    ) {
-      applyFooterDependencyConfigChange(ctx, () =>
-        saveStarshipFooterStylePatch({
-          segments: patch as FooterSegmentsConfig,
-        }),
-      );
-    },
-    setFooterFormat(value: string, ctx: ExtensionContext) {
-      applyFooterDependencyConfigChange(ctx, () =>
-        saveStarshipFooterStylePatch({ format: value }),
-      );
-    },
-    setResponsiveFooter(
-      patch: Partial<
-        Pick<PolishedTuiConfig, "responsiveFooter" | "compactFooterMaxLines">
-      >,
-      ctx: ExtensionContext,
-    ) {
-      applyFooterDependencyConfigChange(ctx, () =>
-        saveStarshipFooterStylePatch({
-          ...(patch.responsiveFooter === undefined
-            ? {}
-            : { responsive: patch.responsiveFooter }),
-          ...(patch.compactFooterMaxLines === undefined
-            ? {}
-            : { compactMaxLines: patch.compactFooterMaxLines }),
-        }),
-      );
-    },
-    setIconMode(mode: IconMode) {
-      saveIconsModePatch(mode);
-      reloadAfterSave();
-    },
-    setContextStyle(style: ContextStyle) {
-      saveStarshipFooterStylePatch({ contextStyle: style });
-      reloadAfterSave();
-    },
-    setSeparator(separator: SeparatorStyle) {
-      saveStarshipFooterStylePatch({ separator });
-      reloadAfterSave();
-    },
-    setPathDisplay(patch: Partial<PathDisplayConfig>) {
-      saveStarshipFooterStylePatch({ pathDisplay: patch as PathDisplayConfig });
-      reloadAfterSave();
-    },
-    setGitBranch(patch: Partial<GitBranchConfig>) {
-      saveStarshipFooterStylePatch({ gitBranch: patch as GitBranchConfig });
-      reloadAfterSave();
-    },
-    setGitCommit(
-      patch: Partial<Pick<GitCommitConfig, "onlyDetached" | "showTag">>,
-      ctx: ExtensionContext,
-    ) {
-      saveStarshipFooterStylePatch({ gitCommit: patch as GitCommitConfig });
-      reloadAfterSave();
-      if (patch.showTag !== undefined)
-        bindings.projectRefreshService.reconcile(ctx, true);
-    },
-    setGitMetrics(patch: Partial<GitMetricsConfig>, ctx: ExtensionContext) {
-      saveStarshipFooterStylePatch({ gitMetrics: patch as GitMetricsConfig });
-      reloadAfterSave();
-      if (patch.ignoreSubmodules !== undefined)
-        bindings.projectRefreshService.reconcile(ctx, true);
-    },
-    getActiveExtensionStatuses() {
-      return bindings.footerController.getExtensionStatuses();
-    },
-    setExtensionStatusDefaultPlacement(placement: ExtensionStatusPlacement) {
-      saveExtensionStatusDefaultPlacement(placement);
-      reloadAfterSave();
-    },
-    setExtensionStatusPlacement(
-      key: string,
-      placement: ExtensionStatusPlacement,
-    ) {
-      saveExtensionStatusPlacement(key, placement);
-      reloadAfterSave();
-    },
-    setExtensionStatusColorMode(
-      key: string,
-      colorMode: ExtensionStatusColorMode,
-    ) {
-      saveExtensionStatusColorMode(key, colorMode);
-      reloadAfterSave();
-    },
-    requestRender: refresh,
-  };
-}
 
 /**
  * Registers production layout lifecycle and test-only User Message ownership.
@@ -268,7 +45,7 @@ function createSettingsDeps(
 export default function (
   pi: ExtensionAPI,
   options: TestLayoutOptions = {},
-): void {
+): ReturnType<typeof registerLayoutLifecycle> {
   let contextConfig: ZentuiConfig = loadConfig();
   let activeTheme: Theme | undefined;
   let cleanupUserMessageStyle: () => void = () => {};
@@ -305,21 +82,6 @@ export default function (
     }
   };
 
-  /**
-   * Applies a standalone User Message configuration patch.
-   *
-   * @param patch User Message configuration changes.
-   * @param _ctx Active Pi extension context.
-   */
-  const updateUserMessages = (
-    patch: Partial<UserMessagesComponentConfig>,
-    _ctx: ExtensionContext,
-  ): void => {
-    contextConfig = saveUserMessagesComponentPatch(patch);
-    if (patch.enabled !== undefined || patch.style !== undefined)
-      reconcileUserMessages();
-  };
-
   pi.on("session_start", (_event, ctx) => {
     if (!isTuiContext(ctx)) return;
     unsubscribeConfig();
@@ -342,12 +104,6 @@ export default function (
   );
   bindings.installEventHandlers(coordinator);
   coordinator.install();
-  if (typeof pi.registerCommand === "function") {
-    registerSettingsCommand(
-      pi,
-      createSettingsDeps(bindings, updateUserMessages),
-    );
-  }
   pi.on("session_start", (_event, ctx) => {
     if (!isTuiContext(ctx)) return;
     activeTheme = ctx.ui.theme;
@@ -370,6 +126,7 @@ export default function (
       activeTheme = undefined;
     }
   });
+  return bindings;
 }
 
 export { activeFooterReferences } from "../../extensions/layouts/footer/data.ts";

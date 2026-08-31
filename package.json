@@ -28,15 +28,13 @@
     "LICENSE"
   ],
   "scripts": {
-    "format": "biome format --write extensions tests package.json tsconfig.json biome.json",
-    "check": "biome check extensions tests package.json tsconfig.json biome.json",
-    "fix": "biome check --write extensions tests package.json tsconfig.json biome.json",
+    "format": "biome format --write extensions tests package.json tsconfig.json vitest.config.ts biome.json",
+    "check": "biome check extensions tests package.json tsconfig.json vitest.config.ts biome.json",
+    "fix": "biome check --write extensions tests package.json tsconfig.json vitest.config.ts biome.json",
     "pack:check": "npm pack --dry-run",
     "pi:dev": "${PI_BIN:-pi} --no-extensions -e ./extensions/index.ts",
     "pi:install-local": "${PI_BIN:-pi} install ./ -l",
-    "test": "npm run test:node && npm run test:vitest",
-    "test:node": "node --test tests/config.test.ts tests/config-store.test.ts tests/header-*.test.ts tests/one-ui-integration.test.ts tests/overlay-infrastructure.test.ts tests/runtime-infrastructure.test.ts tests/context-*.test.ts",
-    "test:vitest": "vitest run tests/shell-*.test.ts tests/working-line-*.test.ts tests/editor-*.test.ts tests/footer-*.test.ts tests/services-*.test.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "verify": "npm run check && npm run typecheck && npm test"
   },
