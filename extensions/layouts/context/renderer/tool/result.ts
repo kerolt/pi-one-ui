@@ -43,21 +43,185 @@ function rawTextFromResult(result: any): string {
     : "";
 }
 
+const MAX_TOOL_DETAILS_DEPTH = 8;
+const MAX_TOOL_DETAILS_ENTRIES = 64;
+const MAX_TOOL_DETAILS_NODES = 512;
+const MAX_TOOL_DETAILS_STRING_LENGTH = 4096;
+const TOOL_DETAILS_TRUNCATED = "[truncated]";
+
+type ToolDetailsProjectionState = {
+  remainingNodes: number;
+  readonly seen: WeakSet<object>;
+};
+
+function projectToolDetailsDescriptor(
+  descriptor: PropertyDescriptor | undefined,
+  state: ToolDetailsProjectionState,
+  depth: number,
+): unknown {
+  if (!descriptor) return "[empty]";
+  if ("value" in descriptor)
+    return projectToolDetailsValue(descriptor.value, state, depth);
+  if (descriptor.get && descriptor.set) return "[Getter/Setter]";
+  if (descriptor.get) return "[Getter]";
+  return "[Setter]";
+}
+
+function projectToolDetailsValue(
+  value: unknown,
+  state: ToolDetailsProjectionState,
+  depth = 0,
+): unknown {
+  if (typeof value === "string")
+    return value.length > MAX_TOOL_DETAILS_STRING_LENGTH
+      ? `${value.slice(0, MAX_TOOL_DETAILS_STRING_LENGTH)}…`
+      : value;
+  if (
+    value === null ||
+    (typeof value !== "object" && typeof value !== "function")
+  )
+    return value;
+  if (typeof value === "function")
+    return `[Function${value.name ? `: ${value.name}` : ""}]`;
+  if (state.seen.has(value)) return "[Circular]";
+  if (state.remainingNodes <= 0) return "[node budget exhausted]";
+  if (depth >= MAX_TOOL_DETAILS_DEPTH) return "[depth limit]";
+
+  state.remainingNodes--;
+  state.seen.add(value);
+  try {
+    if (Array.isArray(value)) {
+      const output: unknown[] = [];
+      const limit = Math.min(value.length, MAX_TOOL_DETAILS_ENTRIES);
+      let index = 0;
+      for (; index < limit && state.remainingNodes > 0; index++) {
+        output.push(
+          projectToolDetailsDescriptor(
+            Object.getOwnPropertyDescriptor(value, String(index)),
+            state,
+            depth + 1,
+          ),
+        );
+      }
+      if (index < value.length)
+        output.push(`... ${value.length - index} more items`);
+      return output;
+    }
+
+    if (value instanceof Map) {
+      const output: unknown[] = [];
+      let processed = 0;
+      for (const [key, entry] of value) {
+        if (processed === MAX_TOOL_DETAILS_ENTRIES || state.remainingNodes <= 0)
+          break;
+        output.push([
+          projectToolDetailsValue(key, state, depth + 1),
+          projectToolDetailsValue(entry, state, depth + 1),
+        ]);
+        processed++;
+      }
+      if (processed < value.size)
+        output.push(`... ${value.size - processed} more entries`);
+      return { Map: output };
+    }
+
+    if (value instanceof Set) {
+      const output: unknown[] = [];
+      let processed = 0;
+      for (const entry of value) {
+        if (processed === MAX_TOOL_DETAILS_ENTRIES || state.remainingNodes <= 0)
+          break;
+        output.push(projectToolDetailsValue(entry, state, depth + 1));
+        processed++;
+      }
+      if (processed < value.size)
+        output.push(`... ${value.size - processed} more entries`);
+      return { Set: output };
+    }
+
+    if (ArrayBuffer.isView(value)) {
+      const length =
+        "length" in value && typeof value.length === "number"
+          ? value.length
+          : 0;
+      const output: unknown[] = [];
+      const limit = Math.min(length, MAX_TOOL_DETAILS_ENTRIES);
+      for (let index = 0; index < limit; index++)
+        output.push(Reflect.get(value, index));
+      if (limit < length) output.push(`... ${length - limit} more items`);
+      return output;
+    }
+
+    if (value instanceof Date || value instanceof RegExp) return value;
+    if (value instanceof Error) {
+      return {
+        name: value.name,
+        message: projectToolDetailsValue(value.message, state, depth + 1),
+      };
+    }
+
+    const output: Record<string, unknown> = {};
+    let processed = 0;
+    for (const key in value) {
+      if (!Object.hasOwn(value, key)) continue;
+      if (processed === MAX_TOOL_DETAILS_ENTRIES || state.remainingNodes <= 0) {
+        Object.defineProperty(output, "... more properties", {
+          value: TOOL_DETAILS_TRUNCATED,
+          enumerable: true,
+        });
+        break;
+      }
+      Object.defineProperty(output, key, {
+        value: projectToolDetailsDescriptor(
+          Object.getOwnPropertyDescriptor(value, key),
+          state,
+          depth + 1,
+        ),
+        enumerable: true,
+      });
+      processed++;
+    }
+    return output;
+  } catch (error) {
+    return `[uninspectable: ${error instanceof Error ? error.message : String(error)}]`;
+  }
+}
+
 function detailsFromResult(result: any): string {
-  if (result?.details === undefined) return "";
-  const details =
-    typeof result.details === "string"
-      ? result.details
-      : inspect(result.details, { depth: 8, breakLength: 100, compact: false });
+  const rawDetails = result?.details;
+  if (rawDetails === undefined) return "";
+  if (typeof rawDetails === "string")
+    return sanitizeToolResultText(rawDetails, 16_384);
+  const projected = projectToolDetailsValue(rawDetails, {
+    remainingNodes: MAX_TOOL_DETAILS_NODES,
+    seen: new WeakSet(),
+  });
+  const details = inspect(projected, {
+    depth: MAX_TOOL_DETAILS_DEPTH,
+    breakLength: 100,
+    compact: false,
+    customInspect: false,
+    getters: false,
+    maxArrayLength: MAX_TOOL_DETAILS_ENTRIES + 1,
+    maxStringLength: MAX_TOOL_DETAILS_STRING_LENGTH,
+  });
   return sanitizeToolResultText(details, 16_384);
 }
 
 export function textFromResult(result: any, expanded = false): string {
-  // Compact previews only need short text; bound sanitize work.
+  // Compact previews only need visible text; avoid traversing large custom details.
   const content = sanitizeToolResultText(rawTextFromResult(result), 16_384);
+  if (content && !expanded) {
+    return content;
+  }
+
   const details = detailsFromResult(result);
-  if (!content) return details;
-  if (!expanded || !details || details === content) return content;
+  if (!content) {
+    return details;
+  }
+  if (!details || details === content) {
+    return content;
+  }
   return `${content}\nDetails:\n${details}`;
 }
 
@@ -299,6 +463,14 @@ export class ExpandedToolIoView {
     this.maxOutputLines = Math.max(1, maxOutputLines);
     this.maxInputLines = Math.max(1, maxInputLines);
     this.flushLeft = flushLeft;
+  }
+
+  setTheme(theme: any): void {
+    if (this.theme === theme) {
+      return;
+    }
+    this.theme = theme;
+    this.invalidate();
   }
 
   setContent(
@@ -759,17 +931,12 @@ export function renderExpandedToolResult(
 
   // Prefer structured Input/Output when we have args or non-empty output.
   if (inputBody.trim() || outputBody.trim()) {
+    const cached = context?.state?.ccstyleExpandedIoView;
     let view: ExpandedToolIoView;
     if (isExpandedToolIoView(lastComponent)) {
-      lastComponent.setContent(
-        inputBody,
-        outputBody,
-        isError,
-        maxLines,
-        maxLines,
-        flushLeft,
-      );
       view = lastComponent;
+    } else if (isExpandedToolIoView(cached)) {
+      view = cached;
     } else {
       view = new ExpandedToolIoView(
         theme,
@@ -781,11 +948,23 @@ export function renderExpandedToolResult(
         flushLeft,
       );
     }
+    view.setTheme(theme);
+    view.setContent(
+      inputBody,
+      outputBody,
+      isError,
+      maxLines,
+      maxLines,
+      flushLeft,
+    );
     if (context) rememberIoView(context, view);
     return view;
   }
 
-  if (context?.state) context.state.ccstyleIoView = undefined;
+  if (context?.state) {
+    context.state.ccstyleIoView = undefined;
+    context.state.ccstyleExpandedIoView = undefined;
+  }
   const color = isError ? "error" : "muted";
   return new Text(theme.fg(color, renderCollapsedToolResult("Done")), 0, 0);
 }
@@ -901,6 +1080,7 @@ function rememberIoView(context: any, view: ExpandedToolIoView): void {
   }
   if (!context.state || typeof context.state !== "object") context.state = {};
   context.state.ccstyleIoView = view;
+  context.state.ccstyleExpandedIoView = view;
 }
 
 /** hover 状态变更后刷新上一个/下一个视图（context.invalidate 缓存于 ioViewInvalidators）。 */

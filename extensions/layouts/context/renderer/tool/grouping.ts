@@ -34,7 +34,7 @@ import {
 } from "./result.ts";
 import { isToolTuiFullscreen, showMoreHintText } from "./show-more-hint.ts";
 
-const NON_GROUPABLE = new Set(["edit", "write", "apply_patch"]);
+const NON_GROUPABLE = new Set(["edit", "write", "apply_patch", "subagent"]);
 
 type Patch = {
   owner: object;

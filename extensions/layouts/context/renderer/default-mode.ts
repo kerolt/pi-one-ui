@@ -50,8 +50,8 @@ import { showMoreHintText } from "./tool/show-more-hint.ts";
 const BRIGHT_GREEN = "\x1b[38;2;80;220;100m";
 const ANSI_FG_RESET = "\x1b[39m";
 
-// pi-subagents 等扩展为 Agent 提供专用渲染器，ccstyle 必须保留。
-const DEDICATED_RENDERER_TOOLS = new Set(["Agent"]);
+// Preserve rich renderers owned by legacy Agent tools and modern pi-subagents.
+const DEDICATED_RENDERER_TOOLS = new Set(["Agent", "subagent"]);
 
 export type DefaultModeHooks = {
   /** 本安装是否仍持有全局工具渲染补丁。 */
@@ -148,14 +148,14 @@ function renderDefault(
   tool: any,
   slot: "renderCall" | "renderResult",
   args: any[],
-  fallback = "",
+  fallback: string | (() => string) = "",
 ) {
   try {
     if (typeof tool?.[slot] === "function") return tool[slot](...args);
   } catch {
     // Fall through to raw fallback.
   }
-  return new Text(fallback, 0, 0);
+  return new Text(typeof fallback === "function" ? fallback() : fallback, 0, 0);
 }
 
 type ParsedTask = { id: string; status: string; subject: string };
@@ -320,7 +320,7 @@ function createCcstyleTool(
           originalTool,
           "renderResult",
           [result, options, theme, context],
-          textFromResult(result),
+          () => textFromResult(result),
         );
       }
 
@@ -421,7 +421,12 @@ function createCcstyleTool(
             isToolCallHovered(toolCallId) ? cachedHoveredLine! : cachedLine,
           ];
         },
-        invalidate() {},
+        invalidate() {
+          cachedWidth = undefined;
+          cachedLine = undefined;
+          cachedHoveredLine = undefined;
+          context?.state?.ccstyleExpandedIoView?.invalidate?.();
+        },
       };
     },
   };
