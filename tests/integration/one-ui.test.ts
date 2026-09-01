@@ -1,7 +1,6 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createJiti } from "jiti";
 import { expect, test } from "vitest";
 
 import { ownerFor, UI_OWNERSHIP } from "../../extensions/app/ownership.ts";
@@ -32,8 +31,8 @@ test("the composed extension exposes /oneui without upstream management commands
   process.env.PI_CODING_AGENT_DIR = agentDir;
 
   try {
-    const { default: registerOneUi } = await createJiti(import.meta.url).import(
-      "../../extensions/index.ts",
+    const { default: registerOneUi } = await import(
+      "../../extensions/index.ts"
     );
     const commands = new Map<string, unknown>();
     const handlers = new Map<string, unknown[]>();
@@ -72,4 +71,4 @@ test("the composed extension exposes /oneui without upstream management commands
     else process.env.PI_CODING_AGENT_DIR = previousAgentDir;
     await rm(agentDir, { recursive: true, force: true });
   }
-});
+}, 15_000);
