@@ -58,8 +58,7 @@
     "themes": [
       "./themes/cc-dark.json",
       "./themes/cc-light.json"
-    ],
-    "image": "https://raw.githubusercontent.com/minuque/pi-cc-extensions/main/assets/readme/preview.png"
+    ]
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.5",

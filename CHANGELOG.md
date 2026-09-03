@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Removed
 
 - Removed the `opencode-copy-friendly` and `accent-rail` Editor styles, including Accent Rail layout patching and style-specific settings.
+- Removed the inherited upstream image from pi-one-ui's package-gallery metadata.
 
 ### Migration
 
