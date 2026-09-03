@@ -5,6 +5,7 @@ import {
   formatTurnSummary,
   InteractionMetricsTracker,
   isTurnSummaryData,
+  MIN_OUTPUT_RATE_WINDOW_MS,
   parseAssistantMessageTokens,
   renderTurnSummaryEntry,
   subtractThoughtIntervalsWithinCap,
@@ -115,6 +116,77 @@ describe("live interaction token display", () => {
         delta("thinking_delta", 1, "defgh", "defgh"),
       ).displayTokens,
     ).toEqual({ input: 0, output: 2, outputApproximate: true });
+  });
+
+  it("reports response-local output rate after the minimum sampling window and resets it per turn", () => {
+    const tracker = new InteractionMetricsTracker();
+    tracker.agentStart(0);
+    tracker.turnStart(100);
+
+    expect(
+      tracker.messageUpdate(
+        assistant(10, 4, { responseId: "first" }),
+        undefined,
+        100 + MIN_OUTPUT_RATE_WINDOW_MS - 1,
+      ).displayTokens,
+    ).toEqual({ input: 10, output: 4, outputApproximate: false });
+    expect(
+      tracker.messageUpdate(
+        assistant(10, 6, { responseId: "first" }),
+        undefined,
+        100 + MIN_OUTPUT_RATE_WINDOW_MS,
+      ).displayTokens,
+    ).toEqual({
+      input: 10,
+      output: 6,
+      outputApproximate: false,
+      outputTokensPerSecond: 12,
+    });
+    expect(
+      tracker.messageEnd(assistant(10, 8, { responseId: "first" }), 1100),
+    ).toEqual(
+      accepted({ input: 10, output: 8 }, "final", {
+        input: 10,
+        output: 8,
+        outputApproximate: false,
+        outputTokensPerSecond: 8,
+      }),
+    );
+
+    tracker.turnStart(1200);
+    expect(tracker.currentDisplayTokens()).toEqual({
+      input: 10,
+      output: 8,
+      outputApproximate: true,
+    });
+  });
+
+  it("calculates output rate from fallback estimates when provider usage is unavailable", () => {
+    const tracker = new InteractionMetricsTracker();
+    tracker.agentStart(0);
+    tracker.turnStart(0);
+
+    const update = tracker.messageUpdate(
+      { role: "assistant", responseId: "estimated" },
+      delta("text_delta", 0, "abcdefgh", "abcdefgh"),
+      MIN_OUTPUT_RATE_WINDOW_MS,
+    );
+    expect(update.displayTokens).toEqual({
+      input: 0,
+      output: 2,
+      outputApproximate: true,
+      outputTokensPerSecond: 4,
+    });
+    expect(
+      tracker.messageEnd({ role: "assistant", responseId: "estimated" }, 500),
+    ).toEqual(
+      accepted({ input: 0, output: 0 }, "no-snapshot", {
+        input: 0,
+        output: 2,
+        outputApproximate: true,
+        outputTokensPerSecond: 4,
+      }),
+    );
   });
 
   it("counts cumulative Unicode code points and ignores unchanged or stale snapshots", () => {

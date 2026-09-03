@@ -550,7 +550,12 @@ export type WorkingLineRuntimeSegments = {
   tool?: string;
   elapsedMs?: number;
   thought?: { durationMs: number; active: boolean };
-  tokens?: { input: number; output: number; outputApproximate?: boolean };
+  tokens?: {
+    input: number;
+    output: number;
+    outputApproximate?: boolean;
+    outputTokensPerSecond?: number;
+  };
 };
 
 export type WorkingLineFrameState = {
@@ -617,11 +622,18 @@ export function formatWorkingLineTokens(
     tokens.input < 0 ||
     tokens.output < 0 ||
     (tokens.outputApproximate !== undefined &&
-      typeof tokens.outputApproximate !== "boolean")
+      typeof tokens.outputApproximate !== "boolean") ||
+    (tokens.outputTokensPerSecond !== undefined &&
+      (!Number.isFinite(tokens.outputTokensPerSecond) ||
+        tokens.outputTokensPerSecond < 0))
   ) {
     return undefined;
   }
-  return `↑${formatCount(tokens.input)} ↓${formatCount(tokens.output)}`;
+  const outputRate =
+    tokens.outputTokensPerSecond && tokens.outputTokensPerSecond > 0
+      ? ` ⚡${formatCount(Math.round(tokens.outputTokensPerSecond * 10) / 10)} tok/s`
+      : "";
+  return `↑${formatCount(tokens.input)} ↓${formatCount(tokens.output)}${outputRate}`;
 }
 
 function truncateWithEllipsis(value: string, capacity: number): string {
@@ -1174,6 +1186,15 @@ export class WorkingLineController {
   startTurn(ctx: WorkingLineContext): WorkingLineReconcileResult {
     const config = this.getConfig().components.workingLine;
     this.activeTools.clear();
+    if (this.tokens?.outputTokensPerSecond !== undefined) {
+      this.tokens = {
+        input: this.tokens.input,
+        output: this.tokens.output,
+        ...(this.tokens.outputApproximate === undefined
+          ? {}
+          : { outputApproximate: this.tokens.outputApproximate }),
+      };
+    }
     const selectedMessage = selectWorkingLineMessage(config, this.random);
     if (!config.enabled) {
       this.selectedMessage = selectedMessage;

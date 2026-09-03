@@ -164,6 +164,53 @@ beforeEach(() => {
 });
 
 describe("working-line extension lifecycle integration", () => {
+  it("shows response-local output rate and clears it at the next turn", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
+    const handlers = loadExtension();
+    const current = harness();
+    const row = () => {
+      const indicator = current.calls.at(-1)?.[1] as
+        | { frames?: string[] }
+        | undefined;
+      return stripTerminalSequences(indicator?.frames?.[0] ?? "");
+    };
+    try {
+      await emit(handlers, "session_start", current.ctx);
+      await emit(handlers, "agent_start", current.ctx);
+      await emit(handlers, "turn_start", current.ctx);
+      vi.setSystemTime(500);
+      await emit(handlers, "message_update", current.ctx, {
+        message: {
+          role: "assistant",
+          usage: { input: 100, output: 10 },
+          content: [],
+          responseId: "first",
+        },
+      });
+      expect(row()).toContain("↑100 ↓10 ⚡20 tok/s");
+
+      vi.setSystemTime(1000);
+      await emit(handlers, "message_end", current.ctx, {
+        message: {
+          role: "assistant",
+          usage: { input: 100, output: 8 },
+          content: [],
+          responseId: "first",
+        },
+      });
+      expect(row()).toContain("↑100 ↓8 ⚡8 tok/s");
+
+      vi.setSystemTime(1100);
+      await emit(handlers, "turn_start", current.ctx);
+      expect(row()).toContain("↑100 ↓8");
+      expect(row()).not.toContain("tok/s");
+    } finally {
+      await emit(handlers, "session_shutdown", current.ctx);
+      vi.useRealTimers();
+    }
+  });
+
   it("wires full-row rebuilds, authoritative usage, parallel tools, and isolated cleanup", async () => {
     const handlers = loadExtension();
     const current = harness();

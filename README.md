@@ -25,7 +25,7 @@ Header → Context → WorkingLine → Editor → Footer
 
 - **Header**：启动信息、Logo 和快捷键提示。
 - **Context**：对话内容区，包含用户消息、Assistant 消息、Thinking、Tool、Diff、Markdown 和 Summary。
-- **WorkingLine**：工作状态、spinner、token/thought/elapsed 信息和回合摘要。
+- **WorkingLine**：工作状态、spinner、token/thought/elapsed、实时输出速率和回合摘要。
 - **Editor**：输入编辑器、completion、metadata，以及 Opencode 和 Minimalist 样式。
 - **Footer**：目录、Git、runtime、token、cost 和扩展状态等信息。
 - **Overlay**：设置面板、Context Inspector 等临时浮层由统一的 OverlayManager 管理。
@@ -112,6 +112,8 @@ pi install git:github.com/kerolt/pi-one-ui
 ```
 
 Editor 当前只支持 `opencode` 和 `minimalist` 两种样式。`minimalist` 不再重复显示上下文占用信息；上下文百分比、token 总量、阈值和 gauge 等展示统一由 Footer 配置。已有配置若选择了已移除的 `opencode-copy-friendly` 或 `accent-rail`，运行时会安全回退到默认的 `opencode`，相应的旧嵌套样式配置会被忽略。
+
+WorkingLine 的 token segment 会在一次模型响应持续至少 500ms 后追加实时输出速率，例如 `⚡12 tok/s`。速率按当前响应独立计算，在下一次 `turn_start` 时重置；关闭 token segment 时也会一并隐藏。
 
 不同布局和渲染器的可用选项会随版本变化，建议优先使用 `/oneui` 面板进行配置。
 

@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - Simplified Editor styling to the `opencode` and `minimalist` options; removed Minimalist context-usage metadata in favor of Footer's more complete context configuration.
+- Added response-local live output throughput to the WorkingLine token segment after a bounded sampling window.
 
 ### Removed
 

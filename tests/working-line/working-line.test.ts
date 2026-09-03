@@ -118,9 +118,31 @@ describe("working-line token formatting", () => {
     ).toBe("↑27k ↓1.4k");
     expect(
       formatWorkingLineTokens({
+        input: 27_000,
+        output: 1_400,
+        outputApproximate: false,
+        outputTokensPerSecond: 12.4,
+      }),
+    ).toBe("↑27k ↓1.4k ⚡12.4 tok/s");
+    expect(
+      formatWorkingLineTokens({
         input: 1,
         output: 2,
         outputApproximate: "yes",
+      } as never),
+    ).toBeUndefined();
+    expect(
+      formatWorkingLineTokens({
+        input: 1,
+        output: 2,
+        outputTokensPerSecond: 0.4,
+      }),
+    ).toBe("↑1 ↓2 ⚡0.4 tok/s");
+    expect(
+      formatWorkingLineTokens({
+        input: 1,
+        output: 2,
+        outputTokensPerSecond: Number.POSITIVE_INFINITY,
       } as never),
     ).toBeUndefined();
   });
@@ -135,10 +157,13 @@ describe("working-line token formatting", () => {
           input: Number.MAX_SAFE_INTEGER,
           output: Number.MAX_SAFE_INTEGER,
           outputApproximate: true,
+          outputTokensPerSecond: Number.MAX_SAFE_INTEGER,
         },
       },
     );
-    expect(composed.row).toContain("↑9007199255M ↓9007199255M");
+    expect(composed.row).toContain(
+      "↑9007199255M ↓9007199255M ⚡9007199255M tok/s",
+    );
     expect(visibleWidth(composed.row)).toBeLessThanOrEqual(
       MAX_WORKING_LINE_FRAME_CELLS - 2,
     );

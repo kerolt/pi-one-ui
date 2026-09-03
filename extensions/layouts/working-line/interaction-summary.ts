@@ -10,6 +10,7 @@ import { isSafeSgrStylePrefix } from "../../shared/style.ts";
 import { renderWorkingLineHigh } from "./working-line.ts";
 
 export const TURN_SUMMARY_ENTRY_TYPE = "zentui-turn-summary";
+export const MIN_OUTPUT_RATE_WINDOW_MS = 500;
 const TURN_SUMMARY_VERSION = 3;
 const SGR_RESET = "\x1b[0m";
 
@@ -18,6 +19,7 @@ export type LiveTokenDisplay = Readonly<{
   input: number;
   output: number;
   outputApproximate: boolean;
+  outputTokensPerSecond?: number;
 }>;
 export type ThoughtSnapshot = Readonly<{ durationMs: number; active: boolean }>;
 
@@ -70,6 +72,8 @@ type ResponseState = {
   outputAnchor: number;
   outputAnchorCodePoints: number;
   liveOutputFloor: number;
+  startedAt: number;
+  outputTokensPerSecond?: number;
   lastDisplay?: LiveTokenDisplay;
   estimateIncomplete: boolean;
   estimateEnabled: boolean;
@@ -515,7 +519,7 @@ export class InteractionMetricsTracker {
       this.commitSnapshot(run, run.response);
       this.closeResponse(run, run.response, now);
     }
-    this.openResponse(run);
+    this.openResponse(run, now);
   }
 
   messageUpdate(
@@ -549,7 +553,7 @@ export class InteractionMetricsTracker {
         contentChanged = this.applyContentEvent(response, validated);
     }
     const usageChanged = tokens ? this.applyLiveUsage(response, tokens) : false;
-    const display = this.liveDisplay(response);
+    const display = this.liveDisplay(response, now);
     const displayChanged = !this.sameDisplay(response.lastDisplay, display);
     response.lastDisplay = display;
     return {
@@ -570,20 +574,31 @@ export class InteractionMetricsTracker {
     if (response.responseIdKey && key && response.responseIdKey !== key)
       return { status: "rejected" };
     if (!response.responseIdKey && key) response.responseIdKey = key;
-    const preCloseDisplay = this.liveDisplay(response);
     let source: "final" | "last-snapshot" | "no-snapshot";
     if (tokens) {
       response.snapshot = tokens;
       response.hasSnapshot = true;
+      this.updateOutputRate(response, tokens.output, now);
       source = "final";
     } else source = response.hasSnapshot ? "last-snapshot" : "no-snapshot";
+    const preCloseDisplay = this.liveDisplay(
+      response,
+      tokens ? undefined : now,
+    );
     this.commitSnapshot(run, response);
     const committed = this.totalTokens();
     const preserveEstimate =
       source !== "final" && response.lastDisplay?.outputApproximate === true;
+    const outputRate = preCloseDisplay.outputTokensPerSecond;
     const displayTokens = preserveEstimate
       ? { ...preCloseDisplay, outputApproximate: true }
-      : { ...committed, outputApproximate: false };
+      : {
+          ...committed,
+          outputApproximate: false,
+          ...(outputRate === undefined
+            ? {}
+            : { outputTokensPerSecond: outputRate }),
+        };
     run.lastClosedDisplay = preserveEstimate ? displayTokens : undefined;
     this.closeResponse(run, response, now);
     return { status: "accepted", tokens: committed, displayTokens, source };
@@ -770,7 +785,11 @@ export class InteractionMetricsTracker {
     );
   }
 
-  private openResponse(run: RunState, key?: string): ResponseState {
+  private openResponse(
+    run: RunState,
+    now: number,
+    key?: string,
+  ): ResponseState {
     run.responseOrdinal = safeAdd(run.responseOrdinal, 1);
     run.lastClosedDisplay = undefined;
     const estimateEnabled =
@@ -787,6 +806,7 @@ export class InteractionMetricsTracker {
       outputAnchor: 0,
       outputAnchorCodePoints: 0,
       liveOutputFloor: 0,
+      startedAt: safeTime(now),
       estimateIncomplete: !estimateEnabled,
       estimateEnabled,
     };
@@ -996,7 +1016,7 @@ export class InteractionMetricsTracker {
     return true;
   }
 
-  private liveDisplay(response: ResponseState): LiveTokenDisplay {
+  private liveDisplay(response: ResponseState, now?: number): LiveTokenDisplay {
     const committed = this.committedTokens();
     const postAnchorCodePoints = Math.max(
       0,
@@ -1013,6 +1033,8 @@ export class InteractionMetricsTracker {
       responseOutput === response.outputAnchor &&
       !response.estimateIncomplete;
     response.liveOutputFloor = responseOutput;
+    if (now !== undefined) this.updateOutputRate(response, responseOutput, now);
+    const outputRate = response.outputTokensPerSecond;
     return {
       input: safeAdd(
         committed.input,
@@ -1020,7 +1042,24 @@ export class InteractionMetricsTracker {
       ),
       output: safeAdd(committed.output, responseOutput),
       outputApproximate: !exactCoverage,
+      ...(outputRate === undefined
+        ? {}
+        : { outputTokensPerSecond: outputRate }),
     };
+  }
+
+  private updateOutputRate(
+    response: ResponseState,
+    responseOutput: number,
+    now: number,
+  ): void {
+    const elapsedMs = durationMs(response.startedAt, now);
+    const rate =
+      elapsedMs >= MIN_OUTPUT_RATE_WINDOW_MS && responseOutput > 0
+        ? Math.min(Number.MAX_SAFE_INTEGER, (responseOutput * 1000) / elapsedMs)
+        : undefined;
+    response.outputTokensPerSecond =
+      rate !== undefined && rate >= 0.1 ? rate : undefined;
   }
 
   private runTokens(run: RunState): InteractionTokens {
@@ -1104,7 +1143,8 @@ export class InteractionMetricsTracker {
     return (
       left?.input === right?.input &&
       left?.output === right?.output &&
-      left?.outputApproximate === right?.outputApproximate
+      left?.outputApproximate === right?.outputApproximate &&
+      left?.outputTokensPerSecond === right?.outputTokensPerSecond
     );
   }
 }

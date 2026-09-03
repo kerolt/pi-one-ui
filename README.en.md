@@ -25,7 +25,7 @@ Header → Context → WorkingLine → Editor → Footer
 
 - **Header**: startup information, logo, and shortcut hints.
 - **Context**: the conversation area, including user messages, assistant messages, thinking, tools, diffs, Markdown, and summaries.
-- **WorkingLine**: working state, spinner, token/thought/elapsed information, and turn summaries.
+- **WorkingLine**: working state, spinner, token/thought/elapsed information, live output rate, and turn summaries.
 - **Editor**: input editor, completion, metadata, and the Opencode and Minimalist styles.
 - **Footer**: current directory, Git, runtime, token, cost, and extension status information.
 - **Overlay**: temporary interfaces such as the settings panel and Context Inspector, managed by a shared OverlayManager.
@@ -112,6 +112,8 @@ Using the `/oneui` settings panel is recommended. The panel uses a top-centered 
 ```
 
 The Editor now supports only the `opencode` and `minimalist` styles. `minimalist` no longer duplicates context-usage information; context percentage, token totals, thresholds, gauges, and related presentation are configured through Footer. Existing configurations that select the removed `opencode-copy-friendly` or `accent-rail` styles safely fall back to the default `opencode`, and their old nested style settings are ignored.
+
+The WorkingLine token segment appends live output throughput, such as `⚡12 tok/s`, after a model response has run for at least 500ms. Throughput is calculated independently for the current response and resets on the next `turn_start`; disabling the token segment hides it as well.
 
 Available layout and renderer options may change between versions, so prefer configuring them through `/oneui`.
 
