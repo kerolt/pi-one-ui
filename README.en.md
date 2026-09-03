@@ -32,17 +32,17 @@ Header → Context → WorkingLine → Editor → Footer
 
 ### Built-in functionality
 
-| Feature | Description | Entry point |
-| --- | --- | --- |
-| Unified settings panel | Organizes settings by Header, Context, WorkingLine, Editor, Footer, and Features | `/oneui` |
-| Context Inspector | Shows context usage and previews the system prompt, memory, skills, tools, and messages | `/context` |
-| Session reference | Searches previous Pi sessions or SubAgents and injects their useful context | `@` completion |
-| Subagent autocomplete | Completes SubAgent names and delegation hints | `@` completion |
-| Tool / Diff renderer | Provides unified rendering for tool calls, results, collapsed content, and Edit/Write diffs | Automatic |
-| Subagent live renderer | Preserves pi-subagents' dedicated progress cards and keeps them out of generic tool groups | Automatic |
-| Markdown enhancement | Adds Mermaid, admonitions, URL linking, and related rendering improvements | Automatic |
-| Built-in themes | Provides CC Dark and CC Light themes | `/theme` |
-| Compatibility aliases | Optionally provides common command aliases | `/clear`, `/exit` |
+| Feature                | Description                                                                                 | Entry point       |
+| ---------------------- | ------------------------------------------------------------------------------------------- | ----------------- |
+| Unified settings panel | Organizes settings by Header, Context, WorkingLine, Editor, Footer, and Features            | `/oneui`          |
+| Context Inspector      | Shows context usage and previews the system prompt, memory, skills, tools, and messages     | `/context`        |
+| Session reference      | Searches previous Pi sessions or SubAgents and injects their useful context                 | `@` completion    |
+| Subagent autocomplete  | Completes SubAgent names and delegation hints                                               | `@` completion    |
+| Tool / Diff renderer   | Provides unified rendering for tool calls, results, collapsed content, and Edit/Write diffs | Automatic         |
+| Subagent live renderer | Preserves pi-subagents' dedicated progress cards and keeps them out of generic tool groups  | Automatic         |
+| Markdown enhancement   | Adds Mermaid, admonitions, URL linking, and related rendering improvements                  | Automatic         |
+| Built-in themes        | Provides CC Dark and CC Light themes                                                        | `/theme`          |
+| Compatibility aliases  | Optionally provides common command aliases                                                  | `/clear`, `/exit` |
 
 ## Quick start
 
@@ -131,9 +131,9 @@ It does not automatically read, merge, or migrate historical configuration files
 
 `pi-one-ui` originally combined source from the following open-source projects. Many thanks to their maintainers and contributors for providing the initial foundation.
 
-| Upstream project | Capabilities incorporated into `pi-one-ui` | Reference baseline |
-| --- | --- | --- |
-| [pi-zentui](https://github.com/lmilojevicc/pi-zentui) | Starship-style Footer, Opencode-style Editor, layouts, and shell capabilities | v0.21.0, commit `5341b38` |
+| Upstream project                                                | Capabilities incorporated into `pi-one-ui`                                                 | Reference baseline        |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------- |
+| [pi-zentui](https://github.com/lmilojevicc/pi-zentui)           | Starship-style Footer, Opencode-style Editor, layouts, and shell capabilities              | v0.21.0, commit `5341b38` |
 | [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code-style Context renderer, Tool/Diff rendering, Context Inspector, and references | v0.8.67, commit `dba37e5` |
 
 Production code lives in `extensions/`. The project has since unified its entry point, configuration storage, lifecycle, layout ownership, overlays, and input routing. The current implementation is no longer equivalent to either upstream project and does not automatically track upstream changes.
@@ -182,16 +182,16 @@ After changing the source, run the following command in Pi:
 
 ### Development commands
 
-| Command | Purpose |
-| --- | --- |
-| `npm install` | Install dependencies |
-| `npm run format` | Format source, tests, and configuration files |
-| `npm run check` | Check formatting and import organization |
-| `npm run fix` | Fix formatting and organize imports |
-| `npm run typecheck` | Run TypeScript type checking |
-| `npm test` | Run all tests with Vitest |
-| `npm run pack:check` | Preview the npm package contents |
-| `npm run verify` | Run Biome checks, type checking, and all tests |
+| Command              | Purpose                                        |
+| -------------------- | ---------------------------------------------- |
+| `npm install`        | Install dependencies                           |
+| `npm run format`     | Format source, tests, and configuration files  |
+| `npm run check`      | Check formatting and import organization       |
+| `npm run fix`        | Fix formatting and organize imports            |
+| `npm run typecheck`  | Run TypeScript type checking                   |
+| `npm test`           | Run all tests with Vitest                      |
+| `npm run pack:check` | Preview the npm package contents               |
+| `npm run verify`     | Run Biome checks, type checking, and all tests |
 
 Before submitting changes, run at least:
 
