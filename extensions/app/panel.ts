@@ -40,12 +40,7 @@ import { overlayManager } from "./overlay/overlay-manager.ts";
 import { ownerFor } from "./ownership.ts";
 import { applyPreset, PRESET_VALUES, type Preset } from "./presets.ts";
 
-const EDITOR_STYLES: EditorStyle[] = [
-  "opencode",
-  "opencode-copy-friendly",
-  "accent-rail",
-  "minimalist",
-];
+const EDITOR_STYLES: EditorStyle[] = ["opencode", "minimalist"];
 const MESSAGE_STYLES: UserMessageStyle[] = [
   "framed",
   "framed-copy-friendly",

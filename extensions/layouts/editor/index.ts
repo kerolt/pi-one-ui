@@ -1,10 +1,4 @@
 export {
-  type AccentRailLayoutPatchDiagnostic,
-  installHostAccentRailLayoutPatch,
-  markAccentRailLayoutEditor,
-  retainAccentRailLayoutPatchInstallation,
-} from "./accent-rail-layout-patch.ts";
-export {
   type EditorChangeResult,
   EditorLayoutController,
   type EditorLayoutControllerContext,

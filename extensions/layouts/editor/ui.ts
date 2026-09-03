@@ -12,17 +12,13 @@ import {
   truncateToWidth,
   visibleWidth,
 } from "@earendil-works/pi-tui";
-import type { EditorStyle, ZentuiConfig } from "../../app/config/shell.ts";
+import type { ZentuiConfig } from "../../app/config/shell.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   EDITOR_BORDER_FALLBACK,
   renderStyleForSourceOrFallback,
   safeThemeFg,
 } from "../../shared/style.ts";
-import {
-  ACCENT_RAIL_CHROME_WIDTH,
-  renderAccentRailEditorFrame,
-} from "./accent-rail-editor.ts";
 import { renderCompletionPalette } from "./completion-menu.ts";
 import { renderEditorMetadataFormat } from "./editor-metadata-format.ts";
 import {
@@ -126,17 +122,6 @@ type PolishedFrameOptions = {
 type PolishedFrameResult = {
   lines: string[];
   decorated: boolean;
-};
-
-type AccentRailFrameAdapterOptions = {
-  width: number;
-  baseRendered: string[];
-  autocompleteSource: AutocompleteEditorInternals;
-  autocompleteCapture?: AutocompleteCapture;
-  uiTheme: Theme;
-  config: ZentuiConfig;
-  ownedFrame?: PolishedFrameSplit;
-  trustedBaseFrame?: boolean;
 };
 
 type MinimalistFrameAdapterOptions = {
@@ -342,61 +327,19 @@ function fillLine(content: string, width: number): string {
   return `${truncated}${pad}`;
 }
 
-function isLowRailPolishedStyle(style: EditorStyle): boolean {
-  return style === "opencode-copy-friendly";
-}
-
-function selectedPolishedConfig(config: ZentuiConfig) {
-  switch (config.components.editor.style) {
-    case "opencode":
-      return config.components.editor.styles.opencode;
-    case "opencode-copy-friendly":
-      return config.components.editor.styles["opencode-copy-friendly"];
-    case "accent-rail":
-    case "minimalist":
-      return undefined;
-  }
-}
-
-function lowRailPrompt(
-  config: ZentuiConfig,
-  uiTheme: Theme,
-  reset: string,
-): string {
-  const promptIcon = config.icons.editorPrompt;
-  return promptIcon
-    ? `${renderStyleForSourceOrFallback(
-        uiTheme,
-        config.components.editor.colorSource,
-        config.colors.editorPrompt ?? config.colors.editorAccent,
-        EDITOR_ACCENT_FALLBACK,
-        promptIcon,
-      )}${reset} `
-    : "";
-}
-
 function getEditorChromeWidths(
   config: ZentuiConfig,
   uiTheme: Theme,
   reset: string,
 ) {
-  const lowRail = isLowRailPolishedStyle(config.components.editor.style);
-  const prompt = lowRailPrompt(config, uiTheme, reset);
-  const rail = lowRail
-    ? ""
-    : `${renderStyleForSourceOrFallback(
-        uiTheme,
-        config.components.editor.colorSource,
-        config.colors.editorAccent,
-        EDITOR_ACCENT_FALLBACK,
-        config.icons.rail,
-      )}${reset} `;
-  return {
-    prompt,
-    promptWidth: visibleWidth(prompt),
-    rail,
-    railWidth: lowRail ? visibleWidth(prompt) : visibleWidth(rail),
-  };
+  const rail = `${renderStyleForSourceOrFallback(
+    uiTheme,
+    config.components.editor.colorSource,
+    config.colors.editorAccent,
+    EDITOR_ACCENT_FALLBACK,
+    config.icons.rail,
+  )}${reset} `;
+  return { rail, railWidth: visibleWidth(rail) };
 }
 
 function composeMetadataLine(
@@ -463,31 +406,6 @@ function unwrapPolishedFrameOnly(
   const viewport = { above: top.count, below: bottom.count };
   const interior = lines.slice(1, -1);
   if (interior.length < 3) return undefined;
-
-  if (isLowRailPolishedStyle(config.components.editor.style)) {
-    if (
-      plainRenderedText(interior[0] ?? "").trim() !== "" ||
-      plainRenderedText(interior.at(-2) ?? "").trim() !== "" ||
-      !(interior.at(-1) ?? "").startsWith(" ")
-    )
-      return undefined;
-
-    const { prompt, promptWidth } = getEditorChromeWidths(
-      config,
-      uiTheme,
-      "\x1b[0m",
-    );
-    const continuation = " ".repeat(promptWidth);
-    const content = interior.slice(1, -2);
-    const unwrapped: string[] = [];
-    for (let index = 0; index < content.length; index++) {
-      const prefix = index === 0 ? prompt : continuation;
-      const line = content[index] ?? "";
-      if (prefix && !line.startsWith(prefix)) return undefined;
-      unwrapped.push(prefix ? line.slice(prefix.length) : line);
-    }
-    return { editorLines: unwrapped, viewport };
-  }
 
   const { rail } = getEditorChromeWidths(config, uiTheme, "\x1b[0m");
   if (!rail || interior.some((line) => !line.startsWith(rail)))
@@ -567,65 +485,6 @@ function readVimStatus(
   if (!normalized) return undefined;
   const label = `${normalized.toUpperCase()} `;
   return safeThemeFg(uiTheme, vimModeColor(normalized), label);
-}
-
-function renderAccentRailFrameFromBase({
-  width,
-  baseRendered,
-  autocompleteSource,
-  autocompleteCapture,
-  uiTheme,
-  config,
-  ownedFrame,
-  trustedBaseFrame = false,
-}: AccentRailFrameAdapterOptions): PolishedFrameResult {
-  if (width < ACCENT_RAIL_CHROME_WIDTH + 1 || baseRendered.length < 2) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-  if (ownedFrame && !isPolishedFrameSplit(ownedFrame, baseRendered.length)) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-  const autocomplete = ownedFrame
-    ? { known: true as const, count: ownedFrame.trailingLines.length }
-    : autocompleteCount(autocompleteSource, autocompleteCapture, baseRendered);
-  if (!autocomplete.known) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-  const editorFrame =
-    !ownedFrame && autocomplete.count > 0
-      ? baseRendered.slice(0, -autocomplete.count)
-      : baseRendered;
-  const autocompleteLines = ownedFrame
-    ? ownedFrame.trailingLines
-    : autocomplete.count > 0
-      ? baseRendered.slice(-autocomplete.count)
-      : [];
-  if (editorFrame.length < 2) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-  const parsedTop = parseEditorBorder(editorFrame[0] ?? "", "above");
-  const parsedBottom = parseEditorBorder(editorFrame.at(-1) ?? "", "below");
-  if (!ownedFrame && !trustedBaseFrame && (!parsedTop || !parsedBottom)) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-  const editorLines = ownedFrame?.editorLines ?? editorFrame.slice(1, -1);
-  const viewport = ownedFrame?.viewport ?? {
-    above: parsedTop?.count,
-    below: parsedBottom?.count,
-  };
-  const lines = renderAccentRailEditorFrame({
-    width,
-    editorLines,
-    autocompleteLines,
-    viewport,
-    uiTheme,
-    config,
-  });
-  POLISHED_FRAME_SPLITS.set(lines, {
-    rows: Object.freeze([...lines]),
-    split: { editorLines, trailingLines: autocompleteLines, viewport },
-  });
-  return { lines, decorated: true };
 }
 
 function renderMinimalistFrameFromBase({
@@ -784,16 +643,10 @@ export function renderPolishedEditorFrame({
   if (width <= 2) return clampRenderedLines(editorLines, width);
   const reset = "\x1b[0m";
   const colorSource = config.components.editor.colorSource;
-  const { prompt, promptWidth, rail, railWidth } = getEditorChromeWidths(
-    config,
-    uiTheme,
-    reset,
-  );
+  const { rail, railWidth } = getEditorChromeWidths(config, uiTheme, reset);
   const innerWidth = Math.max(0, width - railWidth);
-  const lowRailContinuation = " ".repeat(promptWidth);
   const meta = renderEditorMetadataFormat(
-    selectedPolishedConfig(config)?.metadataFormat ??
-      config.components.editor.styles.opencode.metadataFormat,
+    config.components.editor.styles.opencode.metadataFormat,
     {
       model: modelMeta.modelLabel,
       modelId: modelMeta.modelId ?? "",
@@ -804,11 +657,6 @@ export function renderPolishedEditorFrame({
     },
     uiTheme,
     config,
-  );
-  const lowRailMeta = composeMetadataLine(
-    meta,
-    rightStatus,
-    Math.max(0, width - 1),
   );
   const railedMeta = composeMetadataLine(meta, rightStatus, innerWidth);
 
@@ -849,7 +697,7 @@ export function renderPolishedEditorFrame({
     ),
   );
   const completionLines =
-    selectedPolishedConfig(config)?.completionMenu === "palette"
+    config.components.editor.styles.opencode.completionMenu === "palette"
       ? renderCompletionPalette({
           lines: autocompleteLines,
           width,
@@ -859,25 +707,12 @@ export function renderPolishedEditorFrame({
         })
       : autocompleteLines;
   const lines = ["", ...editorLines, "", railedMeta];
-  const renderedLines = isLowRailPolishedStyle(config.components.editor.style)
-    ? [
-        top,
-        "",
-        ...editorLines.map(
-          (line, index) =>
-            `${index === 0 ? prompt : lowRailContinuation}${fillLine(line, innerWidth)}`,
-        ),
-        "",
-        ` ${truncateToWidth(lowRailMeta, Math.max(0, width - 1), "")}`,
-        bottom,
-        ...completionLines,
-      ]
-    : [
-        top,
-        ...lines.map((line) => `${rail}${fillLine(line, innerWidth)}`),
-        bottom,
-        ...completionLines,
-      ];
+  const renderedLines = [
+    top,
+    ...lines.map((line) => `${rail}${fillLine(line, innerWidth)}`),
+    bottom,
+    ...completionLines,
+  ];
 
   return clampRenderedLines(renderedLines, width);
 }
@@ -920,36 +755,6 @@ export class PolishedEditor extends CustomEditor {
     if (!config.components.editor.enabled) {
       this.reportMinimalistDecoration(false);
       return clampRenderedLines(super.render(width), width);
-    }
-    if (config.components.editor.style === "accent-rail") {
-      this.reportMinimalistDecoration(false);
-      if (width < ACCENT_RAIL_CHROME_WIDTH + 1) {
-        return clampRenderedLines(super.render(width), width);
-      }
-      let captured: { value: string[]; capture?: AutocompleteCapture };
-      try {
-        captured = renderWithAutocompleteCapture(
-          this as unknown as AutocompleteEditorInternals,
-          () => super.render(width - ACCENT_RAIL_CHROME_WIDTH),
-        );
-      } catch {
-        return clampRenderedLines(super.render(width), width);
-      }
-      try {
-        const result = renderAccentRailFrameFromBase({
-          width,
-          baseRendered: captured.value,
-          autocompleteSource: this as unknown as AutocompleteEditorInternals,
-          autocompleteCapture: captured.capture,
-          uiTheme: this.uiTheme,
-          config,
-          trustedBaseFrame: true,
-        });
-        if (result.decorated) return result.lines;
-      } catch {
-        // Decoration is optional; preserve the completed same-render rows below.
-      }
-      return clampRenderedLines(captured.value, width);
     }
     if (config.components.editor.style === "minimalist") {
       if (width <= 4) {
@@ -1154,43 +959,6 @@ export class WrappedPolishedEditor implements EditorComponent {
     if (!config.components.editor.enabled) {
       this.reportMinimalistDecoration(false);
       return clampRenderedLines(this.base.render(width), width);
-    }
-    if (config.components.editor.style === "accent-rail") {
-      this.reportMinimalistDecoration(false);
-      if (width < ACCENT_RAIL_CHROME_WIDTH + 1) {
-        return clampRenderedLines(this.base.render(width), width);
-      }
-      let captured: { value: string[]; capture?: AutocompleteCapture };
-      try {
-        captured = renderWithAutocompleteCapture(this.base, () =>
-          this.base.render(width - ACCENT_RAIL_CHROME_WIDTH),
-        );
-      } catch {
-        return clampRenderedLines(this.base.render(width), width);
-      }
-      try {
-        const provenance = inspectPolishedFrameProvenance(
-          this.base,
-          captured.value,
-          config,
-          this.uiTheme,
-        );
-        if (provenance.safe) {
-          const result = renderAccentRailFrameFromBase({
-            width,
-            baseRendered: captured.value,
-            autocompleteSource: this.base,
-            autocompleteCapture: captured.capture,
-            uiTheme: this.uiTheme,
-            config,
-            ownedFrame: provenance.ownedFrame,
-          });
-          if (result.decorated) return result.lines;
-        }
-      } catch {
-        // Decoration is optional; preserve the completed same-render rows below.
-      }
-      return clampRenderedLines(captured.value, width);
     }
     if (config.components.editor.style === "minimalist") {
       if (width <= 4) {

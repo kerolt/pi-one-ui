@@ -262,12 +262,12 @@ test("/oneui keeps the panel open and refocuses after an Editor style change", a
   component.handleInput(" ");
 
   expect(setEditorComponent).toHaveBeenCalledWith(
-    { style: "opencode-copy-friendly" },
+    { style: "minimalist" },
     expect.anything(),
   );
   expect(overlayManager.hasActive()).toBe(true);
   expect(harness.operations).toStrictEqual(["apply", "focus"]);
-  expect(component.render(80).join("\n")).toContain("opencode-copy-friendly");
+  expect(component.render(80).join("\n")).toContain("minimalist");
 
   component.handleInput("\x1b");
   await opened;

@@ -7,7 +7,6 @@ import registerContext, {
   type ContextExtensionOptions,
   type ContextRuntimeController,
 } from "../../layouts/context/index.ts";
-import type { AccentRailLayoutPatchDiagnostic } from "../../layouts/editor/accent-rail-layout-patch.ts";
 import { EditorLayoutController } from "../../layouts/editor/controller.ts";
 import { FooterLayoutController } from "../../layouts/footer/controller.ts";
 import registerHeaderLayout from "../../layouts/header/index.ts";
@@ -240,17 +239,6 @@ function createLayoutRuntime(
   let minimalistProjectRoot: string | undefined;
   let activeTuiContext: ExtensionContext | undefined;
 
-  const recordAccentRailLayoutPatchDiagnostic = (
-    diagnostic: AccentRailLayoutPatchDiagnostic,
-    version?: string,
-  ) => {
-    if (process.env.ZENTUI_DEBUG === "1") {
-      console.error(
-        `[zentui] Accent Rail fullscreen layout patch: ${diagnostic}${version ? ` (Pi TUI ${version})` : ""}`,
-      );
-    }
-  };
-
   /**
    * Requests redraws from the Editor controller and shared render seam.
    */
@@ -297,16 +285,6 @@ function createLayoutRuntime(
     sessionLifecycle,
     render: { request: () => footerController.requestRender() },
     getThinkingLevel,
-    getContextWindow: (ctx) =>
-      ctx.model?.contextWindow ?? ctx.getContextUsage()?.contextWindow,
-    getContextPercent: (ctx) => {
-      const usage = ctx.getContextUsage();
-      const contextWindow = ctx.model?.contextWindow ?? usage?.contextWindow;
-      const live = liveContext.get();
-      return live && contextWindow && contextWindow > 0
-        ? (live.tokens / contextWindow) * 100
-        : (usage?.percent ?? undefined);
-    },
     getAgentDurationMs: () => workingLineController.duration().elapsedMs() ?? 0,
     isAgentActive: () => workingLineController.isAgentActive(),
     isAgentDurationActive: () => workingLineController.duration().isActive(),
@@ -317,7 +295,6 @@ function createLayoutRuntime(
       if (activeTuiContext) projectRefreshService.reconcile(activeTuiContext);
     },
     onModelLabelChanged: (ctx) => syncFooterState(ctx),
-    recordLayoutDiagnostic: recordAccentRailLayoutPatchDiagnostic,
   });
   const syncFooterState = (ctx: ExtensionContext) => sessionState.sync(ctx);
   const projectRefreshService = new ProjectRefreshService({
@@ -427,10 +404,8 @@ function createLayoutRuntime(
    * @param coordinator Shared lifecycle event coordinator.
    */
   const installEventHandlers = (coordinator: EventCoordinator): void => {
-    coordinator.on("session_start", async (_event, ctx) => {
+    coordinator.on("session_start", (_event, ctx) => {
       sessionLifecycle.start();
-      await editorController.startSession(ctx);
-      if (!sessionLifecycle.isCurrent()) return;
       liveContext.startSession();
       sessionState.startSession();
       minimalistProjectRoot = undefined;

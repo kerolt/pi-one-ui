@@ -26,7 +26,6 @@ import {
   getExtensionStatusPlacement,
   hasUnsupportedComponentStyle,
   mergeConfig,
-  saveAccentRailEditorStylePatch,
   saveColorSourcesPatch,
   saveContextStylePatch,
   saveContextThresholdsPatch,
@@ -46,7 +45,6 @@ import {
   saveMinimalistEditorStylePatch,
   saveMinimalistPatch,
   savePathDisplayPatch,
-  savePolishedCopyFriendlyEditorStylePatch,
   savePolishedEditorStylePatch,
   saveResponsiveFooterPatch,
   saveSelectorBordersComponentPatch,
@@ -106,24 +104,12 @@ describe("canonical config resolution", () => {
             metadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
             completionMenu: "palette",
           },
-          "opencode-copy-friendly": {
-            metadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
-            completionMenu: "palette",
-          },
-          "accent-rail": {
-            rail: "▎",
-            asciiRail: "|",
-            transparent: false,
-          },
           minimalist: {
             pathDisplay: "compact",
-            contextFormat: "percent",
-            contextGauge: false,
             showSessionName: true,
             showTimer: true,
             showCost: true,
             showGit: true,
-            contextThresholds: { warning: 70, error: 90 },
           },
         },
       },
@@ -187,60 +173,15 @@ describe("canonical config resolution", () => {
     expect(defaultConfig.components).toEqual(config.components);
   });
 
-  it("normalizes Opencode completion menus independently", () => {
+  it("normalizes the Opencode completion menu", () => {
     const config = mergeConfig({
       components: {
-        editor: {
-          styles: {
-            opencode: { completionMenu: "native" },
-            "opencode-copy-friendly": { completionMenu: "invalid" },
-          },
-        },
+        editor: { styles: { opencode: { completionMenu: "native" } } },
       },
     });
     expect(config.components.editor.styles.opencode.completionMenu).toBe(
       "native",
     );
-    expect(
-      config.components.editor.styles["opencode-copy-friendly"].completionMenu,
-    ).toBe("palette");
-  });
-
-  it("normalizes the canonical accent-rail style and its editor-owned roles", () => {
-    const config = mergeConfig({
-      colors: { editorRail: "bright-green", editorAccent: "error" },
-      components: {
-        editor: {
-          style: "accent-rail",
-          styles: {
-            "accent-rail": { rail: "!", asciiRail: ":", transparent: true },
-          },
-        },
-      },
-    });
-    expect(config.components.editor.style).toBe("accent-rail");
-    expect(config.components.editor.styles["accent-rail"]).toEqual({
-      rail: "!",
-      asciiRail: ":",
-      transparent: true,
-    });
-    expect(config.colors.editorRail).toBe("bright-green");
-    expect(config.colors.editorAccent).toBe("error");
-
-    const invalid = mergeConfig({
-      components: {
-        editor: {
-          styles: {
-            "accent-rail": { rail: "", asciiRail: 1, transparent: "yes" },
-          },
-        },
-      },
-    });
-    expect(invalid.components.editor.styles["accent-rail"]).toEqual({
-      rail: "▎",
-      asciiRail: "|",
-      transparent: false,
-    });
   });
 
   it("ignores stale fixed-editor config forms without exposing runtime fields", () => {
@@ -272,28 +213,11 @@ describe("canonical config resolution", () => {
       ).toBe("compact");
     }
 
-    for (const contextFormat of ["percent", "percent-total"]) {
-      expect(
-        mergeConfig({
-          components: { editor: { styles: { minimalist: { contextFormat } } } },
-        }).components.editor.styles.minimalist.contextFormat,
-      ).toBe(contextFormat);
-    }
-    for (const contextFormat of ["tokens", "", 1, null, true]) {
-      expect(
-        mergeConfig({
-          editorStyles: { minimalist: { contextFormat: "percent-total" } },
-          components: { editor: { styles: { minimalist: { contextFormat } } } },
-        }).components.editor.styles.minimalist.contextFormat,
-      ).toBe("percent");
-    }
-
     const valid = mergeConfig({
       components: {
         editor: {
           styles: {
             minimalist: {
-              contextGauge: true,
               showSessionName: false,
               showTimer: false,
               showCost: false,
@@ -304,7 +228,6 @@ describe("canonical config resolution", () => {
       },
     }).components.editor.styles.minimalist;
     expect(valid).toMatchObject({
-      contextGauge: true,
       showSessionName: false,
       showTimer: false,
       showCost: false,
@@ -314,7 +237,6 @@ describe("canonical config resolution", () => {
     const invalid = mergeConfig({
       editorStyles: {
         minimalist: {
-          contextGauge: true,
           showSessionName: false,
           showTimer: false,
           showCost: false,
@@ -325,7 +247,6 @@ describe("canonical config resolution", () => {
         editor: {
           styles: {
             minimalist: {
-              contextGauge: "yes",
               showSessionName: "yes",
               showTimer: null,
               showCost: 0,
@@ -338,7 +259,30 @@ describe("canonical config resolution", () => {
     expect(invalid).toEqual(defaultConfig.components.editor.styles.minimalist);
   });
 
-  it("ignores branch-only editorStyle/editorStyles and safely defaults closed style IDs", () => {
+  it("ignores removed Minimalist context-usage settings", () => {
+    const minimalist = mergeConfig({
+      components: {
+        editor: {
+          styles: {
+            minimalist: {
+              contextFormat: "percent-total",
+              contextGauge: true,
+              contextThresholds: { warning: 40, error: 60 },
+            },
+          },
+        },
+      },
+    }).components.editor.styles.minimalist;
+
+    expect(minimalist).toEqual(
+      defaultConfig.components.editor.styles.minimalist,
+    );
+    expect(minimalist).not.toHaveProperty("contextFormat");
+    expect(minimalist).not.toHaveProperty("contextGauge");
+    expect(minimalist).not.toHaveProperty("contextThresholds");
+  });
+
+  it("ignores branch-only editor settings and safely defaults closed style IDs", () => {
     const config = mergeConfig({
       editorStyle: "minimalist",
       editorStyles: { minimalist: { showGit: false } },
@@ -354,6 +298,14 @@ describe("canonical config resolution", () => {
     expect(config.components.userMessages.style).toBe("framed");
     expect(config.components.selectorBorders.style).toBe("zentui");
     expect(config.components.footer.style).toBe("starship");
+
+    for (const retired of ["opencode-copy-friendly", "accent-rail"]) {
+      const migrated = mergeConfig({
+        components: { editor: { style: retired } },
+      });
+      expect(migrated.components.editor.style).toBe("opencode");
+      expect(hasUnsupportedComponentStyle(migrated, "editor")).toBe(false);
+    }
   });
 
   it("does not treat native as a User-message style", () => {
@@ -696,15 +648,7 @@ describe("canonical snapshot persistence", () => {
         { metadataFormat: "$provider", completionMenu: "native" },
         path,
       );
-      savePolishedCopyFriendlyEditorStylePatch(
-        { metadataFormat: "$model", completionMenu: "palette" },
-        path,
-      );
-      saveAccentRailEditorStylePatch({ transparent: true }, path);
-      saveMinimalistEditorStylePatch(
-        { showGit: false, contextGauge: true },
-        path,
-      );
+      saveMinimalistEditorStylePatch({ showGit: false }, path);
       saveUserMessagesComponentPatch(
         { enabled: false, colorSource: "terminal" },
         path,
@@ -723,18 +667,8 @@ describe("canonical snapshot persistence", () => {
         metadataFormat: "$provider",
         completionMenu: "native",
       });
-      expect(config.components.editor.styles["opencode-copy-friendly"]).toEqual(
-        {
-          metadataFormat: "$model",
-          completionMenu: "palette",
-        },
-      );
-      expect(config.components.editor.styles["accent-rail"]).toMatchObject({
-        transparent: true,
-      });
       expect(config.components.editor.styles.minimalist).toMatchObject({
         showGit: false,
-        contextGauge: true,
       });
       expect(config.components.userMessages).toMatchObject({
         enabled: false,
@@ -796,7 +730,6 @@ describe("mergeConfig", () => {
     const config = mergeConfig({});
     expect(config.projectRefreshIntervalMs).toBe(30_000);
     expect(config.icons.cacheHit).toBe("󰆼");
-    expect(config.icons.editorPrompt).toBe("");
     expect(config.colors.gitBranch).toBe("bold purple");
     expect(config.colors.packageVersion).toBe("208");
     expect(config.colors.gitCommit).toBe("bold green");
@@ -807,8 +740,6 @@ describe("mergeConfig", () => {
     expect(config.colors.tokens).toBe("bright-black");
     expect(config.colors.extensionStatus).toBe("bright-black");
     expect(config.colors.editorAccent).toBeUndefined();
-    expect(config.colors.editorRail).toBeUndefined();
-    expect(config.colors.editorPrompt).toBeUndefined();
     expect(config.colors.editorBorder).toBeUndefined();
     expect(config.colorSources).toEqual({
       starship: "theme",
@@ -982,16 +913,12 @@ describe("mergeConfig", () => {
       const config = saveMinimalistPatch(
         {
           pathDisplay: "full",
-          contextFormat: "percent-total",
           showSessionName: false,
           showGit: false,
         },
         path,
       );
       expect(config.editorStyles.minimalist.pathDisplay).toBe("full");
-      expect(config.editorStyles.minimalist.contextFormat).toBe(
-        "percent-total",
-      );
       expect(config.editorStyles.minimalist.showSessionName).toBe(false);
       expect(config.editorStyles.minimalist.showGit).toBe(false);
       const raw = JSON.parse(readFileSync(path, "utf8"));
@@ -1004,7 +931,6 @@ describe("mergeConfig", () => {
       });
       expect(raw.components.editor.styles.minimalist).toMatchObject({
         pathDisplay: "full",
-        contextFormat: "percent-total",
         showSessionName: false,
         showGit: false,
       });
@@ -1028,16 +954,6 @@ describe("mergeConfig", () => {
       expect(raw.editorStyle).toBeUndefined();
       expect(raw.components.editor.style).toBe("minimalist");
       expect(minimalist.editorStyle).toBe("minimalist");
-
-      const accentRail = saveEditorStyle("accent-rail", path);
-      raw = JSON.parse(readFileSync(path, "utf8"));
-      expect(accentRail.editorStyle).toBe("accent-rail");
-      expect(raw.components.editor.style).toBe("accent-rail");
-      expect(raw.components.editor.styles["accent-rail"]).toEqual({
-        rail: "▎",
-        asciiRail: "|",
-        transparent: false,
-      });
 
       const polished = saveEditorStyle("opencode", path);
       raw = JSON.parse(readFileSync(path, "utf8"));
@@ -1236,14 +1152,12 @@ describe("mergeConfig", () => {
         cwd: 42,
         git: "git",
         cacheHit: "CH",
-        editorPrompt: ">",
       },
       colors: {
         cwd: 123,
         gitStatus: "not-a-color",
         separator: "dimmed",
         editorAccent: "neon",
-        editorPrompt: "accent",
         editorBorder: "also-neon",
         editorThinkingHigh: "thinkingHigh",
       },
@@ -1259,12 +1173,10 @@ describe("mergeConfig", () => {
     expect(config.icons.cwd).toBe(defaultConfig.icons.cwd);
     expect(config.icons.git).toBe("git");
     expect(config.icons.cacheHit).toBe("CH");
-    expect(config.icons.editorPrompt).toBe(">");
     expect(config.colors.cwd).toBe(defaultConfig.colors.cwd);
     expect(config.colors.gitStatus).toBe(defaultConfig.colors.gitStatus);
     expect(config.colors.separator).toBe("dimmed");
     expect(config.colors.editorAccent).toBeUndefined();
-    expect(config.colors.editorPrompt).toBe("accent");
     expect(config.colors.editorBorder).toBeUndefined();
     expect(config.colors.editorThinkingHigh).toBe("thinkingHigh");
     expect(config.colorSources).toEqual({

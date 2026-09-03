@@ -24,11 +24,7 @@ export type { IconMode } from "../../shared/icons.ts";
 export type ContextStyle = "text" | "gauge" | "text+gauge";
 export type SeparatorStyle = "pipe" | "dot" | "chevron" | "none";
 export type ModelLabelSource = "id" | "name";
-export type EditorStyle =
-  | "opencode"
-  | "opencode-copy-friendly"
-  | "accent-rail"
-  | "minimalist";
+export type EditorStyle = "opencode" | "minimalist";
 export type UserMessageStyle =
   | "framed"
   | "framed-copy-friendly"
@@ -49,7 +45,6 @@ export type ComponentStyleOwner =
   | "selectorBorders"
   | "footer";
 export type MinimalistPathDisplayMode = "compact" | "project" | "full";
-export type MinimalistContextFormat = "percent" | "percent-total";
 export type EditorBorderColorMode = "static" | "adaptive";
 export type CompletionMenuStyle = "native" | "palette";
 export type CompactFooterMaxLines = 1 | 2 | 3 | "unlimited";
@@ -113,26 +108,12 @@ export type PolishedEditorStyleConfig = {
   completionMenu: CompletionMenuStyle;
 };
 
-export type PolishedCopyFriendlyEditorStyleConfig = {
-  metadataFormat: string;
-  completionMenu: CompletionMenuStyle;
-};
-
-export type AccentRailEditorStyleConfig = {
-  rail: string;
-  asciiRail: string;
-  transparent: boolean;
-};
-
 export type MinimalistEditorStyleConfig = {
   pathDisplay: MinimalistPathDisplayMode;
-  contextFormat: MinimalistContextFormat;
-  contextGauge: boolean;
   showSessionName: boolean;
   showTimer: boolean;
   showCost: boolean;
   showGit: boolean;
-  contextThresholds: ContextThresholds;
 };
 
 /** Temporary name retained for existing settings consumers. */
@@ -151,8 +132,6 @@ export type EditorComponentConfig = {
   viewportIndicators: boolean;
   styles: {
     opencode: PolishedEditorStyleConfig;
-    "opencode-copy-friendly": PolishedCopyFriendlyEditorStyleConfig;
-    "accent-rail": AccentRailEditorStyleConfig;
     minimalist: MinimalistEditorStyleConfig;
   };
 };
@@ -323,8 +302,6 @@ export type PolishedTuiColors = {
   time: ColorSpec;
   os: ColorSpec;
   editorAccent?: ColorSpec;
-  editorRail?: ColorSpec;
-  editorPrompt?: ColorSpec;
   editorBorder?: ColorSpec;
   editorGitBranch?: ColorSpec;
   editorModel?: ColorSpec;
@@ -439,21 +416,12 @@ const defaultFooterSegments: FooterSegmentsConfig = {
 
 const DEFAULT_COMPLETION_MENU: CompletionMenuStyle = "palette";
 
-const defaultAccentRailStyle: AccentRailEditorStyleConfig = {
-  rail: "▎",
-  asciiRail: "|",
-  transparent: false,
-};
-
 const defaultMinimalistStyle: MinimalistEditorStyleConfig = {
   pathDisplay: "compact",
-  contextFormat: "percent",
-  contextGauge: false,
   showSessionName: true,
   showTimer: true,
   showCost: true,
   showGit: true,
-  contextThresholds: { warning: 70, error: 90 },
 };
 
 const defaultStarshipStyle: StarshipFooterStyleConfig = {
@@ -489,11 +457,6 @@ const defaultComponents: ComponentsConfig = {
         metadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
         completionMenu: DEFAULT_COMPLETION_MENU,
       },
-      "opencode-copy-friendly": {
-        metadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
-        completionMenu: DEFAULT_COMPLETION_MENU,
-      },
-      "accent-rail": defaultAccentRailStyle,
       minimalist: defaultMinimalistStyle,
     },
   },
@@ -615,14 +578,7 @@ function parseEditorModelLabel(
 }
 
 function parseEditorStyle(value: unknown): EditorStyle {
-  if (
-    value === "opencode" ||
-    value === "opencode-copy-friendly" ||
-    value === "accent-rail" ||
-    value === "minimalist"
-  ) {
-    return value;
-  }
+  if (value === "opencode" || value === "minimalist") return value;
   return defaultComponents.editor.style;
 }
 
@@ -775,8 +731,6 @@ function normalizeColors(
     time: colorValue(record, "time"),
     os: colorValue(record, "os"),
     editorAccent: colorValue(record, "editorAccent"),
-    editorRail: colorValue(record, "editorRail"),
-    editorPrompt: colorValue(record, "editorPrompt"),
     editorBorder: colorValue(record, "editorBorder"),
     editorGitBranch: colorValue(record, "editorGitBranch"),
     editorModel: colorValue(record, "editorModel"),
@@ -1074,10 +1028,6 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
   const editor = recordValue(components.editor);
   const editorStyles = recordValue(editor.styles);
   const opencode = recordValue(editorStyles.opencode);
-  const opencodeCopyFriendly = recordValue(
-    editorStyles["opencode-copy-friendly"],
-  );
-  const accentRail = recordValue(editorStyles["accent-rail"]);
   const minimalist = recordValue(editorStyles.minimalist);
   const userMessages = recordValue(components.userMessages);
   const workingLine = recordValue(components.workingLine);
@@ -1113,29 +1063,6 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
           ),
           completionMenu: parseCompletionMenuStyle(opencode.completionMenu),
         },
-        "opencode-copy-friendly": {
-          metadataFormat: parseNonEmptyString(
-            opencodeCopyFriendly.metadataFormat,
-            DEFAULT_EDITOR_METADATA_FORMAT,
-          ),
-          completionMenu: parseCompletionMenuStyle(
-            opencodeCopyFriendly.completionMenu,
-          ),
-        },
-        "accent-rail": {
-          rail: parseNonEmptyString(
-            accentRail.rail,
-            defaultAccentRailStyle.rail,
-          ),
-          asciiRail: parseNonEmptyString(
-            accentRail.asciiRail,
-            defaultAccentRailStyle.asciiRail,
-          ),
-          transparent: parseBoolean(
-            accentRail.transparent,
-            defaultAccentRailStyle.transparent,
-          ),
-        },
         minimalist: {
           pathDisplay:
             minimalist.pathDisplay === "compact" ||
@@ -1143,15 +1070,6 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
             minimalist.pathDisplay === "full"
               ? minimalist.pathDisplay
               : defaultMinimalistStyle.pathDisplay,
-          contextFormat:
-            minimalist.contextFormat === "percent" ||
-            minimalist.contextFormat === "percent-total"
-              ? minimalist.contextFormat
-              : defaultMinimalistStyle.contextFormat,
-          contextGauge: parseBoolean(
-            minimalist.contextGauge,
-            defaultMinimalistStyle.contextGauge,
-          ),
           showSessionName: parseBoolean(
             minimalist.showSessionName,
             defaultMinimalistStyle.showSessionName,
@@ -1167,10 +1085,6 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
           showGit: parseBoolean(
             minimalist.showGit,
             defaultMinimalistStyle.showGit,
-          ),
-          contextThresholds: resolveContextThresholds(
-            minimalist.contextThresholds,
-            defaultMinimalistStyle.contextThresholds,
           ),
         },
       },
@@ -1349,16 +1263,17 @@ const unsupportedComponentStyles = new WeakMap<
   ReadonlySet<ComponentStyleOwner>
 >();
 
+// Retired selections migrate to Opencode instead of disabling the custom Editor.
+const retiredEditorStyleIds: ReadonlySet<string> = new Set([
+  "opencode-copy-friendly",
+  "accent-rail",
+]);
+
 const knownComponentStyleIds: Record<
   ComponentStyleOwner,
   ReadonlySet<string>
 > = {
-  editor: new Set([
-    "opencode",
-    "opencode-copy-friendly",
-    "accent-rail",
-    "minimalist",
-  ]),
+  editor: new Set(["opencode", "minimalist"]),
   userMessages: new Set([
     "framed",
     "framed-copy-friendly",
@@ -1378,7 +1293,8 @@ function unsupportedSelectedStyleId(
   const style = component.style;
   return typeof style === "string" &&
     style.trim() &&
-    !knownComponentStyleIds[owner].has(style)
+    !knownComponentStyleIds[owner].has(style) &&
+    !(owner === "editor" && retiredEditorStyleIds.has(style))
     ? style
     : undefined;
 }
@@ -1580,50 +1496,16 @@ export function savePolishedEditorStylePatch(
   }, path);
 }
 
-export function savePolishedCopyFriendlyEditorStylePatch(
-  patch: Partial<PolishedCopyFriendlyEditorStyleConfig>,
-  path = configPath,
-): PolishedTuiConfig {
-  return saveComponentsMutation((components) => {
-    const style = components.editor.styles["opencode-copy-friendly"];
-    if (patch.metadataFormat !== undefined)
-      style.metadataFormat = patch.metadataFormat;
-    if (patch.completionMenu !== undefined)
-      style.completionMenu = patch.completionMenu;
-  }, path);
-}
-
-export function saveAccentRailEditorStylePatch(
-  patch: Partial<AccentRailEditorStyleConfig>,
-  path = configPath,
-): PolishedTuiConfig {
-  return saveComponentsMutation((components) => {
-    const style = components.editor.styles["accent-rail"];
-    if (patch.rail !== undefined) style.rail = patch.rail;
-    if (patch.asciiRail !== undefined) style.asciiRail = patch.asciiRail;
-    if (patch.transparent !== undefined) style.transparent = patch.transparent;
-  }, path);
-}
-
 function applyMinimalistStylePatch(
   style: MinimalistEditorStyleConfig,
   patch: Partial<MinimalistEditorStyleConfig>,
 ): void {
   if (patch.pathDisplay !== undefined) style.pathDisplay = patch.pathDisplay;
-  if (patch.contextFormat !== undefined)
-    style.contextFormat = patch.contextFormat;
-  if (patch.contextGauge !== undefined) style.contextGauge = patch.contextGauge;
   if (patch.showSessionName !== undefined)
     style.showSessionName = patch.showSessionName;
   if (patch.showTimer !== undefined) style.showTimer = patch.showTimer;
   if (patch.showCost !== undefined) style.showCost = patch.showCost;
   if (patch.showGit !== undefined) style.showGit = patch.showGit;
-  if (patch.contextThresholds !== undefined) {
-    style.contextThresholds = {
-      ...style.contextThresholds,
-      ...patch.contextThresholds,
-    };
-  }
 }
 
 export function saveMinimalistEditorStylePatch(
@@ -1912,10 +1794,6 @@ export function saveContextThresholdsPatch(
     throw new TypeError("Context thresholds must be JSON-serializable numbers");
   }
   return saveComponentsMutation((components) => {
-    components.editor.styles.minimalist.contextThresholds = {
-      ...components.editor.styles.minimalist.contextThresholds,
-      ...thresholds,
-    };
     components.footer.styles.starship.contextThresholds = {
       ...components.footer.styles.starship.contextThresholds,
       ...thresholds,

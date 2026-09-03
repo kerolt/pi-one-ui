@@ -23,7 +23,6 @@ export type IconGlyphs = {
   deleted: string;
   typechanged: string;
   cacheHit: string;
-  editorPrompt: string;
   rail: string;
   username: string;
   time: string;
@@ -48,7 +47,6 @@ export const ICON_GLYPH_KEYS = [
   "deleted",
   "typechanged",
   "cacheHit",
-  "editorPrompt",
   "rail",
   "username",
   "time",
@@ -79,7 +77,6 @@ export const NERD_DEFAULT_ICONS: IconGlyphs = {
   deleted: "✘",
   typechanged: "T",
   cacheHit: "󰆼",
-  editorPrompt: "",
   rail: "│",
   username: "",
   time: "",
@@ -103,7 +100,6 @@ export const ASCII_DEFAULT_ICONS: IconGlyphs = {
   deleted: "x",
   typechanged: "T",
   cacheHit: "c",
-  editorPrompt: "",
   rail: "|",
   username: "@",
   time: "t",

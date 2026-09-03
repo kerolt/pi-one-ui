@@ -108,16 +108,9 @@ describe("settings previews", () => {
     },
   );
 
-  it("renders the defining structure of all four Editor styles without status cues", () => {
+  it("renders the defining structure of both Editor styles without status cues", () => {
     const outputs = Object.fromEntries(
-      (
-        [
-          "opencode",
-          "opencode-copy-friendly",
-          "accent-rail",
-          "minimalist",
-        ] as EditorStyle[]
-      ).map((style) => {
+      (["opencode", "minimalist"] as EditorStyle[]).map((style) => {
         const current = config();
         current.components.editor.style = style;
         return [
@@ -126,7 +119,7 @@ describe("settings previews", () => {
         ];
       }),
     ) as Record<EditorStyle, string>;
-    expect(new Set(Object.values(outputs)).size).toBe(4);
+    expect(new Set(Object.values(outputs)).size).toBe(2);
     for (const output of Object.values(outputs)) {
       expect(output).not.toContain("Editor preview");
       expect(output).not.toContain("preview enabled");
@@ -136,18 +129,6 @@ describe("settings previews", () => {
     expect(outputs.opencode).toContain("─── ↑ 2 more");
     expect(outputs.opencode).toContain("↑↓ Navigate");
     expect(outputs.opencode).not.toContain("→ settings");
-    expect(outputs["opencode-copy-friendly"]).toContain(
-      "\nExplain this change safely.",
-    );
-    expect(outputs["opencode-copy-friendly"]).toContain("↑↓ Navigate");
-    expect(outputs["opencode-copy-friendly"]).toContain("\n sonnet-4");
-    expect(outputs["opencode-copy-friendly"]).not.toContain(
-      "│ Explain this change safely.",
-    );
-    expect(outputs["accent-rail"]).toContain("▎ Explain this change safely.");
-    expect(outputs["accent-rail"]).toContain("▎ settings     Open settings");
-    expect(outputs["accent-rail"]).toContain("  files        Search files");
-    expect(outputs["accent-rail"]).not.toContain("sonnet-4");
     expect(outputs.minimalist).toContain("╭─ ↑ 2 more");
     expect(outputs.minimalist).toContain("╰─ ↓ 3 more");
     expect(outputs.minimalist).toContain("feat/settings-previews");
@@ -160,7 +141,7 @@ describe("settings previews", () => {
     expect(disabledOutput).not.toContain("preview");
   });
 
-  it("previews transparent palette and native completion menus independently for both Opencode styles", () => {
+  it("previews Opencode palette and native completion menus", () => {
     const current = config();
     const renderRows = () => renderEditorSettingsPreview(current, theme(), 72);
     const render = () => plain(renderRows());
@@ -173,51 +154,6 @@ describe("settings previews", () => {
     expect(render()).not.toContain("↑↓ Navigate");
     expect(render()).toContain("→ settings");
     expect(render()).toContain("(1/47)");
-    expect(
-      current.components.editor.styles["opencode-copy-friendly"].completionMenu,
-    ).toBe("palette");
-
-    current.components.editor.style = "opencode-copy-friendly";
-    expect(render()).toContain("↑↓ Navigate");
-    expect(render()).not.toContain("(1/47)");
-    current.components.editor.styles["opencode-copy-friendly"].completionMenu =
-      "native";
-    expect(render()).not.toContain("↑↓ Navigate");
-    expect(render()).toContain("→ settings");
-    expect(render()).toContain("(1/47)");
-  });
-
-  it("passes enabled and disabled viewport indicators through the Accent Rail preview", () => {
-    const current = config();
-    current.components.editor.style = "accent-rail";
-    const render = () =>
-      plain(renderEditorSettingsPreview(current, theme(), 72));
-
-    current.components.editor.viewportIndicators = true;
-    expect(render()).toContain("▎ ↑ 2 more");
-    expect(render()).toContain("▎ ↓ 3 more");
-
-    current.components.editor.viewportIndicators = false;
-    expect(render()).not.toContain("↑ 2 more");
-    expect(render()).not.toContain("↓ 3 more");
-    expect(render()).toContain("▎ Explain this change safely.");
-  });
-
-  it("previews filled and transparent Accent Rail layouts", () => {
-    const current = config();
-    current.components.editor.style = "accent-rail";
-    const render = () =>
-      renderEditorSettingsPreview(current, theme(), 72).join("\n");
-    const filled = render();
-    expect(filled).toContain("\x1b[48;5;234m");
-    expect(plain(filled.split("\n"))).toContain("▎ settings     Open settings");
-
-    current.components.editor.styles["accent-rail"].transparent = true;
-    const transparent = render();
-    expect(transparent).not.toContain("\x1b[48;5;234m");
-    expect(plain(transparent.split("\n"))).toContain(
-      "▎ settings     Open settings",
-    );
   });
 
   it("responds to Editor visible settings and selected metadata format", () => {
@@ -248,7 +184,7 @@ describe("settings previews", () => {
     expect(render()).not.toBe(staticBorder);
   });
 
-  it("responds to every applicable Minimalist setting and thresholds", () => {
+  it("responds to every applicable Minimalist setting", () => {
     const current = config();
     current.components.editor.style = "minimalist";
     const minimalist = current.components.editor.styles.minimalist;
@@ -256,13 +192,10 @@ describe("settings previews", () => {
       renderEditorSettingsPreview(current, theme(), 72).join("\n");
     const changes = [
       () => (minimalist.pathDisplay = "full"),
-      () => (minimalist.contextFormat = "percent-total"),
-      () => (minimalist.contextGauge = !minimalist.contextGauge),
       () => (minimalist.showSessionName = !minimalist.showSessionName),
       () => (minimalist.showTimer = !minimalist.showTimer),
       () => (minimalist.showCost = !minimalist.showCost),
       () => (minimalist.showGit = !minimalist.showGit),
-      () => (minimalist.contextThresholds = { warning: 80, error: 90 }),
     ];
     for (const [index, change] of changes.entries()) {
       const before = render();
@@ -341,43 +274,23 @@ describe("settings previews", () => {
     const current = config();
     current.icons.rail =
       "\x1b]2;RAIL-OSC\x07│\u009b31m\u009dRAIL-C1\u009c\u009b0m";
-    current.icons.editorPrompt =
-      "❯\x1b]8;;https://PROMPT-OSC.evil.invalid\x07\x1b]8;;\x07\x1b]2;TRUNCATED-OSC";
     current.icons.ahead = "↑\x1bP$qARROW-DCS\x1b\\";
     current.icons.behind = "↓\u009dARROW-C1\u009c";
 
-    current.components.editor.styles["accent-rail"].rail =
-      "▎\x1b]2;ACCENT-RAIL-OSC\x07\u009b31m\u009dACCENT-RAIL-C1\u009c\u009b0m";
-
-    for (const style of [
-      "opencode",
-      "opencode-copy-friendly",
-      "accent-rail",
-      "minimalist",
-    ] as EditorStyle[]) {
+    for (const style of ["opencode", "minimalist"] as EditorStyle[]) {
       current.components.editor.style = style;
       expectOnlyTrustedSgr(renderEditorSettingsPreview(current, theme(), 72), [
         "RAIL-OSC",
         "RAIL-C1",
-        "PROMPT-OSC",
         "ARROW-DCS",
         "ARROW-C1",
-        "evil.invalid",
-        "TRUNCATED-OSC",
-        "ACCENT-RAIL-OSC",
-        "ACCENT-RAIL-C1",
       ]);
     }
     current.components.editor.style = "opencode";
     expect(plain(renderEditorSettingsPreview(current, theme(), 72))).toContain(
       "│",
     );
-    current.components.editor.style = "opencode-copy-friendly";
-    expect(plain(renderEditorSettingsPreview(current, theme(), 72))).toContain(
-      "❯",
-    );
     expect(current.icons.rail).toContain("RAIL-OSC");
-    expect(current.icons.editorPrompt).toContain("TRUNCATED-OSC");
 
     for (const style of [
       "framed",

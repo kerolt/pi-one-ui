@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Simplified Editor styling to the `opencode` and `minimalist` options; removed Minimalist context-usage metadata in favor of Footer's more complete context configuration.
+
+### Removed
+
+- Removed the `opencode-copy-friendly` and `accent-rail` Editor styles, including Accent Rail layout patching and style-specific settings.
+
+### Migration
+
+- Existing `opencode-copy-friendly` or `accent-rail` selections fall back to `opencode`; remove obsolete nested settings for those styles when convenient.
+- Configure context percentage, token totals, thresholds, and gauges through Footer instead of Minimalist Editor settings.
+
 ## [0.3.1] - 2026-08-31
 
 ### Changed

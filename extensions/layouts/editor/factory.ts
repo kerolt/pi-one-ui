@@ -7,7 +7,6 @@ import type {
 import type { EditorTheme, TUI } from "@earendil-works/pi-tui";
 import type { PolishedTuiConfig } from "../../app/config/shell.ts";
 import { type FooterState, modelLabelFor } from "../footer/index.ts";
-import { markAccentRailLayoutEditor } from "./accent-rail-layout-patch.ts";
 import {
   type EditorFactory,
   markEditorFactory,
@@ -22,14 +21,11 @@ export type EditorFactoryRuntime = {
   readonly getConfig: () => PolishedTuiConfig;
   readonly getState: () => FooterState;
   readonly getThinkingLevel: () => ReturnType<ExtensionAPI["getThinkingLevel"]>;
-  readonly getContextWindow: (ctx: ExtensionContext) => number | undefined;
-  readonly getContextPercent: (ctx: ExtensionContext) => number | undefined;
   readonly getAgentDurationMs: () => number;
   readonly isAgentActive: () => boolean;
   readonly getProjectRoot: () => string | undefined;
   readonly onRender: (requestRender: () => void) => void;
   readonly onDecorationActive: (active: boolean) => void;
-  readonly isAccentRailActive: () => boolean;
 };
 
 /**
@@ -49,7 +45,7 @@ export function createEditorFactory(
     keybindings: KeybindingsManager,
   ) => {
     runtime.onRender(() => tui.requestRender());
-    const editor = new PolishedEditor(
+    return new PolishedEditor(
       tui,
       theme,
       keybindings,
@@ -60,12 +56,6 @@ export function createEditorFactory(
       () => editorDecoration(ctx, runtime),
       runtime.onDecorationActive,
     );
-    markAccentRailLayoutEditor(
-      editor,
-      runtime.ownerToken,
-      runtime.isAccentRailActive,
-    );
-    return editor;
   }) as ZentuiEditorFactory;
   return markEditorFactory(factory, runtime.ownerToken);
 }
@@ -89,7 +79,7 @@ export function createWrappedEditorFactory(
     keybindings: KeybindingsManager,
   ) => {
     runtime.onRender(() => tui.requestRender());
-    const editor = new WrappedPolishedEditor(
+    return new WrappedPolishedEditor(
       baseFactory(tui, theme, keybindings),
       runtime.sessionTheme,
       runtime.getConfig,
@@ -98,12 +88,6 @@ export function createWrappedEditorFactory(
       () => editorDecoration(ctx, runtime),
       runtime.onDecorationActive,
     );
-    markAccentRailLayoutEditor(
-      editor,
-      runtime.ownerToken,
-      runtime.isAccentRailActive,
-    );
-    return editor;
   }) as ZentuiEditorFactory;
   return markWrappedEditorFactory(factory, baseFactory, runtime.ownerToken);
 }
@@ -150,8 +134,6 @@ function editorDecoration(
     costLabel: state.costLabel,
     modelLabel: modelLabelFor(state, config.components.editor.modelLabel),
     thinkingLevel: runtime.getThinkingLevel(),
-    contextPercent: runtime.getContextPercent(ctx),
-    contextWindow: runtime.getContextWindow(ctx),
     sessionName: ctx.sessionManager.getSessionName() ?? "",
     agentDurationMs: runtime.getAgentDurationMs(),
     agentActive: runtime.isAgentActive(),

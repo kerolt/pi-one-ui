@@ -12,9 +12,6 @@ import {
   type MinimalistEditorMetadata,
   renderMinimalistFrame,
 } from "../../extensions/layouts/editor/minimalist-editor";
-import { installFooter } from "../../extensions/layouts/footer/footer";
-import { emptyGitStatus } from "../../extensions/services/git-data";
-import { createInitialState } from "../../extensions/services/session-state";
 
 function theme(): Theme {
   return {
@@ -84,7 +81,6 @@ function render(
       costLabel: "$0.123",
       modelLabel: "model-x",
       thinkingLevel: "high",
-      contextPercent: 42.4,
       sessionName: "release prep",
       agentDurationMs: 12_500,
       agentActive: true,
@@ -98,7 +94,7 @@ describe("minimalist editor frame", () => {
   it("renders metadata and framed autocomplete", () => {
     const lines = render();
     expect(lines[0]).toContain("12s · release prep");
-    expect(lines[0]).toContain("$0.123 – model-x – high – 42%");
+    expect(lines[0]).toContain("$0.123 – model-x – high");
     expect(lines[0]).toMatch(/^╭.*╮$/);
     expect(lines[1]).toMatch(/^│ draft\s+│$/);
     expect(lines[2]).toMatch(/^├─+┤$/);
@@ -120,7 +116,6 @@ describe("minimalist editor frame", () => {
         costLabel: "$0.123",
         modelLabel: "model-x",
         thinkingLevel: "high",
-        contextPercent: 42,
       },
       uiTheme: recordingTheme(calls),
       config: config(),
@@ -132,7 +127,6 @@ describe("minimalist editor frame", () => {
         { color: "success", text: "$0.123" },
         { color: "syntaxKeyword", text: "model-x" },
         { color: "warning", text: "high" },
-        { color: "muted", text: "42%" },
         { color: "syntaxKeyword", text: "main" },
         { color: "syntaxFunction", text: "project" },
       ]),
@@ -169,25 +163,6 @@ describe("minimalist editor frame", () => {
     },
   );
 
-  it.each([
-    [70, "warning"],
-    [90, "error"],
-  ] as const)(
-    "keeps %i%% context on the %s semantic tier",
-    (contextPercent, color) => {
-      const calls: Array<{ color: string; text: string }> = [];
-      renderMinimalistFrame({
-        width: 80,
-        editorLines: ["draft"],
-        inputText: "draft",
-        metadata: { cwd: "", contextPercent },
-        uiTheme: recordingTheme(calls),
-        config: config(),
-      });
-      expect(calls).toContainEqual({ color, text: `${contextPercent}%` });
-    },
-  );
-
   it("preserves custom theme roles", () => {
     const calls: Array<{ color: string; text: string }> = [];
     const colors = {
@@ -196,7 +171,6 @@ describe("minimalist editor frame", () => {
       gitBranch: "bold purple",
       editorGitBranch: "success",
       cost: "warning",
-      contextNormal: "dim",
       editorModel: "text",
       editorThinkingHigh: "thinkingHigh",
     };
@@ -210,7 +184,6 @@ describe("minimalist editor frame", () => {
         costLabel: "$0.123",
         modelLabel: "model-x",
         thinkingLevel: "high",
-        contextPercent: 42,
       },
       uiTheme: recordingTheme(calls),
       config: config({ colors }),
@@ -220,7 +193,6 @@ describe("minimalist editor frame", () => {
         { color: "warning", text: "$0.123" },
         { color: "text", text: "model-x" },
         { color: "thinkingHigh", text: "high" },
-        { color: "muted", text: "42%" },
         { color: "success", text: "main" },
         { color: "accent", text: "project" },
       ]),
@@ -241,7 +213,6 @@ describe("minimalist editor frame", () => {
         costLabel: "$0.123",
         modelLabel: "model-x",
         thinkingLevel: "high",
-        contextPercent: 42,
       },
       uiTheme: theme(),
       config: terminalConfig,
@@ -250,25 +221,9 @@ describe("minimalist editor frame", () => {
     expect(output).toContain("\x1b[1;32m$0.123\x1b[0m");
     expect(output).toContain("\x1b[1;35mmodel-x\x1b[0m");
     expect(output).toContain("\x1b[1;33mhigh\x1b[0m");
-    expect(output).toContain("\x1b[90m42%\x1b[0m");
     expect(output).toContain("\x1b[1;34mmain\x1b[0m");
     expect(output).toContain("\x1b[1;36mproject\x1b[0m");
     expect(output).toContain("\x1b[90m╭\x1b[0m");
-
-    for (const [contextPercent, expected] of [
-      [70, "\x1b[1;33m70%\x1b[0m"],
-      [90, "\x1b[1;31m90%\x1b[0m"],
-    ] as const) {
-      const contextOutput = renderMinimalistFrame({
-        width: 80,
-        editorLines: ["draft"],
-        inputText: "draft",
-        metadata: { cwd: "", contextPercent },
-        uiTheme: theme(),
-        config: terminalConfig,
-      }).join("\n");
-      expect(contextOutput).toContain(expected);
-    }
   });
 
   it("uses only the canonical editor branch color", () => {
@@ -459,7 +414,6 @@ describe("minimalist editor frame", () => {
         cwd: "/tmp/界-project",
         branch: "feature/👩‍💻-e\u0301-long",
         modelLabel: "模型-👩‍💻",
-        contextPercent: 99,
       },
       uiTheme: theme(),
       config: config(),
@@ -507,7 +461,6 @@ describe("minimalist editor frame", () => {
         branch: "main",
         costLabel: "$1.000",
         agentDurationMs: 5000,
-        contextPercent: 11,
       },
       uiTheme: theme(),
       config: config({
@@ -525,142 +478,27 @@ describe("minimalist editor frame", () => {
     expect(rendered).not.toContain("5s");
     expect(rendered).not.toContain("$1.000");
     expect(rendered).not.toContain("main");
-    expect(rendered).toContain("11%");
   });
 
-  it("renders percent, percent-total, and gauge context forms", () => {
-    const contextLine = (
-      contextFormat: "percent" | "percent-total",
-      contextGauge: boolean,
-      contextWindow?: number,
-      width = 80,
-    ) =>
-      renderMinimalistFrame({
-        width,
-        editorLines: ["draft"],
-        inputText: "draft",
-        metadata: { cwd: "/tmp", contextPercent: 11, contextWindow },
-        uiTheme: theme(),
-        config: config({
-          editorStyles: {
-            minimalist: {
-              ...defaultConfig.editorStyles.minimalist,
-              contextFormat,
-              contextGauge,
-            },
-          },
-        }),
-      })[0] ?? "";
-
-    expect(contextLine("percent", false, 372_000)).toContain("11%");
-    expect(contextLine("percent", false, 372_000)).not.toContain("372k");
-    expect(contextLine("percent-total", false, 372_000)).toContain("11%/372k");
-    expect(contextLine("percent-total", false)).toContain("11%");
-    expect(contextLine("percent-total", false)).not.toContain("/");
-    expect(contextLine("percent-total", true, 372_000)).toContain(
-      "[█░░░░] 11%/372k",
-    );
-    const narrow = contextLine("percent-total", true, 372_000, 16);
-    expect(narrow).toContain("11%/372k");
-    expect(narrow).not.toContain("[");
-    expect(visibleWidth(narrow)).toBeLessThanOrEqual(16);
-  });
-
-  it("uses minimalist-owned context thresholds independently of footer thresholds", () => {
-    const base = config();
-    const divergent = {
-      ...base,
-      colors: {
-        ...base.colors,
-        contextNormal: "bright-black",
-        contextWarning: "yellow",
-        contextError: "red",
-      },
-      components: {
-        ...base.components,
-        editor: {
-          ...base.components.editor,
-          colorSource: "terminal" as const,
-          styles: {
-            ...base.components.editor.styles,
-            minimalist: {
-              ...base.components.editor.styles.minimalist,
-              contextThresholds: { warning: 40, error: 60 },
-            },
-          },
-        },
-        footer: {
-          ...base.components.footer,
-          colorSource: "terminal" as const,
-          styles: {
-            starship: {
-              ...base.components.footer.styles.starship,
-              format: "$context",
-              responsive: false,
-              contextThresholds: { warning: 70, error: 90 },
-            },
-          },
-        },
-      },
-    };
-    const taggedTheme = {
-      ...theme(),
-      fg(color: string, text: string) {
-        return `[${color}]${text}`;
-      },
-    } as Theme;
-    const rendered = renderMinimalistFrame({
+  it("does not render legacy context-usage metadata", () => {
+    const legacyMetadata = {
+      cwd: "/tmp",
+      modelLabel: "model-x",
+      contextPercent: 75,
+      contextWindow: 372_000,
+    } as MinimalistEditorMetadata;
+    const output = renderMinimalistFrame({
       width: 80,
       editorLines: ["draft"],
       inputText: "draft",
-      metadata: { cwd: "/tmp", contextPercent: 50 },
-      uiTheme: taggedTheme,
-      config: divergent,
+      metadata: legacyMetadata,
+      uiTheme: theme(),
+      config: config(),
     }).join("\n");
-    expect(rendered).toContain("\x1b[33m50%\x1b[0m");
-    expect(rendered).not.toContain("\x1b[90m50%\x1b[0m");
 
-    let footerFactory:
-      | ((
-          tui: { requestRender(): void },
-          theme: Theme,
-          data: {
-            onBranchChange(callback: () => void): () => void;
-            getExtensionStatuses(): Map<string, string>;
-          },
-        ) => { render(width: number): string[] })
-      | undefined;
-    const footerContext = {
-      cwd: "/tmp",
-      model: { contextWindow: 100_000 },
-      getContextUsage: () => ({
-        percent: 50,
-        tokens: 50_000,
-        contextWindow: 100_000,
-      }),
-      sessionManager: { getSessionName: () => undefined },
-      ui: {
-        setFooter(factory: typeof footerFactory) {
-          footerFactory = factory;
-        },
-      },
-    };
-    installFooter(
-      footerContext as never,
-      createInitialState(emptyGitStatus()),
-      () => divergent,
-      {
-        setRequestRender() {},
-        scheduleProjectRefresh() {},
-      },
-    );
-    const footer = footerFactory?.({ requestRender() {} }, taggedTheme, {
-      onBranchChange: () => () => {},
-      getExtensionStatuses: () => new Map(),
-    });
-    const footerRendered = footer?.render(80).join("\n") ?? "";
-    expect(footerRendered).toContain("\x1b[90m50.0%/100k\x1b[0m");
-    expect(footerRendered).not.toContain("\x1b[33m50.0%/100k\x1b[0m");
+    expect(output).toContain("model-x");
+    expect(output).not.toContain("75%");
+    expect(output).not.toContain("372k");
   });
 
   it("uses the adaptive border callback when configured", () => {
@@ -816,7 +654,6 @@ describe("minimalist editor frame", () => {
         costLabel: "$0.000",
         modelLabel: "gpt-5.6-terra",
         thinkingLevel: "minimal",
-        contextPercent: 0,
       },
       uiTheme: theme(),
       config: config({ editorBorderColorMode: "adaptive" }),
@@ -824,9 +661,9 @@ describe("minimalist editor frame", () => {
     })[0];
 
     expect(top).toContain(
-      "$0.000\x1b[36m – \x1b[0mgpt-5.6-terra\x1b[36m – \x1b[0m\x1b[36mminimal\x1b[0m\x1b[36m – \x1b[0m0%",
+      "$0.000\x1b[36m – \x1b[0mgpt-5.6-terra\x1b[36m – \x1b[0m\x1b[36mminimal\x1b[0m",
     );
-    expect(top.match(/\x1b\[36m – \x1b\[0m/g)).toHaveLength(3);
+    expect(top.match(/\x1b\[36m – \x1b\[0m/g)).toHaveLength(2);
     expect(top).not.toContain("\x1b[36m$0.000");
     expect(top).not.toContain("\x1b[36mgpt-5.6-terra");
   });
@@ -834,28 +671,18 @@ describe("minimalist editor frame", () => {
   it.each([
     [
       "without cost",
-      {
-        cwd: "",
-        modelLabel: "model",
-        thinkingLevel: "low",
-        contextPercent: 12,
-      },
-      "model\x1b[36m – \x1b[0m\x1b[36mlow\x1b[0m\x1b[36m – \x1b[0m12%",
+      { cwd: "", modelLabel: "model", thinkingLevel: "low" },
+      "model\x1b[36m – \x1b[0m\x1b[36mlow\x1b[0m",
     ],
     [
       "without model",
-      { cwd: "", costLabel: "$1", thinkingLevel: "high", contextPercent: 25 },
-      "$1\x1b[36m – \x1b[0m\x1b[36mhigh\x1b[0m\x1b[36m – \x1b[0m25%",
+      { cwd: "", costLabel: "$1", thinkingLevel: "high" },
+      "$1\x1b[36m – \x1b[0m\x1b[36mhigh\x1b[0m",
     ],
     [
       "without thinking",
-      { cwd: "", costLabel: "$2", modelLabel: "model", contextPercent: 50 },
-      "$2\x1b[36m – \x1b[0mmodel\x1b[36m – \x1b[0m50%",
-    ],
-    [
-      "without context",
-      { cwd: "", costLabel: "$3", modelLabel: "model", thinkingLevel: "xhigh" },
-      "$3\x1b[36m – \x1b[0mmodel\x1b[36m – \x1b[0m\x1b[36mxhigh\x1b[0m",
+      { cwd: "", costLabel: "$2", modelLabel: "model" },
+      "$2\x1b[36m – \x1b[0mmodel",
     ],
   ] satisfies Array<[string, MinimalistEditorMetadata, string]>)(
     "uses the resolved border separator %s",

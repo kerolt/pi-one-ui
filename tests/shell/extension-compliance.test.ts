@@ -7,9 +7,8 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import {
   initTheme,
@@ -33,10 +32,6 @@ import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../../extensions/app/ownership/
 import { installUserMessageStyle as installUserMessageStyleProduction } from "../../extensions/layouts/context/message/user-message";
 import { sanitizeUserMessageSourceText } from "../../extensions/layouts/context/message/user-message-osc";
 import {
-  discoverAccentRailLayoutPatchTargetFromEntrypoint,
-  ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR,
-} from "../../extensions/layouts/editor/accent-rail-layout-patch";
-import {
   PolishedEditor as PolishedEditorProduction,
   WrappedPolishedEditor as WrappedPolishedEditorProduction,
 } from "../../extensions/layouts/editor/ui";
@@ -44,20 +39,6 @@ import { installFooter as installFooterProduction } from "../../extensions/layou
 import { emptyGitStatus } from "../../extensions/services/git-data";
 import { createInitialState } from "../../extensions/services/session-state";
 import zentui, { activeFooterReferences } from "../support/layout-lifecycle";
-
-const localPiTuiEntry = createRequire(import.meta.url).resolve(
-  "@earendil-works/pi-tui",
-);
-const localPiTuiVersion = (
-  JSON.parse(
-    readFileSync(join(dirname(localPiTuiEntry), "../package.json"), "utf8"),
-  ) as {
-    version: string;
-  }
-).version;
-const localSupportsAccentRailLayoutPatch = /^0\.84\.\d+$/.test(
-  localPiTuiVersion,
-);
 
 const isolatedAgentDir = vi.hoisted(() => {
   const previous = process.env.PI_CODING_AGENT_DIR;
@@ -498,19 +479,6 @@ function configWithExtensionStatuses(
         styles: {
           starship: { ...footer.styles.starship, extensionStatuses: merged },
         },
-      },
-    },
-  };
-}
-
-function configWithLowRailStyle(lowRail: boolean): PolishedTuiConfig {
-  return {
-    ...defaultConfig,
-    components: {
-      ...defaultConfig.components,
-      editor: {
-        ...defaultConfig.components.editor,
-        style: lowRail ? "opencode-copy-friendly" : "opencode",
       },
     },
   };
@@ -2104,7 +2072,7 @@ describe("Pi docs compliance", () => {
         ...defaultConfig.components,
         editor: {
           ...defaultConfig.components.editor,
-          style: "opencode-copy-friendly",
+          style: "minimalist",
         },
         userMessages: {
           ...defaultConfig.components.userMessages,
@@ -2127,7 +2095,7 @@ describe("Pi docs compliance", () => {
         () => "off",
       );
       editor.setText("draft");
-      expect(editor.render(80).join("\n")).not.toContain("│");
+      expect(editor.render(80).join("\n")).toContain("╭");
       expect(
         new UserMessageComponent("message").render(80).join("\n"),
       ).toContain("│");
@@ -2154,14 +2122,6 @@ describe("Pi docs compliance", () => {
     ["opencode", "framed-copy-friendly"],
     ["opencode", "compact"],
     ["opencode", "labeled"],
-    ["opencode-copy-friendly", "framed"],
-    ["opencode-copy-friendly", "framed-copy-friendly"],
-    ["opencode-copy-friendly", "compact"],
-    ["opencode-copy-friendly", "labeled"],
-    ["accent-rail", "framed"],
-    ["accent-rail", "framed-copy-friendly"],
-    ["accent-rail", "compact"],
-    ["accent-rail", "labeled"],
     ["minimalist", "framed"],
     ["minimalist", "framed-copy-friendly"],
     ["minimalist", "compact"],
@@ -2194,10 +2154,6 @@ describe("Pi docs compliance", () => {
         .join("\n");
 
       if (editorStyle === "opencode") expect(editorRendered).toContain("│");
-      else if (editorStyle === "opencode-copy-friendly")
-        expect(editorRendered).not.toContain("│");
-      else if (editorStyle === "accent-rail")
-        expect(editorRendered).toContain("▎ draft");
       else expect(editorRendered).toContain("╭");
       const plainMessage = stripPromptMarks(messageRendered);
       if (messageStyle === "framed") expect(plainMessage).toContain("────");
@@ -4862,27 +4818,6 @@ describe("Pi docs compliance", () => {
     expect(rendered).toContain("[text]Anthropic");
   });
 
-  it("hides editor rails in the low-rail polished style", () => {
-    const editor = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => configWithLowRailStyle(true),
-      () => ({ modelLabel: "claude-sonnet", providerLabel: "Anthropic" }),
-      () => "high",
-    );
-
-    const rendered = editor.render(120).join("\n");
-
-    expect(rendered).not.toContain("│");
-    expect(rendered).not.toContain("❯");
-    expect(rendered).toContain("[borderMuted]────");
-    expect(rendered).toContain("\n [accent]claude-sonnet");
-    expect(rendered).toContain("[accent]claude-sonnet");
-    expect(rendered).toContain("[text]Anthropic");
-  });
-
   it("renders custom editor metadata variables", () => {
     const editor = new PolishedEditor(
       { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
@@ -4977,77 +4912,34 @@ describe("Pi docs compliance", () => {
     expect(lines.every((line) => visibleWidth(line) <= 16)).toBe(true);
   });
 
-  it("keeps Vim status when long custom metadata collides in both polished modes", () => {
-    for (const lowRail of [false, true]) {
-      const config = {
-        ...configWithLowRailStyle(lowRail),
-        editorMetadataFormat: "very-long-custom-metadata-$model-$provider",
-      };
-      const editor = new WrappedPolishedEditor(
-        {
-          render: (width: number) => ["─".repeat(width), "", "─".repeat(width)],
-          invalidate() {},
-          handleInput() {},
-          getText: () => "",
-          setText() {},
-          getMode: () => "insert",
-        },
-        makeTheme(),
-        () => config,
-        () => ({
-          modelLabel: "model-with-long-name",
-          providerLabel: "provider-with-long-name",
-        }),
-        () => "off",
-      );
-
-      const lines = editor.render(32);
-      const metadata = lines.find((line) => line.includes("INSERT")) ?? "";
-      expect(metadata.trimEnd().endsWith("INSERT")).toBe(true);
-      expect(metadata).not.toContain("provider-with-long-name");
-      expect(lines.every((line) => visibleWidth(line) <= 32)).toBe(true);
-    }
-  });
-
-  it("keeps blank structural metadata rows in the low-rail polished style", () => {
-    const config = configWithLowRailStyle(true);
-    config.components.editor.styles["opencode-copy-friendly"].metadataFormat =
-      "($unknown)";
-    const editor = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
+  it("keeps Vim status when long custom metadata collides", () => {
+    const config = {
+      ...defaultConfig,
+      editorMetadataFormat: "very-long-custom-metadata-$model-$provider",
+    };
+    const editor = new WrappedPolishedEditor(
+      {
+        render: (width: number) => ["─".repeat(width), "", "─".repeat(width)],
+        invalidate() {},
+        handleInput() {},
+        getText: () => "",
+        setText() {},
+        getMode: () => "insert",
+      },
+      makeTheme(),
       () => config,
-      () => ({ modelLabel: "model", providerLabel: "provider" }),
+      () => ({
+        modelLabel: "model-with-long-name",
+        providerLabel: "provider-with-long-name",
+      }),
       () => "off",
     );
 
-    const lines = editor.render(120);
-    expect(stripTestTags(lines.at(-2) ?? "").trim()).toBe("");
-    expect(stripTestTags(lines.at(-3) ?? "").trim()).toBe("");
-    expect(lines.at(-2)).toBe(" ");
-  });
-
-  it("uses the custom low-rail Editor prompt icon and color", () => {
-    const config = configWithLowRailStyle(true);
-    config.icons = { ...config.icons, editorPrompt: "›" };
-    config.colors = { ...config.colors, editorPrompt: "warning" };
-    const editor = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "claude-sonnet", providerLabel: "Anthropic" }),
-      () => "off",
-    );
-
-    const rendered = editor.render(120).join("\n");
-
-    expect(rendered).toContain("[warning]›");
-    expect(rendered).not.toContain("❯");
-    expect(rendered).not.toContain("│");
+    const lines = editor.render(32);
+    const metadata = lines.find((line) => line.includes("INSERT")) ?? "";
+    expect(metadata.trimEnd().endsWith("INSERT")).toBe(true);
+    expect(metadata).not.toContain("provider-with-long-name");
+    expect(lines.every((line) => visibleWidth(line) <= 32)).toBe(true);
   });
 
   it("keeps terminal editor chrome available when configured", () => {
@@ -5190,34 +5082,6 @@ describe("Pi docs compliance", () => {
     expect(
       lines.filter((line) => /^─+$/.test(stripTestTags(line).trim())),
     ).toHaveLength(2);
-  });
-
-  it("unwraps branded low-rail polished frames without duplicating metadata", () => {
-    const config = configWithLowRailStyle(true);
-    config.components.editor.styles["opencode-copy-friendly"].metadataFormat =
-      "copy-meta";
-    const inner = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "old-model", providerLabel: "old-provider" }),
-      () => "off",
-    );
-    inner.setText("typed text");
-    const editor = new WrappedPolishedEditor(
-      inner as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "new-model", providerLabel: "new-provider" }),
-      () => "off",
-    );
-
-    const rendered = editor.render(120).join("\n");
-    expect(rendered.match(/copy-meta/g)).toHaveLength(1);
-    expect(rendered.match(/typed text/g)).toHaveLength(1);
-    expect(rendered).not.toContain("│");
   });
 
   it("unwraps branded frames when metadata resolves blank", () => {
@@ -6064,164 +5928,6 @@ describe("three-state Footer lifecycle", () => {
     await emit(handlers, "session_shutdown", ctx);
     expect(harness.factories).toHaveLength(callsBeforeShutdown);
     expect(harness.factory).toBe(replacement);
-  });
-
-  it("reports the Accent Rail layout diagnostic only when debug logging is enabled", async () => {
-    const previousEntrypoint = process.argv[1];
-    const previousDebug = process.env.ZENTUI_DEBUG;
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    process.argv[1] = join(isolatedAgentDir.path, "missing-pi-entrypoint.js");
-    process.env.ZENTUI_DEBUG = "1";
-    const handlers = loadExtension();
-    const ctx = makeContext();
-    try {
-      await emit(handlers, "session_start", ctx);
-      expect(error).toHaveBeenCalledWith(
-        "[zentui] Accent Rail fullscreen layout patch: host-module-unavailable",
-      );
-      await emit(handlers, "session_shutdown", ctx);
-    } finally {
-      process.argv[1] = previousEntrypoint;
-      if (previousDebug === undefined) delete process.env.ZENTUI_DEBUG;
-      else process.env.ZENTUI_DEBUG = previousDebug;
-      error.mockRestore();
-    }
-  });
-
-  it.skipIf(!localSupportsAccentRailLayoutPatch)(
-    "installs and restores the fullscreen Accent Rail layout patch with the owned outer editor",
-    async () => {
-      writeFileSync(
-        join(isolatedAgentDir.path, "pi-one-ui.json"),
-        JSON.stringify({
-          projectRefreshIntervalMs: 0,
-          components: {
-            editor: { enabled: true, style: "accent-rail" },
-            userMessages: { enabled: false },
-            selectorBorders: { enabled: false },
-            footer: { style: "hidden" },
-          },
-        }),
-      );
-      let editorFactory: unknown;
-      const ctx = makeContext({
-        ui: {
-          theme: makeTheme(),
-          setFooter() {},
-          setEditorComponent(factory: unknown) {
-            editorFactory = factory;
-          },
-          getEditorComponent: () => editorFactory,
-        },
-      });
-      const require = createRequire(import.meta.url);
-      const tuiEntry = require.resolve("@earendil-works/pi-tui");
-      const hostEntrypoint = join(
-        dirname(tuiEntry),
-        "../../pi-coding-agent/dist/cli.js",
-      );
-      const previousEntrypoint = process.argv[1];
-      process.argv[1] = hostEntrypoint;
-      const handlers = loadExtension();
-      try {
-        await emit(handlers, "session_start", ctx);
-        const editor = (
-          editorFactory as (...args: unknown[]) => {
-            render(width: number): string[];
-            invalidate(): void;
-          }
-        )(
-          { requestRender() {}, terminal: { rows: 24, cols: 80 } } as never,
-          { borderColor: (text: string) => text, selectList: {} } as never,
-          {} as never,
-        );
-        expect(Object.hasOwn(editor, ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR)).toBe(
-          true,
-        );
-        const target =
-          await discoverAccentRailLayoutPatchTargetFromEntrypoint(
-            hostEntrypoint,
-          );
-        expect(target?.version).toBe(localPiTuiVersion);
-        const editorContainer = {
-          children: [editor],
-          render: () => ["rail"],
-          invalidate() {},
-        };
-        const stack = Object.create(target?.prototype ?? null) as Record<
-          PropertyKey,
-          unknown
-        >;
-        stack.entries = [{ component: editorContainer, shrink: 1, minSize: 3 }];
-        stack.layoutType = "vstack";
-        stack.gap = 0;
-        stack.align = "stretch";
-        const layout = () =>
-          (
-            stack[Symbol.for("@earendil-works/pi-tui/layout-node")] as () => {
-              entries: Array<{
-                component: { render(): string[] };
-                minSize?: number;
-              }>;
-            }
-          )();
-        const adjusted = layout().entries[0];
-        expect(adjusted?.minSize).toBe(3);
-        expect(adjusted?.component).not.toBe(editorContainer);
-        expect(adjusted?.component.render()).toEqual(["", "rail"]);
-
-        await emit(handlers, "session_shutdown", ctx);
-        expect(layout().entries[0]?.minSize).toBe(3);
-        expect(layout().entries[0]?.component).toBe(editorContainer);
-      } finally {
-        process.argv[1] = previousEntrypoint;
-      }
-    },
-  );
-
-  it("marks only the outer editor when wrapping a third-party factory", async () => {
-    writeFileSync(
-      join(isolatedAgentDir.path, "pi-one-ui.json"),
-      JSON.stringify({
-        projectRefreshIntervalMs: 0,
-        components: { editor: { enabled: true, style: "accent-rail" } },
-      }),
-    );
-    const baseEditor = {
-      render: (width: number) => [
-        "─".repeat(width),
-        "third-party",
-        "─".repeat(width),
-      ],
-      invalidate() {},
-      handleInput() {},
-      getText: () => "",
-      setText() {},
-    };
-    const baseFactory = () => baseEditor;
-    let editorFactory: unknown = baseFactory;
-    const ctx = makeContext({
-      ui: {
-        theme: makeTheme(),
-        setFooter() {},
-        setEditorComponent(factory: unknown) {
-          editorFactory = factory;
-        },
-        getEditorComponent: () => editorFactory,
-      },
-    });
-    const handlers = loadExtension();
-    await emit(handlers, "session_start", ctx);
-    const outer = (editorFactory as (...args: unknown[]) => object)(
-      { requestRender() {}, terminal: { rows: 24, cols: 80 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-    );
-    expect(Object.hasOwn(outer, ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR)).toBe(true);
-    expect(Object.hasOwn(baseEditor, ZENTUI_ACCENT_RAIL_LAYOUT_EDITOR)).toBe(
-      false,
-    );
-    await emit(handlers, "session_shutdown", ctx);
   });
 
   it("rebinds Footer across every live style transition", async () => {

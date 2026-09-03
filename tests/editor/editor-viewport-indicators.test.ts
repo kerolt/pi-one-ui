@@ -53,12 +53,6 @@ function config(
               ? { completionMenu: options.completionMenu }
               : {}),
           },
-          "opencode-copy-friendly": {
-            ...defaultConfig.components.editor.styles["opencode-copy-friendly"],
-            ...(options.completionMenu
-              ? { completionMenu: options.completionMenu }
-              : {}),
-          },
         },
       },
     },
@@ -277,23 +271,6 @@ describe("adaptive editor border colors", () => {
     expect(rendered.match(/↓ 8 more/g)).toHaveLength(1);
     expect(rendered.match(/model/g)).toHaveLength(1);
   });
-
-  it("preserves low-rail polished viewport layout, clamping, and static fallback", () => {
-    const editor = wrapped(
-      baseEditor({ above: 123456, below: 654321, ansi: true }),
-      { style: "opencode-copy-friendly" },
-      "adaptive",
-    );
-    editor.borderColor = () => {
-      throw new Error("theme callback failed");
-    };
-
-    const lines = editor.render(12);
-    expect(lines[0]).toContain("↑");
-    expect(lines.at(-1)).toContain("↓");
-    expect(lines.join("\n")).not.toContain("│");
-    expect(lines.every((line) => visibleWidth(line) <= 12)).toBe(true);
-  });
 });
 
 describe("editor viewport indicators", () => {
@@ -360,7 +337,7 @@ describe("editor viewport indicators", () => {
     expect(narrowLines.at(-1)).toContain("↓");
   });
 
-  it.each(["opencode", "opencode-copy-friendly"] as const)(
+  it.each(["opencode"] as const)(
     "renders one completion palette through nested %s wrappers",
     (style) => {
       const base = baseEditor({
@@ -383,7 +360,7 @@ describe("editor viewport indicators", () => {
     },
   );
 
-  it.each(["opencode", "opencode-copy-friendly"] as const)(
+  it.each(["opencode"] as const)(
     "keeps ANSI, Unicode, and native count autocomplete rows raw after the terminal bottom border in %s",
     (style) => {
       const suggestions = [
@@ -408,7 +385,7 @@ describe("editor viewport indicators", () => {
     },
   );
 
-  it.each(["opencode", "opencode-copy-friendly"] as const)(
+  it.each(["opencode"] as const)(
     "renders the default completion palette once without the native count row in %s",
     (style) => {
       const suggestions = [
@@ -432,7 +409,7 @@ describe("editor viewport indicators", () => {
     },
   );
 
-  it.each(["opencode", "accent-rail"] as const)(
+  it.each(["opencode"] as const)(
     "fails open from the same render when a third-party %s editor rewrites captured autocomplete rows",
     (style) => {
       for (const mutation of ["replace", "reorder"] as const) {
@@ -502,7 +479,7 @@ describe("editor viewport indicators", () => {
     },
   );
 
-  it.each(["opencode", "accent-rail"] as const)(
+  it.each(["opencode"] as const)(
     "preserves same-render %s rows when autocomplete ownership changes during rendering",
     (style) => {
       const suggestions = ["→ original-one", "  original-two"];
@@ -528,7 +505,7 @@ describe("editor viewport indicators", () => {
     },
   );
 
-  it.each(["opencode", "opencode-copy-friendly"] as const)(
+  it.each(["opencode"] as const)(
     "keeps exact no-autocomplete output in %s",
     (style) => {
       const ordinary = baseEditor({ below: 2 });
@@ -542,7 +519,7 @@ describe("editor viewport indicators", () => {
     },
   );
 
-  it.each(["opencode", "opencode-copy-friendly"] as const)(
+  it.each(["opencode"] as const)(
     "keeps raw trailing autocomplete width-safe at widths 5 and 4 in %s",
     (style) => {
       for (const width of [5, 4]) {
@@ -581,7 +558,7 @@ describe("editor viewport indicators", () => {
   });
 
   it("captures standalone Opencode autocomplete from the base render without an extra render", () => {
-    const editor = standalone("opencode-copy-friendly");
+    const editor = standalone();
     let calls = 0;
     Object.assign(editor as unknown as Record<string, unknown>, {
       autocompleteState: {},
@@ -601,7 +578,7 @@ describe("editor viewport indicators", () => {
     expect(lines.every((line) => visibleWidth(line) <= 80)).toBe(true);
   });
 
-  it.each(["opencode", "accent-rail"] as const)(
+  it.each(["opencode"] as const)(
     "keeps standalone %s autocomplete to one render when ownership changes",
     (style) => {
       const editor = standalone(style);
@@ -885,8 +862,8 @@ describe("editor viewport indicators", () => {
     ]);
   });
 
-  it("keeps every rendered line within narrow ANSI-aware widths in both chrome modes", () => {
-    for (const style of ["opencode", "opencode-copy-friendly"] as const) {
+  it("keeps every rendered Opencode line within narrow ANSI-aware widths", () => {
+    for (const style of ["opencode"] as const) {
       for (const width of [3, 8, 12, 16]) {
         const lines = wrapped(
           baseEditor({ above: 12, below: 34, ansi: true }),
@@ -978,7 +955,7 @@ describe("same-render autocomplete capture", () => {
     expect(predecessor).toHaveBeenCalledTimes(1);
   });
 
-  it.each(["opencode", "accent-rail"] as const)(
+  it.each(["opencode"] as const)(
     "fails open from one %s render when inherited-renderer cleanup is rejected",
     (style) => {
       const predecessor = vi.fn((_width: number) => ["→ original"]);
@@ -1054,36 +1031,6 @@ describe("same-render autocomplete capture", () => {
   });
 });
 
-describe("accent rail editor integration", () => {
-  it("decorates trusted wrapped input and autocomplete rows", () => {
-    const editor = wrapped(baseEditor({ autocomplete: ["one", "two"] }), {
-      style: "accent-rail",
-    });
-    const lines = editor.render(24);
-    expect(lines).toHaveLength(3);
-    expect(lines[0]).toMatch(/^▎ typed text/);
-    expect(lines.every((line) => visibleWidth(line) === 24)).toBe(true);
-    expect(lines.slice(1).map((line) => line.trimEnd())).toEqual([
-      "one",
-      "two",
-    ]);
-  });
-
-  it("fails open from the reduced same-render rows for untrusted third-party output", () => {
-    const base = baseEditor({ malformedTop: "third-party header" });
-    const editor = wrapped(base, { style: "accent-rail" });
-    const lines = editor.render(24);
-    expect(lines).toEqual(base.render(22));
-    expect(lines.join("\n")).not.toContain("▎");
-  });
-
-  it("renders the standalone editor with the same accent rail", () => {
-    const lines = standalone("accent-rail").render(24);
-    expect(lines.some((line) => line.startsWith("▎ "))).toBe(true);
-    expect(lines.every((line) => visibleWidth(line) <= 24)).toBe(true);
-  });
-});
-
 describe("minimalist editor integration", () => {
   it("switches renderer modes without replacing the wrapped editor", () => {
     let current = config();
@@ -1105,7 +1052,7 @@ describe("minimalist editor integration", () => {
     expect(minimalist.join("\n")).toContain("$0.100 – model");
   });
 
-  it("cycles one wrapped adapter through every style without nesting owned chrome", () => {
+  it("cycles one wrapped adapter through both styles without nesting owned chrome", () => {
     let current = config({ style: "opencode" });
     const rawWidths: number[] = [];
     const raw = baseEditor({});
@@ -1133,27 +1080,18 @@ describe("minimalist editor integration", () => {
     );
 
     const polished = editor.render(40);
-    current = withEditorStyle(current, "opencode-copy-friendly");
-    const lowRail = editor.render(40);
-    current = withEditorStyle(current, "accent-rail");
-    const accentRail = editor.render(40);
     current = withEditorStyle(current, "minimalist");
     const minimalist = editor.render(40);
     current = withEditorStyle(current, "opencode");
     const polishedAgain = editor.render(40);
 
-    expect(rawWidths).toEqual([36, 38, 36, 34, 36]);
+    expect(rawWidths).toEqual([36, 34, 36]);
     expect(polished.join("\n").match(/provider/g)).toHaveLength(1);
-    expect(lowRail.join("\n").match(/provider/g)).toHaveLength(1);
-    expect(accentRail[0]).toMatch(/^▎ typed text/);
-    expect(accentRail.join("\n")).not.toContain("provider");
     expect(minimalist[0]).toMatch(/^╭.*╮$/);
     expect(minimalist.at(-1)).toMatch(/^╰.*╯$/);
     expect(polishedAgain.join("\n").match(/provider/g)).toHaveLength(1);
     expect(polishedAgain.join("\n")).not.toContain("╭");
     expect(decoration.mock.calls.map(([active]) => active)).toEqual([
-      false,
-      false,
       false,
       true,
       false,

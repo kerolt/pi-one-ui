@@ -1,7 +1,6 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { renderUserMessageStyle } from "../../layouts/context/message/user-message-styles.ts";
-import { renderAccentRailEditorFrame } from "../../layouts/editor/accent-rail-editor.ts";
 import { sanitizeEditorMetadataText } from "../../layouts/editor/editor-metadata-format.ts";
 import { renderMinimalistFrame } from "../../layouts/editor/minimalist-editor.ts";
 import { renderPolishedEditorFrame } from "../../layouts/editor/ui.ts";
@@ -61,16 +60,7 @@ export function renderEditorSettingsPreview(
     ? { above: "2", below: "3" }
     : undefined;
   let frame: string[];
-  if (editor.style === "accent-rail") {
-    frame = renderAccentRailEditorFrame({
-      width: previewWidth,
-      editorLines,
-      autocompleteLines,
-      viewport,
-      uiTheme: theme,
-      config: safeConfig,
-    });
-  } else if (editor.style === "minimalist") {
+  if (editor.style === "minimalist") {
     frame = renderMinimalistFrame({
       width: previewWidth,
       editorLines,
@@ -86,8 +76,6 @@ export function renderEditorSettingsPreview(
         costLabel: "$.12",
         modelLabel,
         thinkingLevel: "high",
-        contextPercent: 75,
-        contextWindow: 372_000,
         sessionName: "Preview",
         agentDurationMs: 12_000,
         agentActive: true,

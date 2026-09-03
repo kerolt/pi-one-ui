@@ -10,11 +10,6 @@ import type { RenderScheduler } from "../../app/runtime/render-scheduler.ts";
 import type { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
 import type { FooterState } from "../footer/index.ts";
 import {
-  type AccentRailLayoutPatchDiagnostic,
-  installHostAccentRailLayoutPatch,
-  retainAccentRailLayoutPatchInstallation,
-} from "./accent-rail-layout-patch.ts";
-import {
   type EditorTransferFailureReason,
   replaceEditorComponentWithExpandedText,
 } from "./editor-transfer.ts";
@@ -41,8 +36,6 @@ export type EditorLayoutControllerContext = {
   readonly sessionLifecycle: SessionLifecycle;
   readonly render: Pick<RenderScheduler, "request">;
   readonly getThinkingLevel: () => ReturnType<ExtensionAPI["getThinkingLevel"]>;
-  readonly getContextWindow: (ctx: ExtensionContext) => number | undefined;
-  readonly getContextPercent: (ctx: ExtensionContext) => number | undefined;
   readonly getAgentDurationMs: () => number;
   readonly isAgentActive: () => boolean;
   readonly isAgentDurationActive: () => boolean;
@@ -50,10 +43,6 @@ export type EditorLayoutControllerContext = {
   readonly getProjectRoot: () => string | undefined;
   readonly onProjectRequirementChanged: () => void;
   readonly onModelLabelChanged: (ctx: ExtensionContext) => void;
-  readonly recordLayoutDiagnostic: (
-    diagnostic: AccentRailLayoutPatchDiagnostic,
-    version?: string,
-  ) => void;
 };
 
 type EditorInstallMode = "none" | "standalone" | "wrapper";
@@ -73,8 +62,6 @@ export class EditorLayoutController {
   private minimalistDecorationActive = false;
   private minimalistDurationUpdatesActive = false;
   private stopMinimalistDurationUpdates: () => void = () => {};
-  private accentRailLayoutPatchCleanup: () => void = () => {};
-  private accentRailLayoutPatchInstallSerial = 0;
 
   /**
    * Creates an Editor controller with shared runtime selectors.
@@ -83,37 +70,6 @@ export class EditorLayoutController {
    */
   constructor(context: EditorLayoutControllerContext) {
     this.context = context;
-  }
-
-  /**
-   * Installs the host Accent Rail patch for a new session generation.
-   *
-   * @param ctx Active Pi extension context.
-   * @returns A promise that settles after patch retention is attempted.
-   */
-  async startSession(ctx: ExtensionContext): Promise<void> {
-    const lifecycleGeneration =
-      this.context.sessionLifecycle.currentGeneration();
-    const installSerial = ++this.accentRailLayoutPatchInstallSerial;
-    this.accentRailLayoutPatchCleanup();
-    this.accentRailLayoutPatchCleanup = () => {};
-    if (!this.isTuiContext(ctx)) return;
-
-    const result = await retainAccentRailLayoutPatchInstallation(
-      () => installHostAccentRailLayoutPatch(this.ownerToken),
-      () =>
-        this.context.sessionLifecycle.isCurrent(lifecycleGeneration) &&
-        installSerial === this.accentRailLayoutPatchInstallSerial,
-      (layoutPatch) => {
-        this.accentRailLayoutPatchCleanup = layoutPatch.cleanup;
-        this.context.recordLayoutDiagnostic(
-          layoutPatch.diagnostic,
-          layoutPatch.version,
-        );
-      },
-    );
-    if (result === "failed")
-      this.context.recordLayoutDiagnostic("host-module-unavailable");
   }
 
   /**
@@ -355,9 +311,6 @@ export class EditorLayoutController {
       }
     }
     this.clearEditorOwnership();
-    ++this.accentRailLayoutPatchInstallSerial;
-    this.accentRailLayoutPatchCleanup();
-    this.accentRailLayoutPatchCleanup = () => {};
     this.activeTuiContext = undefined;
   }
 
@@ -516,8 +469,6 @@ export class EditorLayoutController {
       getConfig: this.context.getConfig,
       getState: this.context.getState,
       getThinkingLevel: this.context.getThinkingLevel,
-      getContextWindow: this.context.getContextWindow,
-      getContextPercent: this.context.getContextPercent,
       getAgentDurationMs: this.context.getAgentDurationMs,
       isAgentActive: this.context.isAgentActive,
       getProjectRoot: this.context.getProjectRoot,
@@ -526,11 +477,6 @@ export class EditorLayoutController {
       },
       onDecorationActive: (active) =>
         this.setMinimalistDecorationActive(active),
-      isAccentRailActive: () =>
-        this.context.sessionLifecycle.isCurrent() &&
-        this.ownsActiveFactory(ctx) &&
-        this.isEditorEnabled() &&
-        this.context.getConfig().components.editor.style === "accent-rail",
     };
   }
 

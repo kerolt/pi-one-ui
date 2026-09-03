@@ -2,13 +2,7 @@ import { basename, isAbsolute, relative, sep } from "node:path";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type { ZentuiConfig } from "../../app/config/shell.ts";
-import {
-  buildContextGauge,
-  contextColorTier,
-  formatCount,
-  formatCwdLabel,
-  formatElapsedDuration,
-} from "../../shared/format.ts";
+import { formatCwdLabel, formatElapsedDuration } from "../../shared/format.ts";
 import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
 
 export { formatElapsedDuration } from "../../shared/format.ts";
@@ -53,8 +47,6 @@ export type MinimalistEditorMetadata = {
   costLabel?: string;
   modelLabel?: string;
   thinkingLevel?: string;
-  contextPercent?: number;
-  contextWindow?: number;
   sessionName?: string;
   agentDurationMs?: number;
   agentActive?: boolean;
@@ -201,7 +193,6 @@ function renderTopRight(
   metadata: MinimalistEditorMetadata,
   uiTheme: Theme,
   config: ZentuiConfig,
-  availableWidth: number,
   renderBorder: (text: string) => string,
   renderThinking: (text: string) => string,
 ): string {
@@ -234,46 +225,6 @@ function renderTopRight(
   const thinking = sanitizeEditorMetadataText(metadata.thinkingLevel ?? "");
   if (thinking && thinking.toLowerCase() !== "off") {
     parts.push(renderThinking(thinking));
-  }
-  if (
-    metadata.contextPercent !== undefined &&
-    Number.isFinite(metadata.contextPercent)
-  ) {
-    const percent = Math.round(
-      Math.max(0, Math.min(999, metadata.contextPercent)),
-    );
-    const tier = contextColorTier(
-      percent,
-      config.components.editor.styles.minimalist.contextThresholds,
-    );
-    const style =
-      tier === "error"
-        ? config.colors.contextError
-        : tier === "warning"
-          ? config.colors.contextWarning
-          : config.colors.contextNormal;
-    const total =
-      config.components.editor.styles.minimalist.contextFormat ===
-        "percent-total" &&
-      metadata.contextWindow !== undefined &&
-      Number.isFinite(metadata.contextWindow) &&
-      metadata.contextWindow > 0
-        ? `/${formatCount(metadata.contextWindow)}`
-        : "";
-    const text = `${percent}%${total}`;
-    let context = renderStyleForSource(uiTheme, source, style, text);
-    if (config.components.editor.styles.minimalist.contextGauge) {
-      for (const gaugeWidth of [5, 3]) {
-        const gauge = `[${buildContextGauge(percent, gaugeWidth, config.icons.mode === "ascii")}] ${text}`;
-        const styledGauge = renderStyleForSource(uiTheme, source, style, gauge);
-        const candidate = joinParts([...parts, styledGauge]);
-        if (visibleWidth(candidate) <= availableWidth) {
-          context = styledGauge;
-          break;
-        }
-      }
-    }
-    parts.push(context);
   }
   return joinParts(parts);
 }
@@ -500,7 +451,6 @@ export function renderMinimalistFrame({
   );
   const topViewport = viewportLabel("above", viewport?.above);
   const topLeft = joinStyled([topViewport, topMetadata], separator);
-  const topRightBudget = Math.max(0, width - 8 - visibleWidth(topLeft));
   const topFallbacks = [
     joinStyled([topViewport, topOperational], separator),
     topOperational,
@@ -516,7 +466,6 @@ export function renderMinimalistFrame({
       metadata,
       uiTheme,
       config,
-      topRightBudget,
       renderBorder,
       renderThinking,
     ),
