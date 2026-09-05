@@ -52,6 +52,11 @@ export const TOOL_EXPANDED_BACKGROUND_PATCH = Symbol.for(
   "pi.ccstyle.tool-expanded-background-patch",
 );
 
+// ── 工具 updateDisplay 跨 toggle 重建缓存 ──
+export const TOGGLE_RENDER_CACHE_PATCH = Symbol.for(
+  "pi.ccstyle.toggle-render-cache-patch",
+);
+
 // ── 消息组件补丁 ──
 export const MESSAGE_DISPLAY_PATCH = Symbol.for(
   "pi.ccstyle.message-display-patch",

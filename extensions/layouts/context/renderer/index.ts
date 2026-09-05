@@ -47,6 +47,10 @@ import {
   setMessageDisplayTheme,
 } from "./tool/message-display.ts";
 import { clearAllAnimations } from "./tool/result.ts";
+import {
+  installToggleRenderCache,
+  type ToggleRenderCacheHooks,
+} from "./tool/toggle-render-cache.ts";
 
 /**
  * Claude Code Style for pi — 装配入口。
@@ -143,6 +147,7 @@ export default function (
     | {
         defaultMode: DefaultModeHooks;
         toolGrouping: ToolGroupingHooks;
+        toggleRenderCache: ToggleRenderCacheHooks;
         compactMode: CompactModeHooks;
         disposeMessageDisplay: () => void;
         disposeToolExpandedBackground: () => void;
@@ -162,12 +167,15 @@ export default function (
     });
     compactModeHooks = compactMode;
     const disposeMessageDisplay = installMessageDisplayRendering();
+    // 跨 toggle 重建缓存必须在展开背景 patch 之下（背景后装外层，shutdown 先拆）。
+    const toggleRenderCache = installToggleRenderCache();
     // 展开背景必须在 compact-mode 之后装，shutdown 时先于 compact 释放。
     const disposeToolExpandedBackground = installToolExpandedBackground();
     deactivateLegacyCompactionRendering();
     installation = {
       defaultMode,
       toolGrouping,
+      toggleRenderCache,
       compactMode,
       disposeMessageDisplay,
       disposeToolExpandedBackground,
@@ -180,6 +188,9 @@ export default function (
       applyStyleMode(mode, ctx, installation?.toolGrouping),
     updateConfig: (partial, ctx) => {
       updateConfig(partial);
+      // 配置（如 expandedPreviewMaxLines / excludeRenderers）变化可能改变
+      // 渲染结果：丢弃工具卡跨 toggle 缓存，下次 updateDisplay 重建。
+      installation?.toggleRenderCache.clear();
       refreshCurrentContext(ctx, installation?.toolGrouping);
     },
   });
@@ -213,6 +224,7 @@ export default function (
       installToolMouseInteraction(ctx, mouseOwner);
     if (!hooks) return;
     hooks.toolGrouping.setTheme(ctx.ui.theme);
+    hooks.toggleRenderCache.setTheme(ctx.ui.theme);
     setMessageDisplayTheme(ctx.ui.theme);
     ctx.ui.setStatus("ccstyle", undefined);
     // Collect the resumed context before syncing compact patches and expansion state.
@@ -231,6 +243,7 @@ export default function (
       installToolMouseInteraction(ctx, mouseOwner);
     if (!hooks) return;
     hooks.toolGrouping.setTheme(ctx.ui.theme);
+    hooks.toggleRenderCache.setTheme(ctx.ui.theme);
     setMessageDisplayTheme(ctx.ui.theme);
     syncCompactMode(ctx);
     scheduleSessionRender(() => {
@@ -248,6 +261,7 @@ export default function (
 
   pi.on("tool_execution_start", async (_event, ctx) => {
     installation?.toolGrouping.setTheme(ctx.ui.theme);
+    installation?.toggleRenderCache.setTheme(ctx.ui.theme);
   });
 
   pi.on("session_shutdown", async () => {
@@ -260,6 +274,7 @@ export default function (
     current.defaultMode.shutdown();
     current.toolGrouping.shutdown();
     current.disposeToolExpandedBackground();
+    current.toggleRenderCache.shutdown();
     current.compactMode.shutdown();
     compactModeHooks = undefined;
     current.disposeMessageDisplay();
