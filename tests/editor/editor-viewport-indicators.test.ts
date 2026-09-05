@@ -259,18 +259,6 @@ describe("adaptive editor border colors", () => {
       }
     },
   );
-
-  it("does not double-apply adaptive colors through nested branded frames", () => {
-    const inner = wrapped(baseEditor({ above: 3, below: 8 }), {}, "adaptive");
-    inner.borderColor = (text) => `\x1b[32m${text}\x1b[0m`;
-    const outer = wrapped(inner, {}, "adaptive");
-
-    const rendered = outer.render(80).join("\n");
-    expect(rendered.match(/\x1b\[32m/g)).toHaveLength(2);
-    expect(rendered.match(/↑ 3 more/g)).toHaveLength(1);
-    expect(rendered.match(/↓ 8 more/g)).toHaveLength(1);
-    expect(rendered.match(/model/g)).toHaveLength(1);
-  });
 });
 
 describe("editor viewport indicators", () => {
@@ -288,124 +276,6 @@ describe("editor viewport indicators", () => {
       else expect(lines[0]).not.toContain("more");
       if (bottomText) expect(lines.at(-1)).toContain(bottomText);
       else expect(lines.at(-1)).not.toContain("more");
-    },
-  );
-
-  it("preserves large counts at ample width and clamps them at narrow ANSI-aware widths", () => {
-    const count = 123456789;
-    const editor = wrapped(
-      baseEditor({ above: count, below: count, ansi: true }),
-    );
-
-    const ampleLines = editor.render(80);
-    expect(ampleLines[0]).toContain(`↑ ${count} more`);
-    expect(ampleLines.at(-1)).toContain(`↓ ${count} more`);
-
-    const narrowLines = editor.render(12);
-    expect(visibleWidth(narrowLines[0] ?? "")).toBe(12);
-    expect(visibleWidth(narrowLines.at(-1) ?? "")).toBe(12);
-    expect(narrowLines[0]).toContain("↑");
-    expect(narrowLines.at(-1)).toContain("↓");
-    expect(narrowLines[0]).not.toContain(`${count} more`);
-    expect(narrowLines.at(-1)).not.toContain(`${count} more`);
-  });
-
-  it("uses plain polished borders when viewport indicators are disabled", () => {
-    const lines = wrapped(baseEditor({ above: 4, below: 9 }), {
-      viewportIndicators: false,
-    }).render(80);
-    expect(lines[0]).not.toContain("more");
-    expect(lines.at(-1)).not.toContain("more");
-    expect(lines[0]).toMatch(/^─+$/);
-    expect(lines.at(-1)).toMatch(/^─+$/);
-  });
-
-  it("carries counts through nested polished wrappers without double-framing", () => {
-    const inner = wrapped(baseEditor({ above: 3, below: 8 }));
-    const lines = wrapped(inner).render(80);
-    const rendered = lines.join("\n");
-    expect(rendered.match(/↑ 3 more/g)).toHaveLength(1);
-    expect(rendered.match(/↓ 8 more/g)).toHaveLength(1);
-    expect(
-      lines.filter((line) => line.startsWith("───") || /^─+$/.test(line)),
-    ).toHaveLength(2);
-    expect(rendered.match(/model/g)).toHaveLength(1);
-
-    const narrowLines = wrapped(inner).render(8);
-    expect(narrowLines).toHaveLength(6);
-    expect(narrowLines[0]).toContain("↑");
-    expect(narrowLines.at(-1)).toContain("↓");
-  });
-
-  it.each(["opencode"] as const)(
-    "renders one completion palette through nested %s wrappers",
-    (style) => {
-      const base = baseEditor({
-        autocomplete: ["→ suggestion-one", "  suggestion-two"],
-      });
-      const renderAutocomplete = base.autocompleteList.render;
-      let calls = 0;
-      base.autocompleteList.render = (width) => {
-        calls += 1;
-        return renderAutocomplete(width);
-      };
-      const inner = wrapped(base, { style });
-      const lines = wrapped(inner, { style }).render(50);
-      const rendered = lines.join("\n");
-      expect(calls).toBe(1);
-      expect(rendered.match(/suggestion-one/g)).toHaveLength(1);
-      expect(rendered.match(/suggestion-two/g)).toHaveLength(1);
-      expect(rendered.match(/↑↓ Navigate/g)).toHaveLength(1);
-      expect(rendered).not.toContain("→ suggestion-one");
-    },
-  );
-
-  it.each(["opencode"] as const)(
-    "keeps ANSI, Unicode, and native count autocomplete rows raw after the terminal bottom border in %s",
-    (style) => {
-      const suggestions = [
-        "\x1b[31msuggestion-one\x1b[0m",
-        "emoji 😀 e\u0301 界",
-        "\x1b[90m (1/47) \x1b[0m",
-      ];
-      const lines = wrapped(
-        baseEditor({ below: 5, autocomplete: suggestions }),
-        {
-          style,
-          completionMenu: "native",
-        },
-      ).render(80);
-      const bottom = lines.findIndex((line) => line.includes("↓ 5 more"));
-      expect(
-        lines.some((line) => line.includes("├") || line.includes("┤")),
-      ).toBe(false);
-      expect(bottom).toBe(lines.length - suggestions.length - 1);
-      expect(lines.slice(bottom + 1)).toEqual(suggestions);
-      expect(lines.every((line) => visibleWidth(line) <= 80)).toBe(true);
-    },
-  );
-
-  it.each(["opencode"] as const)(
-    "renders the default completion palette once without the native count row in %s",
-    (style) => {
-      const suggestions = [
-        "\x1b[1m→ settings\x1b[0m",
-        "  files",
-        "\x1b[90m (1/47) \x1b[0m",
-      ];
-      const lines = wrapped(baseEditor({ autocomplete: suggestions }), {
-        style,
-      }).render(40);
-      const plain = lines.map((line) =>
-        line.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, ""),
-      );
-      expect(plain).toContain("  settings".padEnd(40));
-      expect(plain).toContain("  files".padEnd(40));
-      expect(plain.some((line) => line.includes("→"))).toBe(false);
-      expect(plain.some((line) => line.includes("(1/47)"))).toBe(false);
-      expect(plain.at(-1)).toContain("↑↓ Navigate");
-      expect(plain.filter((line) => /^─+$/.test(line.trim()))).toHaveLength(3);
-      expect(lines.every((line) => visibleWidth(line) <= 40)).toBe(true);
     },
   );
 
@@ -437,44 +307,6 @@ describe("editor viewport indicators", () => {
         expect(widths[0]).toBeLessThan(40);
         expect(lines.join("\n")).not.toContain("↑↓ Navigate");
         expect(lines.some((line) => line.startsWith("▎"))).toBe(false);
-      }
-    },
-  );
-
-  it.each([
-    ["ASCII spaces", "   ", true],
-    ["a tab", "\t", false],
-    ["a newline", "\n", false],
-    ["a non-breaking space", "\u00a0", false],
-    ["a Unicode em space", "\u2003", false],
-  ] as const)(
-    "treats trailing %s as %s autocomplete padding",
-    (_label, trailing, accepted) => {
-      const suggestions = ["→ original-one", "  original-two"];
-      const base = baseEditor({ autocomplete: suggestions });
-      const nativeRender = base.render.bind(base);
-      const widths: number[] = [];
-      let sameRenderRows: string[] = [];
-      base.render = (width: number) => {
-        widths.push(width);
-        const rendered = nativeRender(width);
-        const editorRows = rendered.slice(0, -suggestions.length);
-        sameRenderRows = [
-          ...editorRows,
-          ...rendered
-            .slice(-suggestions.length)
-            .map((line) => `${line}${trailing}`),
-        ];
-        return sameRenderRows;
-      };
-
-      const lines = wrapped(base, { style: "opencode" }).render(40);
-      expect(widths).toHaveLength(1);
-      if (accepted) {
-        expect(lines.join("\n")).toContain("↑↓ Navigate");
-      } else {
-        expect(lines).toEqual(sameRenderRows);
-        expect(lines.join("\n")).not.toContain("↑↓ Navigate");
       }
     },
   );
@@ -518,65 +350,6 @@ describe("editor viewport indicators", () => {
       );
     },
   );
-
-  it.each(["opencode"] as const)(
-    "keeps raw trailing autocomplete width-safe at widths 5 and 4 in %s",
-    (style) => {
-      for (const width of [5, 4]) {
-        const lines = wrapped(baseEditor({ autocomplete: ["界😀e\u0301"] }), {
-          style,
-          completionMenu: "native",
-        }).render(width);
-        expect(
-          lines.some((line) => line.includes("├") || line.includes("┤")),
-        ).toBe(false);
-        expect(lines.at(-2)).toMatch(/^─+$/);
-        expect(visibleWidth(lines.at(-1) ?? "")).toBeLessThanOrEqual(width);
-        expect(lines.every((line) => visibleWidth(line) <= width)).toBe(true);
-      }
-    },
-  );
-
-  it("rerenders standalone Opencode at caller width when reduced-width autocomplete rendering throws", () => {
-    const editor = standalone();
-    let calls = 0;
-    Object.assign(editor as unknown as Record<string, unknown>, {
-      autocompleteState: {},
-      autocompleteList: {
-        render() {
-          calls += 1;
-          if (calls === 1) throw new Error("reduced-width autocomplete failed");
-          return ["caller-width-suggestion"];
-        },
-      },
-    });
-    const lines = editor.render(80);
-    expect(calls).toBe(2);
-    expect(lines.some((line) => line.includes("├"))).toBe(false);
-    expect(lines).toContain("caller-width-suggestion".padEnd(80));
-    expect(lines.every((line) => visibleWidth(line) <= 80)).toBe(true);
-  });
-
-  it("captures standalone Opencode autocomplete from the base render without an extra render", () => {
-    const editor = standalone();
-    let calls = 0;
-    Object.assign(editor as unknown as Record<string, unknown>, {
-      autocompleteState: {},
-      autocompleteList: {
-        render() {
-          calls += 1;
-          return calls === 2 ? [] : ["caller-width-suggestion"];
-        },
-      },
-    });
-    const lines = editor.render(80);
-    expect(calls).toBe(1);
-    expect(lines.some((line) => line.includes("├"))).toBe(false);
-    expect(lines.some((line) => line.includes("caller-width-suggestion"))).toBe(
-      true,
-    );
-    expect(lines.every((line) => visibleWidth(line) <= 80)).toBe(true);
-  });
 
   it.each(["opencode"] as const)(
     "keeps standalone %s autocomplete to one render when ownership changes",
@@ -707,53 +480,6 @@ describe("editor viewport indicators", () => {
     },
   );
 
-  it("does not trust or invoke a generic editor's spoofed polished-frame splitter", () => {
-    const widths: number[] = [];
-    const spoofedSplit = vi.fn(() => ({
-      editorLines: ["spoofed"],
-      trailingLines: [],
-      viewport: {},
-    }));
-    const base = {
-      render(width: number) {
-        widths.push(width);
-        return [
-          nativeBorder(width, "above"),
-          "typed text",
-          nativeBorder(width, "below"),
-        ];
-      },
-      invalidate() {},
-      handleInput() {},
-      getText: () => "typed text",
-      setText() {},
-      [Symbol.for("pi-zentui.polished-frame")]: spoofedSplit,
-    };
-    expect(wrapped(base as never).render(80)).toEqual([
-      nativeBorder(78, "above"),
-      "typed text",
-      nativeBorder(78, "below"),
-    ]);
-    expect(widths).toEqual([78]);
-    expect(spoofedSplit).not.toHaveBeenCalled();
-  });
-
-  it("fails open for polished-looking rows without exact module-owned array provenance", () => {
-    const trusted = wrapped(baseEditor({ above: 2, below: 3 })).render(80);
-    const staleClone = trusted.slice();
-    const base = {
-      render: () => staleClone,
-      invalidate() {},
-      handleInput() {},
-      getText: () => "typed text",
-      setText() {},
-    };
-
-    const lines = wrapped(base as never).render(80);
-    expect(lines).toEqual(staleClone);
-    expect(lines.join("\n").match(/model/g)).toHaveLength(1);
-  });
-
   it("rejects in-place mutation of an otherwise provenance-owned rendered array", () => {
     const rendered = wrapped(baseEditor({ above: 2, below: 3 })).render(80);
     rendered[1] = "changed-row";
@@ -770,51 +496,6 @@ describe("editor viewport indicators", () => {
     expect(lines).toEqual(rendered);
     expect(lines).toContain("changed-row");
     expect(lines).toContain("added-row");
-  });
-
-  it("falls back to caller-width rendering when the inner-width probe throws", () => {
-    const widths: number[] = [];
-    const base = {
-      render(width: number) {
-        widths.push(width);
-        if (width < 80) throw new Error("inner-width render failed");
-        return [
-          "caller-width-header",
-          "x".repeat(width + 4),
-          "caller-width-help",
-        ];
-      },
-      invalidate() {},
-      handleInput() {},
-      getText: () => "typed text",
-      setText() {},
-    };
-
-    const lines = wrapped(base as never).render(80);
-    expect(widths).toEqual([78, 80]);
-    expect(lines[0]).toBe("caller-width-header");
-    expect(lines.at(-1)).toBe("caller-width-help");
-    expect(lines.every((line) => visibleWidth(line) <= 80)).toBe(true);
-  });
-
-  it("returns unknown third-party output from the completed same-width probe", () => {
-    const widths: number[] = [];
-    const base = {
-      render(width: number) {
-        widths.push(width);
-        return [`header-${width}`, "x".repeat(width + 5), `help-${width}`];
-      },
-      invalidate() {},
-      handleInput() {},
-      getText: () => "typed text",
-      setText() {},
-    };
-
-    const lines = wrapped(base as never).render(80);
-    expect(widths).toEqual([78]);
-    expect(lines[0]).toBe("header-78");
-    expect(lines.at(-1)).toBe("help-78");
-    expect(lines.every((line) => visibleWidth(line) <= 80)).toBe(true);
   });
 
   it("only exposes optional editor methods implemented by the base", () => {
@@ -860,28 +541,6 @@ describe("editor viewport indicators", () => {
       "padding",
       "max-visible",
     ]);
-  });
-
-  it("keeps every rendered Opencode line within narrow ANSI-aware widths", () => {
-    for (const style of ["opencode"] as const) {
-      for (const width of [3, 8, 12, 16]) {
-        const lines = wrapped(
-          baseEditor({ above: 12, below: 34, ansi: true }),
-          {
-            style,
-          },
-        ).render(width);
-        expect(lines.every((line) => visibleWidth(line) <= width)).toBe(true);
-      }
-    }
-  });
-
-  it("matches Pi's complete native form rather than reconstructing a truncated count", () => {
-    const truncatedNativeTop = truncateToWidth("─── ↑ 12 more ", 10, "");
-    const lines = wrapped(
-      baseEditor({ below: 1, malformedTop: truncatedNativeTop }),
-    ).render(40);
-    expect(lines[0]).toBe(truncatedNativeTop);
   });
 });
 
@@ -1032,72 +691,6 @@ describe("same-render autocomplete capture", () => {
 });
 
 describe("minimalist editor integration", () => {
-  it("switches renderer modes without replacing the wrapped editor", () => {
-    let current = config();
-    const base = baseEditor({});
-    const editor = new WrappedPolishedEditor(
-      base as never,
-      theme(),
-      () => current,
-      () => ({ modelLabel: "model", providerLabel: "provider" }),
-      () => "off",
-      () => ({ cwd: "/tmp/project", modelLabel: "model", costLabel: "$0.100" }),
-    );
-
-    expect(editor.render(80)[0]).toMatch(/^─+$/);
-    current = withEditorStyle(current, "minimalist");
-    const minimalist = editor.render(80);
-    expect(minimalist[0]).toMatch(/^╭.*╮$/);
-    expect(minimalist.at(-1)).toMatch(/^╰.*╯$/);
-    expect(minimalist.join("\n")).toContain("$0.100 – model");
-  });
-
-  it("cycles one wrapped adapter through both styles without nesting owned chrome", () => {
-    let current = config({ style: "opencode" });
-    const rawWidths: number[] = [];
-    const raw = baseEditor({});
-    const rawRender = raw.render.bind(raw);
-    raw.render = (width: number) => {
-      rawWidths.push(width);
-      return rawRender(width);
-    };
-    const inner = new WrappedPolishedEditor(
-      raw as never,
-      theme(),
-      () => config({ style: "opencode" }),
-      () => ({ modelLabel: "model", providerLabel: "provider" }),
-      () => "off",
-    );
-    const decoration = vi.fn();
-    const editor = new WrappedPolishedEditor(
-      inner as never,
-      theme(),
-      () => current,
-      () => ({ modelLabel: "model", providerLabel: "provider" }),
-      () => "off",
-      () => ({ cwd: "/tmp/project", modelLabel: "model", costLabel: "$0.100" }),
-      decoration,
-    );
-
-    const polished = editor.render(40);
-    current = withEditorStyle(current, "minimalist");
-    const minimalist = editor.render(40);
-    current = withEditorStyle(current, "opencode");
-    const polishedAgain = editor.render(40);
-
-    expect(rawWidths).toEqual([36, 34, 36]);
-    expect(polished.join("\n").match(/provider/g)).toHaveLength(1);
-    expect(minimalist[0]).toMatch(/^╭.*╮$/);
-    expect(minimalist.at(-1)).toMatch(/^╰.*╯$/);
-    expect(polishedAgain.join("\n").match(/provider/g)).toHaveLength(1);
-    expect(polishedAgain.join("\n")).not.toContain("╭");
-    expect(decoration.mock.calls.map(([active]) => active)).toEqual([
-      false,
-      true,
-      false,
-    ]);
-  });
-
   it("places native viewport counts at the far left before minimalist metadata", () => {
     const editor = new WrappedPolishedEditor(
       baseEditor({ above: 7, below: 11 }) as never,
@@ -1180,34 +773,6 @@ describe("minimalist editor integration", () => {
     expect(editor.render(40)).toEqual(["header-36", "body", "help-36"]);
     expect(widths).toEqual([36]);
     expect(decoration).toHaveBeenLastCalledWith(false);
-  });
-
-  it("unwraps module-owned polished chrome, viewport counts, and autocomplete", () => {
-    const inner = wrapped(
-      baseEditor({ above: 3, below: 8, autocomplete: ["one", "two"] }),
-    );
-    const outer = new WrappedPolishedEditor(
-      inner as never,
-      theme(),
-      () => withEditorStyle(config(), "minimalist"),
-      () => ({ modelLabel: "outer", providerLabel: "provider" }),
-      () => "off",
-      () => ({ cwd: "/tmp", modelLabel: "minimal-model" }),
-    );
-
-    const lines = outer.render(80);
-    const rendered = lines.join("\n");
-    expect(lines[0]).toMatch(/^╭.*╮$/);
-    expect(lines.at(-1)).toMatch(/^╰.*╯$/);
-    expect(rendered).toContain("minimal-model");
-    expect(rendered).not.toContain("provider");
-    expect(rendered.match(/minimal-model/g)).toHaveLength(1);
-    expect(rendered.match(/↑ 3 more/g)).toHaveLength(1);
-    expect(rendered.match(/↓ 8 more/g)).toHaveLength(1);
-    expect(lines.some((line) => /^├─+┤$/.test(line))).toBe(true);
-    expect(
-      lines.filter((line) => line.includes("one") || line.includes("two")),
-    ).toHaveLength(2);
   });
 
   it("rejects mutated module-owned polished provenance in minimalist mode", () => {

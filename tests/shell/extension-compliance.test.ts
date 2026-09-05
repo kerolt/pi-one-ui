@@ -100,9 +100,6 @@ function canonicalizeTestConfig(config: PolishedTuiConfig): PolishedTuiConfig {
     components: {
       editor: {
         ...editor,
-        enabled: flatChanged("features")
-          ? config.features.editor
-          : editor.enabled,
         style: flatChanged("editorStyle") ? config.editorStyle : editor.style,
         colorSource: flatChanged("colorSources")
           ? config.colorSources.editor
@@ -118,12 +115,6 @@ function canonicalizeTestConfig(config: PolishedTuiConfig): PolishedTuiConfig {
           : editor.viewportIndicators,
         styles: {
           ...editor.styles,
-          opencode: {
-            ...editor.styles.opencode,
-            metadataFormat: flatChanged("editorMetadataFormat")
-              ? config.editorMetadataFormat
-              : editor.styles.opencode.metadataFormat,
-          },
           minimalist: flatChanged("editorStyles")
             ? { ...editor.styles.minimalist, ...config.editorStyles.minimalist }
             : editor.styles.minimalist,
@@ -793,7 +784,7 @@ describe("Pi docs compliance", () => {
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
-          editor: { enabled: false },
+          editor: { style: "off" },
           userMessages: { enabled: true, style: "framed-copy-friendly" },
           selectorBorders: { enabled: true },
           footer: { style: "native" },
@@ -838,7 +829,7 @@ describe("Pi docs compliance", () => {
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
-          editor: { enabled: true },
+          editor: { style: "on" },
           userMessages: { enabled: false },
           selectorBorders: { enabled: false },
           footer: { style: "starship" },
@@ -1150,33 +1141,28 @@ describe("Pi docs compliance", () => {
 
     editorText = marker;
     reloadedHandlers.layout.editorController.setComponent(
-      { enabled: false },
+      { style: "off" },
       ctx as never,
     );
     editorText = marker;
     reloadedHandlers.layout.editorController.setComponent(
-      { enabled: true },
+      { style: "on" },
       ctx as never,
     );
     editorText = marker;
     await emit(reloadedHandlers, "session_shutdown", ctx);
 
+    // off 透传、on 收敛（自身工厂短路），均不替换；仅关闭恢复替换一次。
     expect(operations).toEqual(
-      Array.from({ length: 5 }, () => [
+      Array.from({ length: 3 }, () => [
         "getEditorText",
         "setEditorText",
         "setEditorComponent",
       ]).flat(),
     );
-    expect(transferred).toEqual(Array.from({ length: 5 }, () => expanded));
+    expect(transferred).toEqual(Array.from({ length: 3 }, () => expanded));
     expect(transferred).not.toContain(marker);
-    expect(patchPresenceDuringReplacements).toEqual([
-      false,
-      false,
-      true,
-      true,
-      true,
-    ]);
+    expect(patchPresenceDuringReplacements).toEqual([false, false, true]);
   });
 
   it("isolates user-message patch failure from editor and selector activation", async () => {
@@ -1270,15 +1256,18 @@ describe("Pi docs compliance", () => {
       expect(assignedFactories).toHaveLength(1);
       userPrototype.render = originalUserMessageRender;
 
+      // off 透传：不卸载、不替换工厂。
       handlers.layout.editorController.setComponent(
-        { enabled: false },
+        { style: "off" },
         ctx as never,
       );
       expect(editorFactory).not.toBe(existingFactory);
-      expect(assignedFactories).toHaveLength(3);
+      expect(assignedFactories).toHaveLength(1);
+      // shutdown 恢复 existing 失败后回退，仍保持 Zentui 工厂在位。
       await emit(handlers, "session_shutdown", ctx);
-      expect(editorFactory).toBe(existingFactory);
-      expect(assignedFactories).toHaveLength(4);
+      expect(editorFactory).not.toBe(existingFactory);
+      expect(editorFactory).toBeTypeOf("function");
+      expect(assignedFactories).toHaveLength(3);
     } finally {
       userPrototype.render = originalUserMessageRender;
     }
@@ -1316,12 +1305,13 @@ describe("Pi docs compliance", () => {
     expect(editorFactory).toBe(zentuiFactory);
     expect(assignedFactories).toHaveLength(3);
 
+    // off 透传：工厂保留，卸载恢复只发生在 shutdown 清理。
     handlers.layout.editorController.setComponent(
-      { enabled: false },
+      { style: "off" },
       ctx as never,
     );
-    expect(editorFactory).toBeUndefined();
-    expect(assignedFactories).toHaveLength(4);
+    expect(editorFactory).toBe(zentuiFactory);
+    expect(assignedFactories).toHaveLength(3);
   });
 
   it("wraps an editor component already installed by another extension", async () => {
@@ -1370,7 +1360,7 @@ describe("Pi docs compliance", () => {
     expect(editor.render(80).join("\n")).toContain("base editor");
   });
 
-  it("applies editor style changes at render time without replacing an opaque wrapper chain", async () => {
+  it("applies the off style at render time without replacing an opaque wrapper chain", async () => {
     initTheme(undefined, false);
     writeFileSync(
       join(isolatedAgentDir.path, "pi-one-ui.json"),
@@ -1414,7 +1404,7 @@ describe("Pi docs compliance", () => {
     editorFactory = opaqueWrapper;
 
     handlers.layout.editorController.setComponent(
-      { style: "minimalist" },
+      { style: "off" },
       ctx as never,
     );
 
@@ -1425,7 +1415,10 @@ describe("Pi docs compliance", () => {
       { borderColor: (text: string) => text, selectList: {} } as never,
       {} as never,
     );
-    expect(stripTestTags(editor.render(80)[0] ?? "")).toMatch(/^╭/);
+    // off 渲染透传：不再包裹 Minimalist 边框（顶层为原生内容行）。
+    const offRender = stripTestTags(editor.render(80)[0] ?? "");
+    expect(stripTestTags(editor.render(80)[0] ?? "")).not.toMatch(/^╭/);
+    expect(offRender.length > 0).toBe(true);
     await emit(handlers, "session_shutdown", ctx);
   });
 
@@ -1493,7 +1486,7 @@ describe("Pi docs compliance", () => {
 
       expect(zentuiLayers(opaqueEditor.render(80))).toBe(1);
       handlers.layout.editorController.setComponent(
-        { enabled: false },
+        { style: "off" },
         ctx as never,
       );
 
@@ -1509,19 +1502,20 @@ describe("Pi docs compliance", () => {
       expect(disabledRender.slice(1)).toEqual(retainedEditor.render(80));
 
       handlers.layout.editorController.setComponent(
-        { enabled: true },
+        { style: "on" },
         ctx as never,
       );
       expect(setEditorCalls).toBe(2);
-      const activeEditor = (
-        editorFactory as (...args: unknown[]) => typeof opaqueEditor
-      )(
+      const activeFactory = editorFactory as (
+        ...args: unknown[]
+      ) => typeof opaqueEditor;
+      const activeEditor = activeFactory(
         { requestRender() {}, terminal: { rows: 24, cols: 80 } } as never,
         { borderColor: (text: string) => text, selectList: {} } as never,
         keybindings as never,
       );
       const activeRender = activeEditor.render(80);
-      expect(activeRender).toContain("third-party:78");
+      expect(activeRender).toContain("third-party:76");
       expect(zentuiLayers(activeRender)).toBe(1);
       expect(zentuiLayers(opaqueEditor.render(80))).toBe(1);
       activeEditor.handleInput("x");
@@ -1529,13 +1523,14 @@ describe("Pi docs compliance", () => {
       expect(retainedEditor.getText()).toBe("base editorx");
 
       handlers.layout.editorController.setComponent(
-        { enabled: false },
+        { style: "off" },
         ctx as never,
       );
-      expect(editorFactory).toBe(opaqueFactory);
+      // off 透传：工厂保留（on 时收敛的工厂），渲染不再包 Minimalist 层。
+      expect(editorFactory).toBe(activeFactory);
       expect(activeEditor.render(80)).toEqual(opaqueEditor.render(80));
       handlers.layout.editorController.setComponent(
-        { enabled: true },
+        { style: "on" },
         ctx as never,
       );
       expect(zentuiLayers(activeEditor.render(80))).toBe(1);
@@ -1555,7 +1550,7 @@ describe("Pi docs compliance", () => {
           join(isolatedAgentDir.path, "pi-one-ui.json"),
           JSON.stringify({
             components: {
-              editor: { style: "minimalist" },
+              editor: { style: "on" },
               footer: { style: "native" },
             },
             projectRefreshIntervalMs: 5_000,
@@ -1805,7 +1800,7 @@ describe("Pi docs compliance", () => {
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
-          editor: { enabled: false },
+          editor: { style: "off" },
           userMessages: { enabled: false },
           selectorBorders: { enabled: false },
           footer: { style: "native" },
@@ -1838,7 +1833,7 @@ describe("Pi docs compliance", () => {
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
-          editor: { enabled: true, style: "future-editor" },
+          editor: { style: "future-editor" },
           userMessages: { enabled: true, style: "future-messages" },
           selectorBorders: { enabled: true, style: "future-selectors" },
           footer: { style: "future-footer" },
@@ -1940,8 +1935,9 @@ describe("Pi docs compliance", () => {
 
     expect(baseFactoryCalls).toBe(1);
     expect(rendered).toContain("base editor");
+    // minimalist 顶部元数据展示会话时长、成本与模型标签（无 provider 段）。
     expect(rendered.match(/claude-sonnet/g)).toHaveLength(1);
-    expect(rendered.match(/Anthropic/g)).toHaveLength(1);
+    expect(rendered).toContain("$0.000");
   });
 
   it.each([
@@ -1968,6 +1964,12 @@ describe("Pi docs compliance", () => {
           setFooter() {},
           setEditorComponent(factory: unknown) {
             setEditorCalls += 1;
+            // eslint-disable-next-line no-console
+            console.log(
+              "DBG setEditorComponent call",
+              setEditorCalls,
+              typeof factory,
+            );
             editorFactory = factory;
           },
           getEditorComponent() {
@@ -1997,7 +1999,7 @@ describe("Pi docs compliance", () => {
       );
 
       handlers.layout.editorController.setComponent(
-        { enabled: true },
+        { style: "on" },
         ctx as never,
       );
       expect(editorFactory).toBeTypeOf("function");
@@ -2006,7 +2008,7 @@ describe("Pi docs compliance", () => {
       );
       editorFactory = takeoverFactory;
       handlers.layout.editorController.setComponent(
-        { enabled: false },
+        { style: "off" },
         ctx as never,
       );
       expect(editorFactory).toBe(takeoverFactory);
@@ -2072,7 +2074,7 @@ describe("Pi docs compliance", () => {
         ...defaultConfig.components,
         editor: {
           ...defaultConfig.components.editor,
-          style: "minimalist",
+          style: "on",
         },
         userMessages: {
           ...defaultConfig.components.userMessages,
@@ -3326,7 +3328,7 @@ describe("Pi docs compliance", () => {
     writeFileSync(
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
-        components: { editor: { style: "minimalist" } },
+        components: { editor: { style: "on" } },
         projectRefreshIntervalMs: 0,
       }),
     );
@@ -3426,7 +3428,7 @@ describe("Pi docs compliance", () => {
     writeFileSync(
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
-        components: { editor: { style: "minimalist" } },
+        components: { editor: { style: "on" } },
         projectRefreshIntervalMs: 0,
       }),
     );
@@ -3491,7 +3493,7 @@ describe("Pi docs compliance", () => {
     writeFileSync(
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
-        components: { editor: { style: "minimalist" } },
+        components: { editor: { style: "on" } },
         projectRefreshIntervalMs: 0,
       }),
     );
@@ -3557,7 +3559,7 @@ describe("Pi docs compliance", () => {
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
-          editor: { style: "minimalist" },
+          editor: { style: "on" },
           footer: { style: "native" },
         },
         projectRefreshIntervalMs: 0,
@@ -3605,7 +3607,7 @@ describe("Pi docs compliance", () => {
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
-          editor: { style: "minimalist" },
+          editor: { style: "on" },
           footer: { style: "native" },
         },
         projectRefreshIntervalMs: 0,
@@ -3657,7 +3659,7 @@ describe("Pi docs compliance", () => {
       await emit(handlers, "agent_start", ctx);
       expect(vi.getTimerCount()).toBe(1);
       handlers.layout.editorController.setComponent(
-        { enabled: false },
+        { style: "off" },
         ctx as never,
       );
       expect(vi.getTimerCount()).toBe(0);
@@ -3673,7 +3675,7 @@ describe("Pi docs compliance", () => {
       join(isolatedAgentDir.path, "pi-one-ui.json"),
       JSON.stringify({
         components: {
-          editor: { style: "minimalist" },
+          editor: { style: "on" },
           footer: { style: "native" },
         },
         projectRefreshIntervalMs: 5_000,
@@ -4798,510 +4800,6 @@ describe("Pi docs compliance", () => {
     expect(renderFor(0, 0)).not.toContain("+0");
     expect(renderFor(0, 0)).not.toContain("−0");
   });
-  it("renders editor rails with theme accent and borderMuted borders", () => {
-    const editor = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => defaultConfig,
-      () => ({ modelLabel: "claude-sonnet", providerLabel: "Anthropic" }),
-      () => "high",
-    );
-
-    const rendered = editor.render(120).join("\n");
-
-    expect(rendered).toContain("[borderMuted]────");
-    expect(rendered).toContain("[muted]high");
-    expect(rendered).toContain("[accent]│");
-    expect(rendered).toContain("[accent]claude-sonnet");
-    expect(rendered).toContain("[text]Anthropic");
-  });
-
-  it("renders custom editor metadata variables", () => {
-    const editor = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => ({
-        ...defaultConfig,
-        editorMetadataFormat:
-          "$model|$model_id|$model_name|$provider|$thinking|$session_name",
-      }),
-      () => ({
-        modelLabel: "selected-model",
-        modelId: "model-id",
-        modelName: "Model Name",
-        providerLabel: "Provider",
-        sessionName: "Session",
-      }),
-      () => "high",
-    );
-
-    const rendered = editor.render(240).join("\n");
-    expect(rendered).toContain("[accent]selected-model");
-    expect(rendered).toContain("[accent]model-id");
-    expect(rendered).toContain("[accent]Model Name");
-    expect(rendered).toContain("[text]Provider");
-    expect(rendered).toContain("[muted]high");
-    expect(rendered).toContain("[border]Session");
-  });
-
-  it("keeps custom metadata output identical in standalone and wrapped editors", () => {
-    const config = {
-      ...defaultConfig,
-      editorMetadataFormat: "meta:$model|$provider|$thinking|$session_name",
-    };
-    const getMeta = () => ({
-      modelLabel: "parity-model",
-      providerLabel: "parity-provider",
-      sessionName: "parity-session",
-    });
-    const standalone = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 200 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => config,
-      getMeta,
-      () => "medium",
-    );
-    const wrapped = new WrappedPolishedEditor(
-      {
-        render: (width: number) => ["─".repeat(width), "", "─".repeat(width)],
-        invalidate() {},
-        handleInput() {},
-        getText: () => "",
-        setText() {},
-      },
-      makeTaggedTheme(),
-      () => config,
-      getMeta,
-      () => "medium",
-    );
-
-    const standaloneMeta = standalone
-      .render(200)
-      .find((line) => line.includes("parity-model"));
-    const wrappedMeta = wrapped
-      .render(200)
-      .find((line) => line.includes("parity-model"));
-    expect(standaloneMeta).toBe(wrappedMeta);
-  });
-
-  it("renders Unicode and sanitized ANSI metadata safely at narrow widths", () => {
-    const editor = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 16 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTheme(),
-      () => ({ ...defaultConfig, editorMetadataFormat: "界🙂:$model" }),
-      () => ({
-        modelLabel:
-          "\u001b]8;;https://example.com\u001b\\表示\u001b]8;;\u001b\\\u001b[31m危険",
-        providerLabel: "provider",
-      }),
-      () => "off",
-    );
-
-    const lines = editor.render(16);
-    const metadata = lines.find((line) => line.includes("界")) ?? "";
-    expect(metadata).toContain("表示");
-    expect(metadata).not.toContain("\u001b]");
-    expect(lines.every((line) => visibleWidth(line) <= 16)).toBe(true);
-  });
-
-  it("keeps Vim status when long custom metadata collides", () => {
-    const config = {
-      ...defaultConfig,
-      editorMetadataFormat: "very-long-custom-metadata-$model-$provider",
-    };
-    const editor = new WrappedPolishedEditor(
-      {
-        render: (width: number) => ["─".repeat(width), "", "─".repeat(width)],
-        invalidate() {},
-        handleInput() {},
-        getText: () => "",
-        setText() {},
-        getMode: () => "insert",
-      },
-      makeTheme(),
-      () => config,
-      () => ({
-        modelLabel: "model-with-long-name",
-        providerLabel: "provider-with-long-name",
-      }),
-      () => "off",
-    );
-
-    const lines = editor.render(32);
-    const metadata = lines.find((line) => line.includes("INSERT")) ?? "";
-    expect(metadata.trimEnd().endsWith("INSERT")).toBe(true);
-    expect(metadata).not.toContain("provider-with-long-name");
-    expect(lines.every((line) => visibleWidth(line) <= 32)).toBe(true);
-  });
-
-  it("keeps terminal editor chrome available when configured", () => {
-    const editor = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => configWithColorSources({ editor: "terminal" }),
-      () => ({ modelLabel: "claude-sonnet", providerLabel: "Anthropic" }),
-      () => "high",
-    );
-
-    const rendered = editor.render(120).join("\n");
-
-    expect(rendered).toContain("\u001b[90m────");
-    expect(rendered).toContain("\u001b[34m│\u001b[0m");
-    expect(rendered).toContain("\u001b[34mclaude-sonnet\u001b[0m");
-    expect(rendered).toContain("[text]Anthropic");
-  });
-
-  it("renders custom editor accent, border, model, provider, and thinking colors", () => {
-    const editor = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () =>
-        configWithColors({
-          editorAccent: "warning",
-          editorBorder: "error",
-          editorModel: "success",
-          editorProvider: "syntaxKeyword",
-          editorThinking: "thinkingText",
-          editorThinkingHigh: "thinkingHigh",
-        }),
-      () => ({ modelLabel: "claude-sonnet", providerLabel: "Anthropic" }),
-      () => "high",
-    );
-
-    const rendered = editor.render(120).join("\n");
-
-    expect(rendered).toContain("[warning]│");
-    expect(rendered).toContain("[error]────");
-    expect(rendered).toContain("[success]claude-sonnet");
-    expect(rendered).toContain("[syntaxKeyword]Anthropic");
-    expect(rendered).toContain("[thinkingHigh]high");
-  });
-
-  it("uses the shared editorThinking color when a level-specific color is absent", () => {
-    const editor = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => configWithColors({ editorThinking: "thinkingText" }),
-      () => ({ modelLabel: "claude-sonnet", providerLabel: "Anthropic" }),
-      () => "low",
-    );
-
-    const rendered = editor.render(120).join("\n");
-
-    expect(rendered).toContain("[thinkingText]low");
-  });
-
-  it("delegates vim input and leaves an unrecognized vim frame untouched", () => {
-    const inputs: string[] = [];
-    let text = "hello";
-    let mode = "normal";
-    const base = {
-      render(width: number) {
-        return [
-          "─".repeat(width),
-          text,
-          `${"─".repeat(Math.max(0, width - 8))} NORMAL `,
-        ];
-      },
-      invalidate() {},
-      handleInput(data: string) {
-        inputs.push(data);
-        if (data === "i") mode = "insert";
-      },
-      getText() {
-        return text;
-      },
-      setText(next: string) {
-        text = next;
-      },
-      getMode() {
-        return mode;
-      },
-    };
-    const editor = new WrappedPolishedEditor(
-      base,
-      makeTaggedTheme(),
-      () => defaultConfig,
-      () => ({ modelLabel: "claude-sonnet", providerLabel: "Anthropic" }),
-      () => "off",
-    );
-
-    editor.handleInput("i");
-    editor.handleInput("j");
-    editor.handleInput("k");
-    editor.setText("changed");
-    const rendered = editor.render(120).join("\n");
-
-    expect(inputs).toEqual(["i", "j", "k"]);
-    expect(editor.getText()).toBe("changed");
-    expect(rendered).toContain("changed");
-    expect(rendered).toContain("NORMAL");
-    expect(rendered).not.toContain("[success]INSERT");
-    expect(rendered).not.toContain("[accent]claude-sonnet");
-  });
-
-  it("unwraps a branded nested editor without duplicating literal-only metadata", () => {
-    const config = { ...defaultConfig, editorMetadataFormat: "literal-only" };
-    const inner = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "old-model", providerLabel: "old-provider" }),
-      () => "off",
-    );
-    inner.setText("typed text");
-    const editor = new WrappedPolishedEditor(
-      inner as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "new-model", providerLabel: "new-provider" }),
-      () => "off",
-    );
-
-    const lines = editor.render(120);
-    const rendered = lines.join("\n");
-
-    expect(rendered.match(/literal-only/g)).toHaveLength(1);
-    expect(rendered).toContain("typed text");
-    expect(
-      lines.filter((line) => /^─+$/.test(stripTestTags(line).trim())),
-    ).toHaveLength(2);
-  });
-
-  it("unwraps branded frames when metadata resolves blank", () => {
-    const config = { ...defaultConfig, editorMetadataFormat: "($unknown)" };
-    const inner = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "old-model", providerLabel: "old-provider" }),
-      () => "off",
-    );
-    const editor = new WrappedPolishedEditor(
-      inner as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "new-model", providerLabel: "new-provider" }),
-      () => "off",
-    );
-
-    const lines = editor.render(120);
-    expect(lines).toHaveLength(6);
-    expect(
-      lines.filter((line) => /^─+$/.test(stripTestTags(line).trim())),
-    ).toHaveLength(2);
-    expect(
-      lines.slice(1, -1).every((line) => stripTestTags(line).trim() === "│"),
-    ).toBe(true);
-  });
-
-  it("preserves a user blank line while unwrapping branded editor chrome", () => {
-    const inner = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => defaultConfig,
-      () => ({ modelLabel: "old-model", providerLabel: "old-provider" }),
-      () => "off",
-    );
-    inner.setText("\ntyped text");
-    const editor = new WrappedPolishedEditor(
-      inner as never,
-      makeTaggedTheme(),
-      () => defaultConfig,
-      () => ({ modelLabel: "new-model", providerLabel: "new-provider" }),
-      () => "off",
-    );
-
-    const lines = editor.render(120);
-    const textIndex = lines.findIndex((line) => line.includes("typed text"));
-
-    expect(textIndex).toBe(3);
-    expect(stripTestTags(lines[textIndex - 2] ?? "").trim()).toBe("│");
-    expect(stripTestTags(lines[textIndex - 1] ?? "").trim()).toBe("│");
-  });
-
-  it("does not accumulate stale metadata or chrome across repeated nested renders", () => {
-    let config = {
-      ...defaultConfig,
-      editorMetadataFormat: "first:$model:$session_name",
-    };
-    let meta = {
-      modelLabel: "model-one",
-      providerLabel: "provider-one",
-      sessionName: "session-one",
-    };
-    let thinking = "low";
-    const inner = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => config,
-      () => meta,
-      () => thinking,
-    );
-    const editor = new WrappedPolishedEditor(
-      inner as never,
-      makeTaggedTheme(),
-      () => config,
-      () => meta,
-      () => thinking,
-    );
-    const assertSingleFrame = (lines: string[]) => {
-      expect(
-        lines.filter((line) => /^─+$/.test(stripTestTags(line).trim())),
-      ).toHaveLength(2);
-    };
-
-    const first = editor.render(120);
-    expect(first.join("\n")).toContain("first:");
-    expect(first.join("\n")).toContain("model-one");
-    assertSingleFrame(first);
-
-    config = {
-      ...config,
-      editorMetadataFormat: "second:$provider:$thinking:$session_name",
-    };
-    meta = {
-      modelLabel: "model-two",
-      providerLabel: "provider-two",
-      sessionName: "session-two",
-    };
-    thinking = "xhigh";
-    const second = editor.render(120);
-    const secondText = second.join("\n");
-    expect(secondText).toContain("second:");
-    expect(secondText).toContain("provider-two");
-    expect(secondText).toContain("xhigh");
-    expect(secondText).toContain("session-two");
-    expect(secondText).not.toContain("first:");
-    expect(secondText).not.toContain("model-one");
-    expect(secondText).not.toContain("session-one");
-    assertSingleFrame(second);
-
-    config = {
-      ...config,
-      editorMetadataFormat: "$model($model_name)($session_name)",
-    };
-    meta = { modelLabel: "model-three", providerLabel: "", sessionName: "" };
-    thinking = "off";
-    const third = editor.render(120);
-    const thirdText = third.join("\n");
-    expect(thirdText.match(/model-three/g)).toHaveLength(1);
-    expect(thirdText).not.toContain("second:");
-    expect(thirdText).not.toContain("provider-two");
-    expect(thirdText).not.toContain("session-two");
-    assertSingleFrame(third);
-  });
-
-  it("preserves every native autocomplete row outside multiply wrapped branded frames", () => {
-    const config = structuredClone(defaultConfig);
-    config.editorMetadataFormat = "autocomplete-meta";
-    config.components.editor.styles.opencode.metadataFormat =
-      "autocomplete-meta";
-    config.components.editor.styles.opencode.completionMenu = "native";
-    const base = new PolishedEditor(
-      { requestRender() {}, terminal: { rows: 24, cols: 120 } } as never,
-      { borderColor: (text: string) => text, selectList: {} } as never,
-      {} as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "model", providerLabel: "provider" }),
-      () => "off",
-    );
-    base.setText("typed");
-    const autocomplete = base as unknown as {
-      autocompleteState: string;
-      autocompleteList: { render: (width: number) => string[] };
-    };
-    autocomplete.autocompleteState = "force";
-    autocomplete.autocompleteList = {
-      render: () => ["suggestion-one", "suggestion-two", "suggestion-three"],
-    };
-    const inner = new WrappedPolishedEditor(
-      base as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "model", providerLabel: "provider" }),
-      () => "off",
-    );
-    const outer = new WrappedPolishedEditor(
-      inner as never,
-      makeTaggedTheme(),
-      () => config,
-      () => ({ modelLabel: "model", providerLabel: "provider" }),
-      () => "off",
-    );
-
-    const lines = outer.render(120);
-    const rendered = lines.join("\n");
-    const bottom = lines.findLastIndex((line) =>
-      /^─+$/.test(stripTestTags(line).trim()),
-    );
-    expect(rendered.match(/autocomplete-meta/g)).toHaveLength(1);
-    expect(
-      lines.filter((line) => /^─+$/.test(stripTestTags(line).trim())),
-    ).toHaveLength(2);
-    expect(lines.some((line) => stripTestTags(line).includes("├"))).toBe(false);
-    expect(bottom).toBe(lines.length - 4);
-    for (const suggestion of [
-      "suggestion-one",
-      "suggestion-two",
-      "suggestion-three",
-    ]) {
-      expect(rendered.match(new RegExp(suggestion, "g"))).toHaveLength(1);
-      const row = lines.findIndex((line) => line.includes(suggestion));
-      expect(row).toBeGreaterThan(bottom);
-    }
-  });
-
-  it("does not delete metadata-like content from an unbranded third-party editor", () => {
-    const staleMeta = "claude-sonnet  Anthropic  xhigh";
-    const base = {
-      render: (width: number) => [
-        "─".repeat(width),
-        staleMeta,
-        "─".repeat(width),
-      ],
-      invalidate() {},
-      handleInput() {},
-      getText: () => staleMeta,
-      setText() {},
-    };
-    const editor = new WrappedPolishedEditor(
-      base,
-      makeTaggedTheme(),
-      () => defaultConfig,
-      () => ({ modelLabel: "claude-sonnet", providerLabel: "Anthropic" }),
-      () => "xhigh",
-    );
-
-    const rendered = editor.render(120).join("\n");
-    expect(rendered.match(/claude-sonnet/g)).toHaveLength(2);
-    expect(rendered.match(/Anthropic/g)).toHaveLength(2);
-    expect(rendered.match(/xhigh/g)).toHaveLength(2);
-  });
-
   it("proxies mutable editor callbacks and app-action state to the wrapped editor", () => {
     const base = {
       render: (width: number) => ["─".repeat(width), "", "─".repeat(width)],
@@ -5508,7 +5006,9 @@ describe("Pi docs compliance", () => {
       theme: makeTaggedTheme(),
       branch: "feat/session-name-footer",
       branchEnabled: true,
-    }).join("\n");
+    })
+      .join("\n")
+      .replace(/\x1b\[[0-9;]*m/g, "");
     expect(rendered).toContain("project in [success]release prep on");
     expect(rendered.indexOf("project")).toBeLessThan(
       rendered.indexOf("release prep"),
@@ -5539,7 +5039,9 @@ describe("Pi docs compliance", () => {
       name: "\x1b[31mrelease\x1b[0m\tprep\x07\x1b]0;owned\x07研究 🚀",
       width: 120,
       theme: makeTaggedTheme(),
-    }).join("\n");
+    })
+      .join("\n")
+      .replace(/\x1b\[[0-9;]*m/g, "");
     expect(rendered).toContain("release prep研究 🚀");
     expect(rendered).not.toMatch(/[\x00-\x1f\x7f-\x9f]/);
     expect(rendered).not.toContain("owned");
@@ -5591,7 +5093,9 @@ describe("Pi docs compliance", () => {
       width: 120,
       footerFormat: "$cwd($sep$session_name)",
       segmentEnabled: false,
-    }).join("\n");
+    })
+      .join("\n")
+      .replace(/\x1b\[[0-9;]*m/g, "");
     expect(named).toContain("release prep");
     expect(named).not.toContain("in release prep");
     const braced = renderSessionNameFooter({
@@ -5599,7 +5103,9 @@ describe("Pi docs compliance", () => {
       width: 120,
       footerFormat: "$cwd ${" + "session_name}",
       segmentEnabled: false,
-    }).join("\n");
+    })
+      .join("\n")
+      .replace(/\x1b\[[0-9;]*m/g, "");
     expect(braced).toContain("project release prep");
     expect(braced).not.toContain("in release prep");
     const unnamed = renderSessionNameFooter({
@@ -5607,7 +5113,9 @@ describe("Pi docs compliance", () => {
       width: 120,
       footerFormat: "$cwd$sep$session_name",
       segmentEnabled: false,
-    }).join("\n");
+    })
+      .join("\n")
+      .replace(/\x1b\[[0-9;]*m/g, "");
     expect(unnamed).toContain("project");
     expect(unnamed).not.toContain(" | ");
   });

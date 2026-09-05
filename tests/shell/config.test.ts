@@ -93,17 +93,12 @@ describe("canonical config resolution", () => {
     const config = mergeConfig({});
     expect(config.components).toEqual({
       editor: {
-        enabled: true,
-        style: "opencode",
+        style: "on",
         colorSource: "theme",
         borderColorMode: "static",
         modelLabel: "id",
         viewportIndicators: true,
         styles: {
-          opencode: {
-            metadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
-            completionMenu: "palette",
-          },
           minimalist: {
             pathDisplay: "compact",
             showSessionName: true,
@@ -171,17 +166,6 @@ describe("canonical config resolution", () => {
     expect(config.icons.cacheHit).toBe("󰆼");
     expect(config.colors).toEqual(defaultConfig.colors);
     expect(defaultConfig.components).toEqual(config.components);
-  });
-
-  it("normalizes the Opencode completion menu", () => {
-    const config = mergeConfig({
-      components: {
-        editor: { styles: { opencode: { completionMenu: "native" } } },
-      },
-    });
-    expect(config.components.editor.styles.opencode.completionMenu).toBe(
-      "native",
-    );
   });
 
   it("ignores stale fixed-editor config forms without exposing runtime fields", () => {
@@ -293,17 +277,21 @@ describe("canonical config resolution", () => {
         footer: { style: "future" },
       },
     });
-    expect(config.components.editor.style).toBe("opencode");
+    expect(config.components.editor.style).toBe("on");
     expect(config.components.editor.styles.minimalist.showGit).toBe(true);
     expect(config.components.userMessages.style).toBe("framed");
     expect(config.components.selectorBorders.style).toBe("zentui");
     expect(config.components.footer.style).toBe("starship");
 
-    for (const retired of ["opencode-copy-friendly", "accent-rail"]) {
+    for (const retired of [
+      "opencode",
+      "opencode-copy-friendly",
+      "accent-rail",
+    ]) {
       const migrated = mergeConfig({
         components: { editor: { style: retired } },
       });
-      expect(migrated.components.editor.style).toBe("opencode");
+      expect(migrated.components.editor.style).toBe("on");
       expect(hasUnsupportedComponentStyle(migrated, "editor")).toBe(false);
     }
   });
@@ -644,10 +632,6 @@ describe("working-line config", () => {
 describe("canonical snapshot persistence", () => {
   it("supports every typed component saver without discarding inactive styles", () => {
     withConfig(undefined, (path) => {
-      savePolishedEditorStylePatch(
-        { metadataFormat: "$provider", completionMenu: "native" },
-        path,
-      );
       saveMinimalistEditorStylePatch({ showGit: false }, path);
       saveUserMessagesComponentPatch(
         { enabled: false, colorSource: "terminal" },
@@ -663,10 +647,6 @@ describe("canonical snapshot persistence", () => {
         path,
       );
       const config = mergeConfig(readRaw(path));
-      expect(config.components.editor.styles.opencode).toEqual({
-        metadataFormat: "$provider",
-        completionMenu: "native",
-      });
       expect(config.components.editor.styles.minimalist).toMatchObject({
         showGit: false,
       });
@@ -717,7 +697,7 @@ describe("canonical saver adapters", () => {
         "userMessages",
         "workingLine",
       ]);
-      expect(raw.components.editor.enabled).toBe(false);
+      expect(raw.components.editor.style).toBe("off");
       expect(raw.components.userMessages.enabled).toBe(false);
       expect(raw.components.selectorBorders.enabled).toBe(false);
       expect(raw).not.toHaveProperty("features");
@@ -947,20 +927,20 @@ describe("mergeConfig", () => {
         path,
         JSON.stringify({ unknown: { keep: true }, editorModelLabel: "name" }),
       );
-      const minimalist = saveEditorStyle("minimalist", path);
+      const on = saveEditorStyle("on", path);
       let raw = JSON.parse(readFileSync(path, "utf8"));
       expect(raw.unknown).toEqual({ keep: true });
       expect(raw.editorModelLabel).toBe("name");
       expect(raw.editorStyle).toBeUndefined();
-      expect(raw.components.editor.style).toBe("minimalist");
-      expect(minimalist.editorStyle).toBe("minimalist");
+      expect(raw.components.editor.style).toBe("on");
+      expect(on.editorStyle).toBe("on");
 
-      const polished = saveEditorStyle("opencode", path);
+      const off = saveEditorStyle("off", path);
       raw = JSON.parse(readFileSync(path, "utf8"));
-      expect(polished.editorStyle).toBe("opencode");
+      expect(off.editorStyle).toBe("off");
       expect(raw.unknown).toEqual({ keep: true });
       expect(raw.editorModelLabel).toBe("name");
-      expect(raw.components.editor.style).toBe("opencode");
+      expect(raw.components.editor.style).toBe("off");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -1322,7 +1302,7 @@ describe("mergeConfig", () => {
       });
       expect(raw.unknown).toBe(true);
       expect(raw.features).toEqual({ editor: true, futureKey: "future" });
-      expect(raw.components.editor.enabled).toBe(true);
+      expect(raw.components.editor.style).toBe("on");
       expect(raw.components.editor.viewportIndicators).toBe(false);
       expect(raw.components.footer.style).toBe("native");
     } finally {
@@ -1343,7 +1323,7 @@ describe("mergeConfig", () => {
         viewportIndicators: true,
       });
       expect(Object.keys(raw)).toEqual(["version", "components"]);
-      expect(raw.components.editor.enabled).toBe(false);
+      expect(raw.components.editor.style).toBe("off");
       expect(raw.components.userMessages.enabled).toBe(false);
       expect(raw.components.selectorBorders.enabled).toBe(false);
     } finally {

@@ -143,10 +143,15 @@ export class EditorLayoutController {
   ): { applied: boolean; reason?: string } {
     this.context.saveComponent(patch);
     let result: EditorChangeResult | undefined;
-    if (patch.enabled !== undefined && this.isTuiContext(ctx))
-      result = this.reconcile(ctx);
-    if (patch.style !== undefined && patch.style !== "minimalist")
+    if (patch.style === "off") {
+      // off 透传原生渲染：不替换工厂，既有编辑器实例与 overlay preFocus
+      // 保持有效（面板关闭后仍能聚焦输入框）。
       this.setMinimalistDecorationActive(false);
+    } else if (patch.style === "on" && this.isTuiContext(ctx)) {
+      // on 收敛所有权：未安装或第三方接管时安装回来；
+      // 已有自身工厂时 installEditor 短路，不产生替换。
+      result = this.reconcile(ctx);
+    }
     if (patch.modelLabel !== undefined) this.context.onModelLabelChanged(ctx);
     this.context.onProjectRequirementChanged();
     this.requestRender();
@@ -196,7 +201,7 @@ export class EditorLayoutController {
       Boolean(
         this.activeTuiContext && this.ownsActiveFactory(this.activeTuiContext),
       ) &&
-      editor.style === "minimalist" &&
+      editor.style === "on" &&
       (minimalist.showGit || minimalist.pathDisplay === "project")
     );
   }
@@ -328,7 +333,7 @@ export class EditorLayoutController {
         this.minimalistDecorationActive &&
         this.isEditorEnabled() &&
         this.ownsActiveFactory(ctx) &&
-        config.style === "minimalist" &&
+        config.style === "on" &&
         config.styles.minimalist.showTimer,
     );
     if (!needed) {
@@ -365,14 +370,17 @@ export class EditorLayoutController {
   }
 
   /**
-   * Returns whether the configured Editor style can be installed.
+   * Returns whether the configured Editor factory can be installed.
    *
-   * @returns Whether the Editor is enabled and supported.
+   * style "off" restores Pi's native editor: the factory is not installed and
+   * any third-party or native editor keeps ownership.
+   *
+   * @returns Whether the Editor is on and supported.
    */
   private isEditorEnabled(): boolean {
     const editor = this.context.getConfig().components.editor;
     return (
-      editor.enabled &&
+      editor.style === "on" &&
       !hasUnsupportedComponentStyle(this.context.getConfig(), "editor")
     );
   }

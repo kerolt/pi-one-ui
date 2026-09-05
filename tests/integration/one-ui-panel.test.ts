@@ -258,16 +258,17 @@ test("/oneui keeps the panel open and refocuses after an Editor style change", a
   const component = harness.component();
 
   goToEditor(component);
-  component.handleInput("\x1b[B");
+  // Editor 部分第一项即样式开关（on/off），空格直接切换。
   component.handleInput(" ");
 
   expect(setEditorComponent).toHaveBeenCalledWith(
-    { style: "minimalist" },
+    { style: "off" },
     expect.anything(),
   );
   expect(overlayManager.hasActive()).toBe(true);
   expect(harness.operations).toStrictEqual(["apply", "focus"]);
-  expect(component.render(80).join("\n")).toContain("minimalist");
+  expect(component.render(80).join("\n")).toContain("Color source");
+  expect(component.render(80).join("\n")).toContain("Border color");
 
   component.handleInput("\x1b");
   await opened;

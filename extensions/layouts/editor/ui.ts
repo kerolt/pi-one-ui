@@ -19,7 +19,6 @@ import {
   renderStyleForSourceOrFallback,
   safeThemeFg,
 } from "../../shared/style.ts";
-import { renderCompletionPalette } from "./completion-menu.ts";
 import { renderEditorMetadataFormat } from "./editor-metadata-format.ts";
 import {
   type MinimalistEditorMetadata,
@@ -89,34 +88,6 @@ export type EditorMeta = {
   modelName?: string;
   providerLabel: string;
   sessionName?: string;
-};
-
-export type PolishedEditorFrameOptions = {
-  width: number;
-  editorLines: string[];
-  autocompleteLines?: string[];
-  viewport?: ViewportCounts;
-  uiTheme: Theme;
-  config: ZentuiConfig;
-  modelMeta: EditorMeta;
-  thinkingLevel?: string;
-  rightStatus?: string;
-  borderColor?: (text: string) => string;
-};
-
-type PolishedFrameOptions = {
-  width: number;
-  baseRendered: string[];
-  autocompleteSource: AutocompleteEditorInternals;
-  autocompleteCapture?: AutocompleteCapture;
-  uiTheme: Theme;
-  config: ZentuiConfig;
-  modelMeta: EditorMeta;
-  thinkingLevel: string | undefined;
-  rightStatus?: string;
-  ownedFrame?: PolishedFrameSplit;
-  trustedBaseFrame?: boolean;
-  borderColor?: (text: string) => string;
 };
 
 type PolishedFrameResult = {
@@ -316,6 +287,29 @@ export function renderWithAutocompleteCapture<T>(
   }
 }
 
+/**
+ * off 模式的原生边框覆盖：仅在 style=off 且用户显式配置了 colors.editorBorder
+ * 时返回按 colorSource 解释的边框渲染函数；未配置或 on 模式返回 undefined
+ * （保持 Pi 原生 effort/主题变色不动）。
+ */
+export function offEditorBorderColor(
+  config: ZentuiConfig,
+  uiTheme: Theme,
+): ((text: string) => string) | undefined {
+  const editor = config.components.editor;
+  if (editor.style !== "off") return undefined;
+  const spec = config.colors.editorBorder;
+  if (typeof spec !== "string" || spec.trim() === "") return undefined;
+  return (text) =>
+    renderStyleForSourceOrFallback(
+      uiTheme,
+      editor.colorSource,
+      spec,
+      EDITOR_BORDER_FALLBACK,
+      text,
+    );
+}
+
 function clampRenderedLines(lines: string[], width: number): string[] {
   const maxWidth = Math.max(0, width);
   return lines.map((line) => truncateToWidth(line, maxWidth, ""));
@@ -342,24 +336,6 @@ function getEditorChromeWidths(
   return { rail, railWidth: visibleWidth(rail) };
 }
 
-function composeMetadataLine(
-  left: string,
-  right: string | undefined,
-  width: number,
-): string {
-  if (!right) return left;
-  const maxWidth = Math.max(0, width);
-  const rightWidth = visibleWidth(right);
-  if (rightWidth >= maxWidth) return truncateToWidth(right, maxWidth, "");
-
-  const leftWidth = Math.max(0, maxWidth - rightWidth - 1);
-  const leftText = truncateToWidth(left, leftWidth, "");
-  const gap = " ".repeat(
-    Math.max(1, maxWidth - visibleWidth(leftText) - rightWidth),
-  );
-  return `${leftText}${gap}${right}`;
-}
-
 function ansiStrippedText(line: string): string {
   return line
     .replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "")
@@ -380,17 +356,6 @@ function parseEditorBorder(
   const arrow = direction === "above" ? "↑" : "↓";
   const match = new RegExp(`^─── ${arrow} ([1-9]\\d*) more ─*$`).exec(plain);
   return match?.[1] ? { count: match[1] } : undefined;
-}
-
-function renderEditorBorder(
-  width: number,
-  direction: keyof ViewportCounts,
-  count: string | undefined,
-): string {
-  if (!count) return "─".repeat(width);
-  const arrow = direction === "above" ? "↑" : "↓";
-  const indicator = `─── ${arrow} ${count} more `;
-  return `${indicator}${"─".repeat(Math.max(0, width - visibleWidth(indicator)))}`;
 }
 
 function unwrapPolishedFrameOnly(
@@ -458,35 +423,6 @@ function inspectPolishedFrameProvenance(
   return { safe: !unsafe, ownedFrame };
 }
 
-function vimModeColor(mode: string): string {
-  switch (mode.toLowerCase()) {
-    case "insert":
-      return "success";
-    case "normal":
-      return "accent";
-    case "ex":
-      return "warning";
-    case "replace":
-      return "error";
-    case "visual":
-      return "syntaxKeyword";
-    default:
-      return "muted";
-  }
-}
-
-function readVimStatus(
-  editor: WrappedEditor,
-  uiTheme: Theme,
-): string | undefined {
-  const mode = editor.getMode?.();
-  if (typeof mode !== "string") return undefined;
-  const normalized = mode.trim();
-  if (!normalized) return undefined;
-  const label = `${normalized.toUpperCase()} `;
-  return safeThemeFg(uiTheme, vimModeColor(normalized), label);
-}
-
 function renderMinimalistFrameFromBase({
   width,
   baseRendered,
@@ -551,172 +487,6 @@ function renderMinimalistFrameFromBase({
   };
 }
 
-function renderPolishedFrame({
-  width,
-  baseRendered,
-  autocompleteSource,
-  autocompleteCapture,
-  uiTheme,
-  config,
-  modelMeta,
-  thinkingLevel,
-  rightStatus,
-  ownedFrame,
-  trustedBaseFrame = false,
-  borderColor,
-}: PolishedFrameOptions): PolishedFrameResult {
-  if (width <= 2)
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-
-  if (baseRendered.length < 2) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-  if (ownedFrame && !isPolishedFrameSplit(ownedFrame, baseRendered.length)) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-
-  const autocomplete = ownedFrame
-    ? { known: true, count: ownedFrame.trailingLines.length }
-    : autocompleteCount(autocompleteSource, autocompleteCapture, baseRendered);
-  if (!autocomplete.known) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-  const editorFrame =
-    !ownedFrame && autocomplete.count > 0
-      ? baseRendered.slice(0, -autocomplete.count)
-      : baseRendered;
-  const autocompleteLines = ownedFrame
-    ? ownedFrame.trailingLines
-    : autocomplete.count > 0
-      ? baseRendered.slice(-autocomplete.count)
-      : [];
-  if (editorFrame.length < 2) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-
-  const parsedTop = parseEditorBorder(editorFrame[0] ?? "", "above");
-  const parsedBottom = parseEditorBorder(editorFrame.at(-1) ?? "", "below");
-  if (!ownedFrame && !trustedBaseFrame && (!parsedTop || !parsedBottom)) {
-    return { lines: clampRenderedLines(baseRendered, width), decorated: false };
-  }
-  const editorLines = ownedFrame?.editorLines ?? editorFrame.slice(1, -1);
-  const viewport = ownedFrame?.viewport ?? {
-    above: parsedTop?.count,
-    below: parsedBottom?.count,
-  };
-  const lines = renderPolishedEditorFrame({
-    width,
-    editorLines,
-    autocompleteLines,
-    viewport,
-    uiTheme,
-    config,
-    modelMeta,
-    thinkingLevel,
-    rightStatus,
-    borderColor,
-  });
-  POLISHED_FRAME_SPLITS.set(lines, {
-    rows: Object.freeze([...lines]),
-    split: {
-      editorLines,
-      trailingLines: autocompleteLines,
-      viewport,
-    },
-  });
-  return { lines, decorated: true };
-}
-
-/** Pure Opencode frame composition shared by the live editor and settings preview. */
-export function renderPolishedEditorFrame({
-  width,
-  editorLines,
-  autocompleteLines = [],
-  viewport = {},
-  uiTheme,
-  config,
-  modelMeta,
-  thinkingLevel,
-  rightStatus,
-  borderColor,
-}: PolishedEditorFrameOptions): string[] {
-  if (width <= 2) return clampRenderedLines(editorLines, width);
-  const reset = "\x1b[0m";
-  const colorSource = config.components.editor.colorSource;
-  const { rail, railWidth } = getEditorChromeWidths(config, uiTheme, reset);
-  const innerWidth = Math.max(0, width - railWidth);
-  const meta = renderEditorMetadataFormat(
-    config.components.editor.styles.opencode.metadataFormat,
-    {
-      model: modelMeta.modelLabel,
-      modelId: modelMeta.modelId ?? "",
-      modelName: modelMeta.modelName ?? "",
-      provider: modelMeta.providerLabel,
-      thinking: thinkingLevel ?? "",
-      sessionName: modelMeta.sessionName ?? "",
-    },
-    uiTheme,
-    config,
-  );
-  const railedMeta = composeMetadataLine(meta, rightStatus, innerWidth);
-
-  const renderStaticBorder = (text: string) =>
-    renderStyleForSourceOrFallback(
-      uiTheme,
-      colorSource,
-      config.colors.editorBorder,
-      EDITOR_BORDER_FALLBACK,
-      text,
-    );
-  const renderBorder = (text: string) => {
-    if (
-      config.components.editor.borderColorMode !== "adaptive" ||
-      typeof borderColor !== "function"
-    ) {
-      return renderStaticBorder(text);
-    }
-    try {
-      const rendered = borderColor(text);
-      return typeof rendered === "string" ? rendered : renderStaticBorder(text);
-    } catch {
-      return renderStaticBorder(text);
-    }
-  };
-  const top = renderBorder(
-    renderEditorBorder(
-      width,
-      "above",
-      config.components.editor.viewportIndicators ? viewport.above : undefined,
-    ),
-  );
-  const bottom = renderBorder(
-    renderEditorBorder(
-      width,
-      "below",
-      config.components.editor.viewportIndicators ? viewport.below : undefined,
-    ),
-  );
-  const completionLines =
-    config.components.editor.styles.opencode.completionMenu === "palette"
-      ? renderCompletionPalette({
-          lines: autocompleteLines,
-          width,
-          theme: uiTheme,
-          renderSeparator: renderBorder,
-          ownedBackground: false,
-        })
-      : autocompleteLines;
-  const lines = ["", ...editorLines, "", railedMeta];
-  const renderedLines = [
-    top,
-    ...lines.map((line) => `${rail}${fillLine(line, innerWidth)}`),
-    bottom,
-    ...completionLines,
-  ];
-
-  return clampRenderedLines(renderedLines, width);
-}
-
 export class PolishedEditor extends CustomEditor {
   private readonly getModelMeta: () => EditorMeta;
   private readonly getThinkingLevel: () => string | undefined;
@@ -752,83 +522,45 @@ export class PolishedEditor extends CustomEditor {
 
   render(width: number): string[] {
     const config = this.getConfig();
-    if (!config.components.editor.enabled) {
+    if (config.components.editor.style === "off") {
+      const offBorder = offEditorBorderColor(config, this.uiTheme);
+      if (offBorder) this.borderColor = offBorder;
       this.reportMinimalistDecoration(false);
       return clampRenderedLines(super.render(width), width);
     }
-    if (config.components.editor.style === "minimalist") {
-      if (width <= 4) {
-        this.reportMinimalistDecoration(false);
-        return clampRenderedLines(super.render(width), width);
-      }
-      let captured: { value: string[]; capture?: AutocompleteCapture };
-      try {
-        captured = renderWithAutocompleteCapture(
-          this as unknown as AutocompleteEditorInternals,
-          () => super.render(Math.max(0, width - 4)),
-        );
-      } catch {
-        this.reportMinimalistDecoration(false);
-        return clampRenderedLines(super.render(width), width);
-      }
-      try {
-        const result = renderMinimalistFrameFromBase({
-          width,
-          baseRendered: captured.value,
-          autocompleteSource: this as unknown as AutocompleteEditorInternals,
-          autocompleteCapture: captured.capture,
-          uiTheme: this.uiTheme,
-          config,
-          inputText: this.getText(),
-          metadata: this.getMinimalistMetadata(),
-          trustedBaseFrame: true,
-          borderColor: this.borderColor,
-        });
-        this.reportMinimalistDecoration(result.decorated);
-        return result.lines;
-      } catch {
-        this.reportMinimalistDecoration(false);
-        return clampRenderedLines(captured.value, width);
-      }
-    }
-    this.reportMinimalistDecoration(false);
-    if (width <= 2) {
+    if (width <= 4) {
+      this.reportMinimalistDecoration(false);
       return clampRenderedLines(super.render(width), width);
     }
-
-    const { railWidth } = getEditorChromeWidths(
-      config,
-      this.uiTheme,
-      "\x1b[0m",
-    );
-    const innerWidth = Math.max(0, width - railWidth);
     let captured: { value: string[]; capture?: AutocompleteCapture };
     try {
       captured = renderWithAutocompleteCapture(
         this as unknown as AutocompleteEditorInternals,
-        () => super.render(innerWidth),
+        () => super.render(Math.max(0, width - 4)),
       );
     } catch {
+      this.reportMinimalistDecoration(false);
       return clampRenderedLines(super.render(width), width);
     }
     try {
-      const result = renderPolishedFrame({
+      const result = renderMinimalistFrameFromBase({
         width,
         baseRendered: captured.value,
         autocompleteSource: this as unknown as AutocompleteEditorInternals,
         autocompleteCapture: captured.capture,
         uiTheme: this.uiTheme,
         config,
-        modelMeta: this.getModelMeta(),
-        thinkingLevel: this.getThinkingLevel(),
+        inputText: this.getText(),
+        metadata: this.getMinimalistMetadata(),
         trustedBaseFrame: true,
         borderColor: this.borderColor,
       });
-      if (result.decorated) return result.lines;
+      this.reportMinimalistDecoration(result.decorated);
+      return result.lines;
     } catch {
-      // Decoration is optional; preserve the completed same-render rows below.
+      this.reportMinimalistDecoration(false);
+      return clampRenderedLines(captured.value, width);
     }
-    return clampRenderedLines(captured.value, width);
   }
 }
 
@@ -956,73 +688,25 @@ export class WrappedPolishedEditor implements EditorComponent {
 
   render(width: number): string[] {
     const config = this.getConfig();
-    if (!config.components.editor.enabled) {
+    if (config.components.editor.style === "off") {
+      const offBorder = offEditorBorderColor(config, this.uiTheme);
+      if (offBorder) this.borderColor = offBorder;
       this.reportMinimalistDecoration(false);
       return clampRenderedLines(this.base.render(width), width);
     }
-    if (config.components.editor.style === "minimalist") {
-      if (width <= 4) {
-        this.reportMinimalistDecoration(false);
-        return clampRenderedLines(this.base.render(width), width);
-      }
-      let captured: { value: string[]; capture?: AutocompleteCapture };
-      try {
-        captured = renderWithAutocompleteCapture(this.base, () =>
-          this.base.render(Math.max(0, width - 4)),
-        );
-      } catch {
-        this.reportMinimalistDecoration(false);
-        return clampRenderedLines(this.base.render(width), width);
-      }
-      try {
-        const provenance = inspectPolishedFrameProvenance(
-          this.base,
-          captured.value,
-          config,
-          this.uiTheme,
-        );
-        if (provenance.safe) {
-          const result = renderMinimalistFrameFromBase({
-            width,
-            baseRendered: captured.value,
-            autocompleteSource: this.base,
-            autocompleteCapture: captured.capture,
-            uiTheme: this.uiTheme,
-            config,
-            inputText: this.base.getText(),
-            metadata: this.getMinimalistMetadata(),
-            ownedFrame: provenance.ownedFrame,
-            borderColor: this.borderColor,
-          });
-          if (result.decorated) {
-            this.reportMinimalistDecoration(true);
-            return result.lines;
-          }
-        }
-      } catch {
-        // Decoration is optional; preserve the completed same-render rows below.
-      }
+    if (width <= 4) {
       this.reportMinimalistDecoration(false);
-      return clampRenderedLines(captured.value, width);
+      return clampRenderedLines(this.base.render(width), width);
     }
-    this.reportMinimalistDecoration(false);
-    if (width <= 2) return clampRenderedLines(this.base.render(width), width);
-
-    const { railWidth } = getEditorChromeWidths(
-      config,
-      this.uiTheme,
-      "\x1b[0m",
-    );
-    const innerWidth = Math.max(0, width - railWidth);
     let captured: { value: string[]; capture?: AutocompleteCapture };
     try {
       captured = renderWithAutocompleteCapture(this.base, () =>
-        this.base.render(innerWidth),
+        this.base.render(Math.max(0, width - 4)),
       );
     } catch {
+      this.reportMinimalistDecoration(false);
       return clampRenderedLines(this.base.render(width), width);
     }
-    let result: PolishedFrameResult | undefined;
     try {
       const provenance = inspectPolishedFrameProvenance(
         this.base,
@@ -1031,24 +715,27 @@ export class WrappedPolishedEditor implements EditorComponent {
         this.uiTheme,
       );
       if (provenance.safe) {
-        result = renderPolishedFrame({
+        const result = renderMinimalistFrameFromBase({
           width,
           baseRendered: captured.value,
           autocompleteSource: this.base,
           autocompleteCapture: captured.capture,
           uiTheme: this.uiTheme,
           config,
-          modelMeta: this.getModelMeta(),
-          thinkingLevel: this.getThinkingLevel(),
-          rightStatus: readVimStatus(this.base, this.uiTheme),
+          inputText: this.base.getText(),
+          metadata: this.getMinimalistMetadata(),
           ownedFrame: provenance.ownedFrame,
           borderColor: this.borderColor,
         });
+        if (result.decorated) {
+          this.reportMinimalistDecoration(true);
+          return result.lines;
+        }
       }
     } catch {
       // Decoration is optional; preserve the completed same-render rows below.
     }
-    if (result?.decorated) return result.lines;
+    this.reportMinimalistDecoration(false);
     return clampRenderedLines(captured.value, width);
   }
 

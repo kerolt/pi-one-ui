@@ -108,52 +108,19 @@ describe("settings previews", () => {
     },
   );
 
-  it("renders the defining structure of both Editor styles without status cues", () => {
-    const outputs = Object.fromEntries(
-      (["opencode", "minimalist"] as EditorStyle[]).map((style) => {
-        const current = config();
-        current.components.editor.style = style;
-        return [
-          style,
-          plain(renderEditorSettingsPreview(current, theme(), 72)),
-        ];
-      }),
-    ) as Record<EditorStyle, string>;
-    expect(new Set(Object.values(outputs)).size).toBe(2);
-    for (const output of Object.values(outputs)) {
-      expect(output).not.toContain("Editor preview");
-      expect(output).not.toContain("preview enabled");
-      expect(output).not.toContain("preview disabled");
-    }
-    expect(outputs.opencode).toContain("│ Explain this change safely.");
-    expect(outputs.opencode).toContain("─── ↑ 2 more");
-    expect(outputs.opencode).toContain("↑↓ Navigate");
-    expect(outputs.opencode).not.toContain("→ settings");
-    expect(outputs.minimalist).toContain("╭─ ↑ 2 more");
-    expect(outputs.minimalist).toContain("╰─ ↓ 3 more");
-    expect(outputs.minimalist).toContain("feat/settings-previews");
-    const disabled = config();
-    disabled.components.editor.enabled = false;
-    const disabledOutput = plain(
-      renderEditorSettingsPreview(disabled, theme(), 72),
-    );
-    expect(disabledOutput).toContain("Explain this change safely.");
-    expect(disabledOutput).not.toContain("preview");
-  });
-
-  it("previews Opencode palette and native completion menus", () => {
+  it("renders the defining structure of the Minimalist editor style without status cues", () => {
     const current = config();
-    const renderRows = () => renderEditorSettingsPreview(current, theme(), 72);
-    const render = () => plain(renderRows());
-    expect(render()).toContain("↑↓ Navigate");
-    expect(render()).not.toContain("→ settings");
-    expect(render()).not.toContain("(1/47)");
-    expect(renderRows().join("\n")).not.toContain("\x1b[48;5;234m");
-
-    current.components.editor.styles.opencode.completionMenu = "native";
-    expect(render()).not.toContain("↑↓ Navigate");
-    expect(render()).toContain("→ settings");
-    expect(render()).toContain("(1/47)");
+    current.components.editor.style = "off";
+    const offOutput = plain(renderEditorSettingsPreview(current, theme(), 72));
+    expect(offOutput).toContain("Explain this change safely.");
+    current.components.editor.style = "on";
+    const output = plain(renderEditorSettingsPreview(current, theme(), 72));
+    expect(output).not.toContain("Editor preview");
+    expect(output).not.toContain("preview enabled");
+    expect(output).not.toContain("preview disabled");
+    expect(output).toContain("╭─ ↑ 2 more");
+    expect(output).toContain("╰─ ↓ 3 more");
+    expect(output).toContain("feat/settings-previews");
   });
 
   it("responds to Editor visible settings and selected metadata format", () => {
@@ -166,10 +133,6 @@ describe("settings previews", () => {
     current.components.editor.modelLabel = "name";
     expect(plain(renderEditorSettingsPreview(current, theme(), 72))).toContain(
       "Sonnet 4",
-    );
-    current.components.editor.styles.opencode.metadataFormat = "$provider";
-    expect(plain(renderEditorSettingsPreview(current, theme(), 72))).toContain(
-      "Anthropic",
     );
     current.components.editor.viewportIndicators = false;
     expect(
@@ -277,7 +240,7 @@ describe("settings previews", () => {
     current.icons.ahead = "↑\x1bP$qARROW-DCS\x1b\\";
     current.icons.behind = "↓\u009dARROW-C1\u009c";
 
-    for (const style of ["opencode", "minimalist"] as EditorStyle[]) {
+    for (const style of ["on", "off"] as EditorStyle[]) {
       current.components.editor.style = style;
       expectOnlyTrustedSgr(renderEditorSettingsPreview(current, theme(), 72), [
         "RAIL-OSC",
@@ -286,10 +249,6 @@ describe("settings previews", () => {
         "ARROW-C1",
       ]);
     }
-    current.components.editor.style = "opencode";
-    expect(plain(renderEditorSettingsPreview(current, theme(), 72))).toContain(
-      "│",
-    );
     expect(current.icons.rail).toContain("RAIL-OSC");
 
     for (const style of [

@@ -24,7 +24,7 @@ export type { IconMode } from "../../shared/icons.ts";
 export type ContextStyle = "text" | "gauge" | "text+gauge";
 export type SeparatorStyle = "pipe" | "dot" | "chevron" | "none";
 export type ModelLabelSource = "id" | "name";
-export type EditorStyle = "opencode" | "minimalist";
+export type EditorStyle = "on" | "off";
 export type UserMessageStyle =
   | "framed"
   | "framed-copy-friendly"
@@ -46,7 +46,6 @@ export type ComponentStyleOwner =
   | "footer";
 export type MinimalistPathDisplayMode = "compact" | "project" | "full";
 export type EditorBorderColorMode = "static" | "adaptive";
-export type CompletionMenuStyle = "native" | "palette";
 export type CompactFooterMaxLines = 1 | 2 | 3 | "unlimited";
 
 export const DEFAULT_COMPACT_FOOTER_FORMAT =
@@ -103,11 +102,6 @@ export type FooterSegmentsConfig = {
   packageVersion: boolean;
 };
 
-export type PolishedEditorStyleConfig = {
-  metadataFormat: string;
-  completionMenu: CompletionMenuStyle;
-};
-
 export type MinimalistEditorStyleConfig = {
   pathDisplay: MinimalistPathDisplayMode;
   showSessionName: boolean;
@@ -124,14 +118,12 @@ export type EditorStylesConfig = {
 };
 
 export type EditorComponentConfig = {
-  enabled: boolean;
   style: EditorStyle;
   colorSource: ColorSource;
   borderColorMode: EditorBorderColorMode;
   modelLabel: ModelLabelSource;
   viewportIndicators: boolean;
   styles: {
-    opencode: PolishedEditorStyleConfig;
     minimalist: MinimalistEditorStyleConfig;
   };
 };
@@ -414,8 +406,6 @@ const defaultFooterSegments: FooterSegmentsConfig = {
   packageVersion: false,
 };
 
-const DEFAULT_COMPLETION_MENU: CompletionMenuStyle = "palette";
-
 const defaultMinimalistStyle: MinimalistEditorStyleConfig = {
   pathDisplay: "compact",
   showSessionName: true,
@@ -446,17 +436,12 @@ const defaultStarshipStyle: StarshipFooterStyleConfig = {
 
 const defaultComponents: ComponentsConfig = {
   editor: {
-    enabled: true,
-    style: "opencode",
+    style: "on",
     colorSource: "theme",
     borderColorMode: "static",
     modelLabel: "id",
     viewportIndicators: true,
     styles: {
-      opencode: {
-        metadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
-        completionMenu: DEFAULT_COMPLETION_MENU,
-      },
       minimalist: defaultMinimalistStyle,
     },
   },
@@ -578,19 +563,15 @@ function parseEditorModelLabel(
 }
 
 function parseEditorStyle(value: unknown): EditorStyle {
-  if (value === "opencode" || value === "minimalist") return value;
+  if (value === "on" || value === "off") return value;
+  // 迁移：旧 opencode / minimalist 样式统一收敛为 on（minimalist）。
+  if (value === "opencode" || value === "minimalist") return "on";
   return defaultComponents.editor.style;
 }
 
 function parseEditorBorderColorMode(value: unknown): EditorBorderColorMode {
   if (value === "static" || value === "adaptive") return value;
   return defaultConfig.editorBorderColorMode;
-}
-
-function parseCompletionMenuStyle(value: unknown): CompletionMenuStyle {
-  return value === "native" || value === "palette"
-    ? value
-    : DEFAULT_COMPLETION_MENU;
 }
 
 export function isSeparatorStyle(value: unknown): value is SeparatorStyle {
@@ -1027,7 +1008,6 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
   const components = recordValue(config.components);
   const editor = recordValue(components.editor);
   const editorStyles = recordValue(editor.styles);
-  const opencode = recordValue(editorStyles.opencode);
   const minimalist = recordValue(editorStyles.minimalist);
   const userMessages = recordValue(components.userMessages);
   const workingLine = recordValue(components.workingLine);
@@ -1040,8 +1020,12 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
 
   return {
     editor: {
-      enabled: parseBoolean(editor.enabled, defaultComponents.editor.enabled),
-      style: parseEditorStyle(editor.style),
+      // 迁移：旧 enabled:false 收敛为 style:"off"（enabled 字段已移除）。
+      style:
+        hasOwn(editor, "enabled") &&
+        parseBoolean(editor.enabled, true) === false
+          ? "off"
+          : parseEditorStyle(editor.style),
       colorSource: parseColorSource(
         editor.colorSource,
         defaultComponents.editor.colorSource,
@@ -1056,13 +1040,6 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
         defaultComponents.editor.viewportIndicators,
       ),
       styles: {
-        opencode: {
-          metadataFormat: parseNonEmptyString(
-            opencode.metadataFormat,
-            DEFAULT_EDITOR_METADATA_FORMAT,
-          ),
-          completionMenu: parseCompletionMenuStyle(opencode.completionMenu),
-        },
         minimalist: {
           pathDisplay:
             minimalist.pathDisplay === "compact" ||
@@ -1241,8 +1218,7 @@ function derivedRuntimeView(config: ZentuiConfig): PolishedTuiConfig {
     extensionStatuses: starship.extensionStatuses,
     editorStyle: config.components.editor.style,
     editorStyles: { minimalist },
-    editorMetadataFormat:
-      config.components.editor.styles.opencode.metadataFormat,
+    editorMetadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
     editorBorderColorMode: config.components.editor.borderColorMode,
     editorModelLabel: config.components.editor.modelLabel,
     colorSources: {
@@ -1251,7 +1227,7 @@ function derivedRuntimeView(config: ZentuiConfig): PolishedTuiConfig {
       userMessages: config.components.userMessages.colorSource,
     },
     features: {
-      editor: config.components.editor.enabled,
+      editor: config.components.editor.style === "on",
       statusLine: config.components.footer.style === "starship",
       viewportIndicators: config.components.editor.viewportIndicators,
     },
@@ -1263,8 +1239,10 @@ const unsupportedComponentStyles = new WeakMap<
   ReadonlySet<ComponentStyleOwner>
 >();
 
-// Retired selections migrate to Opencode instead of disabling the custom Editor.
+// Retired selections migrate to the sole "on" (minimalist) style instead of
+// disabling the custom Editor. opencode itself is retired along with its variants.
 const retiredEditorStyleIds: ReadonlySet<string> = new Set([
+  "opencode",
   "opencode-copy-friendly",
   "accent-rail",
 ]);
@@ -1273,7 +1251,7 @@ const knownComponentStyleIds: Record<
   ComponentStyleOwner,
   ReadonlySet<string>
 > = {
-  editor: new Set(["opencode", "minimalist"]),
+  editor: new Set(["on", "off"]),
   userMessages: new Set([
     "framed",
     "framed-copy-friendly",
@@ -1441,7 +1419,6 @@ function applyEditorComponentPatch(
   patch: Partial<
     Pick<
       EditorComponentConfig,
-      | "enabled"
       | "style"
       | "colorSource"
       | "borderColorMode"
@@ -1450,7 +1427,6 @@ function applyEditorComponentPatch(
     >
   >,
 ): void {
-  if (patch.enabled !== undefined) component.enabled = patch.enabled;
   if (patch.style !== undefined) component.style = patch.style;
   if (patch.colorSource !== undefined)
     component.colorSource = patch.colorSource;
@@ -1466,7 +1442,6 @@ export function saveEditorComponentPatch(
   patch: Partial<
     Pick<
       EditorComponentConfig,
-      | "enabled"
       | "style"
       | "colorSource"
       | "borderColorMode"
@@ -1481,19 +1456,6 @@ export function saveEditorComponentPatch(
     path,
     patch.style !== undefined ? "editor" : undefined,
   );
-}
-
-export function savePolishedEditorStylePatch(
-  patch: Partial<PolishedEditorStyleConfig>,
-  path = configPath,
-): PolishedTuiConfig {
-  return saveComponentsMutation((components) => {
-    const style = components.editor.styles.opencode;
-    if (patch.metadataFormat !== undefined)
-      style.metadataFormat = patch.metadataFormat;
-    if (patch.completionMenu !== undefined)
-      style.completionMenu = patch.completionMenu;
-  }, path);
 }
 
 function applyMinimalistStylePatch(
@@ -1695,7 +1657,7 @@ export function saveUiFeaturesPatch(
   return saveComponentsMutation(
     (components) => {
       if (valid.editor !== undefined) {
-        components.editor.enabled = valid.editor;
+        components.editor.style = valid.editor ? "on" : "off";
         components.userMessages.enabled = valid.editor;
         components.selectorBorders.enabled = valid.editor;
       }

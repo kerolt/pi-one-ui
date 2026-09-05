@@ -23,10 +23,11 @@ import {
 } from "./config/renderer.ts";
 import {
   type EditorComponentConfig,
-  type EditorStyle,
   type FooterComponentConfig,
   type FooterStyle,
   loadConfig as loadShellConfig,
+  saveColorSourcesPatch,
+  saveEditorBorderColorMode,
   saveEditorComponentPatch,
   saveFooterComponentPatch,
   saveUserMessagesComponentPatch,
@@ -40,7 +41,6 @@ import { overlayManager } from "./overlay/overlay-manager.ts";
 import { ownerFor } from "./ownership.ts";
 import { applyPreset, PRESET_VALUES, type Preset } from "./presets.ts";
 
-const EDITOR_STYLES: EditorStyle[] = ["opencode", "minimalist"];
 const MESSAGE_STYLES: UserMessageStyle[] = [
   "framed",
   "framed-copy-friendly",
@@ -126,18 +126,28 @@ function editorItems(): SettingItem[] {
   const config = loadShellConfig();
   return [
     {
-      id: "editorEnabled",
+      id: "editorStyle",
       label: "Editor",
-      description: "Enable the custom input editor.",
-      currentValue: onOff(config.components.editor.enabled),
+      description:
+        "on applies the Minimalist decoration; off restores Pi's native editor.",
+      currentValue: config.components.editor.style,
       values: ["on", "off"],
     },
     {
-      id: "editorStyle",
-      label: "Editor style",
-      description: "Choose the input editor treatment.",
-      currentValue: config.components.editor.style,
-      values: EDITOR_STYLES,
+      id: "editorColorSource",
+      label: "Color source",
+      description:
+        "theme resolves colors through the active Pi theme; terminal uses fixed terminal colors.",
+      currentValue: config.components.editor.colorSource,
+      values: ["theme", "terminal"],
+    },
+    {
+      id: "editorBorderColorMode",
+      label: "Border color",
+      description:
+        "static keeps one border color; adaptive shifts the border with the effort level.",
+      currentValue: config.components.editor.borderColorMode,
+      values: ["static", "adaptive"],
     },
   ];
 }
@@ -429,18 +439,31 @@ function updateSetting(
   ctx: any,
   deps: UnifiedPanelDeps,
 ): void {
-  if (id === "editorEnabled") {
-    if (deps.runtime)
-      deps.runtime.setEditorComponent({ enabled: isOn(value) }, ctx);
-    else saveEditorComponentPatch({ enabled: isOn(value) });
+  if (id === "editorStyle" && (value === "on" || value === "off")) {
+    if (deps.runtime) deps.runtime.setEditorComponent({ style: value }, ctx);
+    else saveEditorComponentPatch({ style: value });
     saveNotice(ctx, "Editor", value);
     return;
   }
-  if (id === "editorStyle" && EDITOR_STYLES.includes(value as EditorStyle)) {
+  if (
+    id === "editorColorSource" &&
+    (value === "theme" || value === "terminal")
+  ) {
     if (deps.runtime)
-      deps.runtime.setEditorComponent({ style: value as EditorStyle }, ctx);
-    else saveEditorComponentPatch({ style: value as EditorStyle });
-    saveNotice(ctx, "Editor style", value);
+      deps.runtime.setEditorComponent({ colorSource: value }, ctx);
+    else saveColorSourcesPatch({ editor: value });
+    saveNotice(ctx, "Color source", value);
+    return;
+  }
+  if (id === "editorBorderColorMode") {
+    const valid =
+      value === "static" || value === "adaptive" ? value : undefined;
+    if (valid) {
+      if (deps.runtime)
+        deps.runtime.setEditorComponent({ borderColorMode: valid }, ctx);
+      else saveEditorBorderColorMode(valid);
+      saveNotice(ctx, "Border color", value);
+    }
     return;
   }
   if (id === "userMessagesEnabled") {
@@ -615,7 +638,7 @@ export async function showOneUiPanel(
                   createList();
                   list.selectItem(id);
                 } finally {
-                  if (id === "editorEnabled" || id === "editorStyle") {
+                  if (id === "editorStyle") {
                     panelHandle?.focus();
                   }
                   tui.requestRender();

@@ -17,7 +17,7 @@ export function isPreset(value: string): value is Preset {
 /** Apply only ownership-related values; detailed options remain user-editable. */
 export function applyPreset(preset: Preset): void {
   if (preset === "native") {
-    saveEditorComponentPatch({ enabled: false });
+    saveEditorComponentPatch({ style: "off" });
     saveUserMessagesComponentPatch({ enabled: false });
     saveWorkingLineComponentPatch({ enabled: false });
     saveFooterComponentPatch({ style: "native" });
@@ -25,7 +25,7 @@ export function applyPreset(preset: Preset): void {
     return;
   }
 
-  saveEditorComponentPatch({ enabled: true });
+  saveEditorComponentPatch({ style: "on" });
   saveUserMessagesComponentPatch({ enabled: true });
   saveWorkingLineComponentPatch({ enabled: true });
   saveFooterComponentPatch({ style: "starship" });

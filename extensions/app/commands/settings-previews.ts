@@ -3,7 +3,6 @@ import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { renderUserMessageStyle } from "../../layouts/context/message/user-message-styles.ts";
 import { sanitizeEditorMetadataText } from "../../layouts/editor/editor-metadata-format.ts";
 import { renderMinimalistFrame } from "../../layouts/editor/minimalist-editor.ts";
-import { renderPolishedEditorFrame } from "../../layouts/editor/ui.ts";
 import { safeThemeFg } from "../../shared/style.ts";
 import type { PolishedTuiConfig } from "../config/shell.ts";
 
@@ -59,50 +58,30 @@ export function renderEditorSettingsPreview(
   const viewport = editor.viewportIndicators
     ? { above: "2", below: "3" }
     : undefined;
-  let frame: string[];
-  if (editor.style === "minimalist") {
-    frame = renderMinimalistFrame({
-      width: previewWidth,
-      editorLines,
-      viewport,
-      inputText: EDITOR_PREVIEW_INPUT,
-      metadata: {
-        cwd: "/workspace/zentui/src",
-        projectRoot: "/workspace/zentui",
-        branch: "feat/settings-previews",
-        dirty: true,
-        ahead: 2,
-        behind: 1,
-        costLabel: "$.12",
-        modelLabel,
-        thinkingLevel: "high",
-        sessionName: "Preview",
-        agentDurationMs: 12_000,
-        agentActive: true,
-      },
-      uiTheme: theme,
-      config: safeConfig,
-      borderColor,
-    });
-  } else {
-    frame = renderPolishedEditorFrame({
-      width: previewWidth,
-      editorLines,
-      autocompleteLines,
-      viewport,
-      uiTheme: theme,
-      config: safeConfig,
-      modelMeta: {
-        modelLabel,
-        modelId: "sonnet-4",
-        modelName: "Sonnet 4",
-        providerLabel: "Anthropic",
-        sessionName: "Preview",
-      },
+  const frame = renderMinimalistFrame({
+    width: previewWidth,
+    editorLines,
+    autocompleteLines,
+    viewport,
+    inputText: EDITOR_PREVIEW_INPUT,
+    metadata: {
+      cwd: "/workspace/zentui/src",
+      projectRoot: "/workspace/zentui",
+      branch: "feat/settings-previews",
+      dirty: true,
+      ahead: 2,
+      behind: 1,
+      costLabel: "$.12",
+      modelLabel,
       thinkingLevel: "high",
-      borderColor,
-    });
-  }
+      sessionName: "Preview",
+      agentDurationMs: 12_000,
+      agentActive: true,
+    },
+    uiTheme: theme,
+    config: safeConfig,
+    borderColor,
+  });
   return boundedRows(frame, previewWidth);
 }
 
