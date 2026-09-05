@@ -22,7 +22,7 @@ import {
   formatUsernameHostLabel,
 } from "../../shared/format.ts";
 import { resolveRuntimeSymbol } from "../../shared/icons.ts";
-import { renderStyleForSource } from "../../shared/style.ts";
+import { renderSourceColor, renderStyleForSource } from "../../shared/style.ts";
 import { sanitizeEditorMetadataText } from "../editor/editor-metadata-format.ts";
 import {
   collectExtensionStatusSegments,
@@ -322,10 +322,12 @@ export function installFooter(
           separatorText[config.components.footer.styles.starship.separator],
         );
         const innerWidth = Math.max(1, width - 2);
-        const cwdLabel = renderStyleForSource(
+        const cwdLabel = renderSourceColor(
           theme,
           colorSource,
           config.colors.cwd,
+          "cwd",
+          "bold cyan",
           formattedCwd,
         );
         const needsSessionName =
@@ -932,10 +934,12 @@ export function installFooter(
 
         const chunkBudget = compactChunkBudget(innerWidth);
         const compactCwdLabel = truncateToWidth(
-          renderStyleForSource(
+          renderSourceColor(
             theme,
             colorSource,
             config.colors.cwd,
+            "cwd",
+            "bold cyan",
             sanitizeEditorMetadataText(
               formatCwdLabel(ctx.cwd, config.icons.cwd, {
                 mode: "basename",

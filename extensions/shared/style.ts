@@ -427,6 +427,54 @@ export function renderStyleForSourceOrFallback(
   return renderStyleForSource(theme, source, style ?? fallbackStyle, text);
 }
 
+/**
+ * 主题画板存在性探测：pi Theme 暴露 fgColors Map；测试或其他实现可
+ * 提供 hasThemeToken 回调，缺失时保守按“无该 token”处理。
+ */
+function themeHasToken(theme: ThemeLike, token: string): boolean {
+  if (
+    typeof (theme as { hasThemeToken?: (t: string) => boolean })
+      .hasThemeToken === "function"
+  ) {
+    return (
+      theme as unknown as { hasThemeToken(t: string): boolean }
+    ).hasThemeToken(token);
+  }
+  const fgColors = (theme as unknown as { fgColors?: Map<string, string> })
+    .fgColors;
+  return fgColors instanceof Map && fgColors.has(token);
+}
+
+/**
+ * 颜色统一渲染入口（配置优先，其次主题 token，最后原生默认）：
+ * - 配置了 spec：按 colorSource 现有语义解释（theme=token/hex，terminal=终端色）；
+ * - 未配置且 theme 源：主题定义了 themeToken 时用主题色（可指向 vars 变量），
+ *   否则回落原生默认 themeDefault；
+ * - 未配置且 terminal 源：使用固定终端默认 terminalDefault。
+ */
+export function renderSourceColor(
+  theme: ThemeLike,
+  source: ColorSource,
+  spec: ColorSpec | undefined,
+  themeToken: string,
+  themeDefault: ColorSpec,
+  text: string,
+): string {
+  if (typeof spec === "string" && spec.trim() !== "") {
+    return renderStyleForSource(theme, source, spec, text);
+  }
+  // 未配置时:theme 源优先主题专有 token,terminal 源与主题缺 token 时
+  // 都回落 Pi 原生默认(主题语义色),保证两种 colorSource 默认观感一致。
+  if (source !== "terminal" && themeHasToken(theme, themeToken)) {
+    try {
+      return theme.fg(themeToken, text);
+    } catch {
+      // 主题色解析失败时继续回退原生默认。
+    }
+  }
+  return renderThemeStyle(theme, themeDefault, text);
+}
+
 export function renderStyleForSourceOrFallbackStrict(
   theme: ThemeLike,
   source: ColorSource,

@@ -26,7 +26,7 @@ Header → Context → WorkingLine → Editor → Footer
 - **Header**: startup information, logo, and shortcut hints.
 - **Context**: the conversation area, including user messages, assistant messages, thinking, tools, diffs, Markdown, and summaries.
 - **WorkingLine**: working state, spinner, token/thought/elapsed information, live output rate, and turn summaries.
-- **Editor**: input editor, completion, metadata, and the Opencode and Minimalist styles.
+- **Editor**: input editor, completion, metadata, and the Minimalist style (Pi native is one toggle away).
 - **Footer**: current directory, Git, runtime, token, cost, and extension status information.
 - **Overlay**: temporary interfaces such as the settings panel and Context Inspector, managed by a shared OverlayManager.
 
@@ -90,8 +90,9 @@ Using the `/oneui` settings panel is recommended. The panel uses a top-centered 
   "version": 1,
   "components": {
     "editor": {
-      "enabled": true,
-      "style": "opencode"
+      "style": "on",
+      "colorSource": "theme",
+      "borderColorMode": "static"
     },
     "userMessages": {
       "enabled": true,
@@ -111,7 +112,7 @@ Using the `/oneui` settings panel is recommended. The panel uses a top-centered 
 }
 ```
 
-The Editor now supports only the `opencode` and `minimalist` styles. `minimalist` no longer duplicates context-usage information; context percentage, token totals, thresholds, gauges, and related presentation are configured through Footer. Existing configurations that select the removed `opencode-copy-friendly` or `accent-rail` styles safely fall back to the default `opencode`, and their old nested style settings are ignored.
+The Editor keeps a single `minimalist` decoration style controlled by `style`: `on` enables the Minimalist decoration, `off` restores Pi's native editor (the border follows the theme and effort coloring by default; when `colors.editorBorder` is explicitly configured, the off mode applies that color through `colorSource`, overriding the native effort coloring). Legacy configurations migrate automatically: `enabled: false` becomes `style: "off"`, and `opencode`/`minimalist` become `style: "on"`; the `styles.opencode` block and the retired `opencode-copy-friendly`/`accent-rail` styles are ignored. `borderColorMode` supports `static` (fixed `colors.editorBorder`) and `adaptive` (border shifts with the effort level); `colorSource` supports `theme` (colors resolved through the active Pi theme tokens) and `terminal` (fixed terminal colors). When `cwd`, the model label, or the static border are not explicitly configured, the theme's `cwd`/`editorModel`/`editorBorder` tokens are used first (they may point to `vars` variables or hex values), falling back to Pi's native defaults when the theme does not define them; the terminal source falls back to Pi's native colors as well when unconfigured (only an explicit terminal color name or hex is rendered fixed). Context-usage information is presented by Footer.
 
 The WorkingLine token segment appends live output throughput, such as `⚡12 tok/s`, after a model response has run for at least 500ms. Throughput is calculated independently for the current response and resets on the next `turn_start`; disabling the token segment hides it as well.
 

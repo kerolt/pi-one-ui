@@ -91,10 +91,37 @@ function render(
 }
 
 describe("minimalist editor frame", () => {
+  it("prefers theme tokens over native fallbacks when the theme defines them", () => {
+    const calls: Array<{ color: string; text: string }> = [];
+    const themed = {
+      ...recordingTheme(calls),
+      // 模拟主题定义了 cwd / editorModel / editorBorder 专有 token。
+      hasThemeToken: (token: string) =>
+        token === "cwd" || token === "editorModel" || token === "editorBorder",
+    } as Theme;
+    const lines = renderMinimalistFrame({
+      width: 120,
+      editorLines: ["draft"],
+      inputText: "draft",
+      metadata: {
+        cwd: "/tmp/project",
+        costLabel: "$0.123",
+        modelLabel: "model-x",
+      },
+      uiTheme: themed,
+      config: config({ editorBorderColorMode: "static" }),
+    }).join("\n");
+    expect(calls).toContainEqual({ color: "cwd", text: "project" });
+    expect(calls).toContainEqual({ color: "editorModel", text: "model-x" });
+    expect(calls.some(({ color }) => color === "editorBorder")).toBe(true);
+    expect(lines.length).toBeGreaterThan(0);
+  });
+
   it("renders metadata and framed autocomplete", () => {
     const lines = render();
     expect(lines[0]).toContain("12s · release prep");
-    expect(lines[0]).toContain("$0.123 – model-x – high");
+    const plain0 = lines[0].replace(/\x1b\[[0-9;]*m/g, "");
+    expect(plain0).toContain("$0.123 – model-x – high");
     expect(lines[0]).toMatch(/^╭.*╮$/);
     expect(lines[1]).toMatch(/^│ draft\s+│$/);
     expect(lines[2]).toMatch(/^├─+┤$/);
@@ -122,6 +149,7 @@ describe("minimalist editor frame", () => {
     });
 
     expect(lines.join("\n")).toContain("main");
+    // 测试主题未定义 cwd/editorModel 专有 token → 回落原生默认。
     expect(calls).toEqual(
       expect.arrayContaining([
         { color: "success", text: "$0.123" },
@@ -199,7 +227,7 @@ describe("minimalist editor frame", () => {
     );
   });
 
-  it("uses the complete default terminal palette", () => {
+  it("uses configured terminal colors and native fallbacks for the rest", () => {
     const terminalConfig = config({
       colorSources: { ...defaultConfig.colorSources, editor: "terminal" },
     });
@@ -218,12 +246,16 @@ describe("minimalist editor frame", () => {
       config: terminalConfig,
     }).join("\n");
 
+    // 有配置默认值的段按终端色渲染(cost/gitBranch/thinking)。
     expect(output).toContain("\x1b[1;32m$0.123\x1b[0m");
-    expect(output).toContain("\x1b[1;35mmodel-x\x1b[0m");
     expect(output).toContain("\x1b[1;33mhigh\x1b[0m");
     expect(output).toContain("\x1b[1;34mmain\x1b[0m");
-    expect(output).toContain("\x1b[1;36mproject\x1b[0m");
-    expect(output).toContain("\x1b[90m╭\x1b[0m");
+    // cwd/模型名/边框未配置 → 回落 Pi 原生主题色(测试主题透传,无 ANSI)。
+    expect(output).toContain("model-x");
+    expect(output).not.toContain("\x1b[1;35m");
+    expect(output).toContain("project");
+    expect(output).not.toContain("\x1b[1;36m");
+    expect(output).not.toContain("\x1b[90m╭");
   });
 
   it("uses only the canonical editor branch color", () => {
@@ -638,7 +670,9 @@ describe("minimalist editor frame", () => {
         }),
         borderColor: (text) => `[theme]${text}`,
       }).join("\n");
-      expect(output).toContain("\x1b[90m╭\x1b[0m");
+      // 未配置边框 → 原生回退(测试主题透传,无固定 ANSI 与 theme 标记)。
+      expect(output).toContain("╭");
+      expect(output).not.toContain("\x1b[90m");
       expect(output).not.toContain("[theme]");
       expect(output).not.toContain("off");
     },

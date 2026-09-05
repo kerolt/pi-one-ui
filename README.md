@@ -26,7 +26,7 @@ Header → Context → WorkingLine → Editor → Footer
 - **Header**：启动信息、Logo 和快捷键提示。
 - **Context**：对话内容区，包含用户消息、Assistant 消息、Thinking、Tool、Diff、Markdown 和 Summary。
 - **WorkingLine**：工作状态、spinner、token/thought/elapsed、实时输出速率和回合摘要。
-- **Editor**：输入编辑器、completion、metadata，以及 Opencode 和 Minimalist 样式。
+- **Editor**：输入编辑器、completion、metadata，以及 Minimalist 样式（可切换 Pi 原生）。
 - **Footer**：目录、Git、runtime、token、cost 和扩展状态等信息。
 - **Overlay**：设置面板、Context Inspector 等临时浮层由统一的 OverlayManager 管理。
 
@@ -83,15 +83,17 @@ pi install git:github.com/kerolt/pi-one-ui
 ~/.pi/agent/pi-one-ui.json
 ```
 
-推荐通过 `/oneui` 设置面板修改配置。面板采用更靠近顶部的居中布局；切换 Editor 启用状态或样式时会保持打开并在 Editor 替换后恢复焦点，持久化失败时则恢复列表中的有效旧值。当前配置仍使用 v1 结构，例如：
+
+推荐通过 `/oneui` 设置面板修改配置。面板采用更靠近顶部的居中布局；切换 Editor 开关、颜色源或边框模式时会保持打开并在 Editor 替换后恢复焦点，持久化失败时则恢复列表中的有效旧值。当前配置仍使用 v1 结构，例如：
 
 ```json
 {
   "version": 1,
   "components": {
     "editor": {
-      "enabled": true,
-      "style": "opencode"
+      "style": "on",
+      "colorSource": "theme",
+      "borderColorMode": "static"
     },
     "userMessages": {
       "enabled": true,
@@ -111,7 +113,7 @@ pi install git:github.com/kerolt/pi-one-ui
 }
 ```
 
-Editor 当前只支持 `opencode` 和 `minimalist` 两种样式。`minimalist` 不再重复显示上下文占用信息；上下文百分比、token 总量、阈值和 gauge 等展示统一由 Footer 配置。已有配置若选择了已移除的 `opencode-copy-friendly` 或 `accent-rail`，运行时会安全回退到默认的 `opencode`，相应的旧嵌套样式配置会被忽略。
+Editor 只保留 `minimalist` 一种装饰样式，通过 `style` 开关控制：`on` 启用 Minimalist 装饰，`off` 恢复 Pi 原生编辑器（边框默认跟随主题与 effort 变色；若显式配置了 `colors.editorBorder`，off 模式下也会按 `colorSource` 应用该颜色，覆盖原生 effort 变色）。旧配置的 `enabled: false` 会迁移为 `style: "off"`，`opencode`/`minimalist` 会迁移为 `style: "on"`，`styles.opencode` 嵌套配置与 `opencode-copy-friendly`、`accent-rail` 一并失效。`borderColorMode` 支持 `static`（固定 `colors.editorBorder`）与 `adaptive`（边框随 effort 档位变化）；`colorSource` 支持 `theme`（颜色取当前主题 token）与 `terminal`（固定终端色）。cwd、模型名与边框（static）未显式配置时优先使用主题的 `cwd`/`editorModel`/`editorBorder` token（可指向 vars 变量或 hex），主题未定义则回落 Pi 原生默认；terminal 源未配置时同样回落 Pi 原生颜色（配置了终端色名/hex 才固定渲染）。上下文占用相关信息由 Footer 统一展示。
 
 WorkingLine 的 token segment 会在一次模型响应持续至少 500ms 后追加实时输出速率，例如 `⚡12 tok/s`。速率按当前响应独立计算，在下一次 `turn_start` 时重置；关闭 token segment 时也会一并隐藏。
 

@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Reduced the Editor to the single `minimalist` style with an `on`/`off` switch: `off` restores Pi's native editor, and the retired `opencode` style is removed (`enabled` merges into `style`, legacy values migrate automatically).
+- Added `/oneui` panel settings for the Editor component: style (`on`/`off`), color source (`theme`/`terminal`), and border color mode (`static`/`adaptive`), each with an inline description.
+- In `off` mode, an explicitly configured `colors.editorBorder` is applied to the native editor border through `colorSource` (theme tokens or fixed terminal colors); without it the native effort/theme coloring is preserved.
+
+### Performance
+
+- Cached `ToolExecutionComponent` render widgets across expand/collapse toggles: repeated Ctrl+O toggles and identical result updates now skip the full native rebuild, cutting batch expansion of many tools (e.g. 30 × 1000-line outputs) from ~130ms to under 0.2ms while keeping expanded and collapsed render slots independent.
+
+### Migration
+
+- `components.editor.enabled: false` becomes `components.editor.style: "off"`; `style: "opencode"`/`"minimalist"` become `"on"`. The `styles.opencode` block and `opencode-copy-friendly`/`accent-rail` selections are ignored.
+
+### Fixed
+
+- Toggling the Editor style between `on`/`off` no longer replaces the editor factory: the existing instance (and Pi's overlay focus target) stays valid, so the `/oneui` panel restores keyboard focus to the input editor after closing.
+- Unconfigured `cwd`, model-label, and static border colors now prefer the theme's `cwd`/`editorModel`/`editorBorder` tokens (which may reference `vars` variables or hex), falling back to Pi's native defaults when the theme does not define them.
+
 ## [0.4.0] - 2026-09-03
 
 ### Changed

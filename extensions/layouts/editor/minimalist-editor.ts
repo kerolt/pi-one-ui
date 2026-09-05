@@ -10,6 +10,7 @@ export { formatElapsedDuration } from "../../shared/format.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   EDITOR_BORDER_FALLBACK,
+  renderSourceColor,
   renderStyleForSource,
   renderStyleForSourceOrFallback,
   safeThemeFg,
@@ -213,11 +214,12 @@ function renderTopRight(
   const model = sanitizeEditorMetadataText(metadata.modelLabel ?? "");
   if (model) {
     parts.push(
-      renderStyleForSourceOrFallback(
+      renderSourceColor(
         uiTheme,
         source,
         config.colors.editorModel,
-        MINIMALIST_MODEL_FALLBACK,
+        "editorModel",
+        MINIMALIST_MODEL_FALLBACK.theme,
         model,
       ),
     );
@@ -293,10 +295,12 @@ function renderBottomRight(
 ): string {
   const cwd = sanitizeEditorMetadataText(minimalistCwdLabel(metadata, config));
   return cwd
-    ? renderStyleForSource(
+    ? renderSourceColor(
         uiTheme,
         config.components.editor.colorSource,
         config.colors.cwd,
+        "cwd",
+        "bold cyan",
         cwd,
       )
     : "";
@@ -386,11 +390,12 @@ export function renderMinimalistFrame({
   const activeThinking =
     thinking && thinking.toLowerCase() !== "off" ? thinking : "";
   const renderStaticBorder = (text: string) =>
-    renderStyleForSourceOrFallback(
+    renderSourceColor(
       uiTheme,
       source,
       config.colors.editorBorder,
-      EDITOR_BORDER_FALLBACK,
+      "editorBorder",
+      EDITOR_BORDER_FALLBACK.theme,
       text,
     );
   const terminalAdaptiveThinkingStyle = activeThinking

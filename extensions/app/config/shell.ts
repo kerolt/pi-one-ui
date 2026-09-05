@@ -273,7 +273,7 @@ export type ZentuiConfig = {
 };
 
 export type PolishedTuiColors = {
-  cwd: ColorSpec;
+  cwd?: ColorSpec;
   sessionName: ColorSpec;
   gitBranch: ColorSpec;
   gitStatus: ColorSpec;
@@ -481,7 +481,6 @@ export const defaultConfig: PolishedTuiConfig = {
   projectRefreshIntervalMs: DEFAULT_PROJECT_REFRESH_INTERVAL_MS,
   icons: { mode: "auto", ...NERD_DEFAULT_ICONS },
   colors: {
-    cwd: "bold cyan",
     sessionName: "bold green",
     gitBranch: "bold purple",
     gitStatus: "bold red",
