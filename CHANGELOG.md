@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-05
+
+### Changed
+
+- Refined the `cc-dark` theme: `thinkingLow` uses cyan, `thinkingXhigh` yellow, and `thinkingMax` orange for a clearer effort-level hierarchy; `cwd` and `editorModel` labels switch from blue to the muted token for calmer status text.
+
 ## [0.5.0] - 2026-09-05
 
 ### Changed
@@ -87,7 +93,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/kerolt/pi-one-ui/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/kerolt/pi-one-ui/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kerolt/pi-one-ui/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/kerolt/pi-one-ui/compare/v0.3.0...v0.3.1
