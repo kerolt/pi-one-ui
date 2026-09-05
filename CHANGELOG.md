@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-05
+
 ### Changed
 
 - Reduced the Editor to the single `minimalist` style with an `on`/`off` switch: `off` restores Pi's native editor, and the retired `opencode` style is removed (`enabled` merges into `style`, legacy values migrate automatically).
@@ -15,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Performance
 
 - Cached `ToolExecutionComponent` render widgets across expand/collapse toggles: repeated Ctrl+O toggles and identical result updates now skip the full native rebuild, cutting batch expansion of many tools (e.g. 30 × 1000-line outputs) from ~130ms to under 0.2ms while keeping expanded and collapsed render slots independent.
+
+### Removed
+
+- Removed the `opencode` Editor style along with its polished renderer, completion-menu module, and `styles.opencode` configuration; the `enabled` field is gone.
 
 ### Migration
 
@@ -81,7 +87,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/kerolt/pi-one-ui/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kerolt/pi-one-ui/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/kerolt/pi-one-ui/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/kerolt/pi-one-ui/compare/v0.2.2...v0.3.0
