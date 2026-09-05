@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-05
+
 ### Removed
 
 - Removed the `colorSource` (`theme`/`terminal`) concept from the Editor, user messages, WorkingLine, selector borders, and Footer. Colors are now always rendered with theme semantics: configured `colors.*` values resolve as theme tokens (ANSI names such as `red` map to semantic tokens like `error`), while hex, 256-color indexes, and `fg:`/`bg:` prefixes still render fixed terminal colors.
@@ -106,7 +108,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/kerolt/pi-one-ui/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/kerolt/pi-one-ui/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/kerolt/pi-one-ui/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/kerolt/pi-one-ui/compare/v0.3.1...v0.4.0
