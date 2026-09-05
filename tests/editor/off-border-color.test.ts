@@ -24,18 +24,12 @@ function theme(): Theme {
 }
 
 function config(
-  overrides: {
-    style?: "on" | "off";
-    colorSource?: "theme" | "terminal";
-    editorBorder?: string;
-  } = {},
+  overrides: { style?: "on" | "off"; editorBorder?: string } = {},
 ): PolishedTuiConfig {
   const merged = mergeConfig({
     components: {
       editor: {
         style: overrides.style ?? defaultConfig.components.editor.style,
-        colorSource:
-          overrides.colorSource ?? defaultConfig.components.editor.colorSource,
       },
     },
     colors: overrides.editorBorder
@@ -91,13 +85,22 @@ describe("offEditorBorderColor", () => {
     expect(calls).toContainEqual({ color: "accent", text: "╭" });
   });
 
-  it("renders an explicit editorBorder through the terminal source", () => {
+  it("renders an explicit editorBorder through theme semantics", () => {
+    const calls: Array<{ color: string; text: string }> = [];
     const renderBorder = offEditorBorderColor(
-      config({ style: "off", colorSource: "terminal", editorBorder: "red" }),
-      theme(),
+      config({ style: "off", editorBorder: "red" }),
+      {
+        ...theme(),
+        fg(color: string, text: string) {
+          calls.push({ color, text });
+          return text;
+        },
+      } as Theme,
     );
     expect(renderBorder).toBeTypeOf("function");
-    expect(renderBorder?.("╭")).toContain("\x1b[31m");
+    renderBorder?.("╭");
+    // ANSI 色名 red 按 theme 语义映射为 error token。
+    expect(calls).toContainEqual({ color: "error", text: "╭" });
   });
 });
 

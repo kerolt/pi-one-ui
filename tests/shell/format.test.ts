@@ -644,7 +644,6 @@ describe("formatGitMetricsSegment", () => {
         makeTheme(),
         undefined,
         { onlyNonzero: true },
-        "terminal",
         "bold green",
         "bold red",
       ),
@@ -654,7 +653,6 @@ describe("formatGitMetricsSegment", () => {
         makeTheme(),
         null,
         { onlyNonzero: true },
-        "terminal",
         "bold green",
         "bold red",
       ),
@@ -666,7 +664,6 @@ describe("formatGitMetricsSegment", () => {
       makeTheme(),
       { added: 12, deleted: 3 },
       { onlyNonzero: false },
-      "terminal",
       "bold green",
       "bold red",
     );
@@ -681,7 +678,6 @@ describe("formatGitMetricsSegment", () => {
         makeTheme(),
         { added: 0, deleted: 5 },
         { onlyNonzero: true },
-        "terminal",
         "bold green",
         "bold red",
       ),
@@ -691,7 +687,6 @@ describe("formatGitMetricsSegment", () => {
         makeTheme(),
         { added: 0, deleted: 5 },
         { onlyNonzero: true },
-        "terminal",
         "bold green",
         "bold red",
       ),
@@ -702,7 +697,6 @@ describe("formatGitMetricsSegment", () => {
         makeTheme(),
         { added: 7, deleted: 0 },
         { onlyNonzero: true },
-        "terminal",
         "bold green",
         "bold red",
       ),
@@ -715,7 +709,6 @@ describe("formatGitMetricsSegment", () => {
         makeTheme(),
         { added: 0, deleted: 0 },
         { onlyNonzero: true },
-        "terminal",
         "bold green",
         "bold red",
       ),
@@ -735,7 +728,6 @@ describe("formatGitCommitSegment", () => {
         makeTheme(),
         undefined,
         { hashLength: 7, onlyDetached: true, showTag: true },
-        "terminal",
         "bold green",
       ),
     ).toBe("");
@@ -744,7 +736,6 @@ describe("formatGitCommitSegment", () => {
         makeTheme(),
         { oid: null, detached: false, tag: null },
         { hashLength: 7, onlyDetached: true, showTag: true },
-        "terminal",
         "bold green",
       ),
     ).toBe("");
@@ -755,7 +746,6 @@ describe("formatGitCommitSegment", () => {
       makeTheme(),
       { oid: FULL, detached: true, tag: null },
       { hashLength: 7, onlyDetached: true, showTag: true },
-      "terminal",
       "bold green",
     );
     expect(out).toContain("a1b2c3d");
@@ -766,7 +756,6 @@ describe("formatGitCommitSegment", () => {
       makeTheme(),
       { oid: FULL, detached: false, tag: null },
       { hashLength: 7, onlyDetached: true, showTag: true },
-      "terminal",
       "bold green",
     );
     expect(out).toBe("");
@@ -777,7 +766,6 @@ describe("formatGitCommitSegment", () => {
       makeTheme(),
       { oid: FULL, detached: false, tag: "v1.0.0" },
       { hashLength: 7, onlyDetached: true, showTag: true },
-      "terminal",
       "bold green",
     );
     expect(out).toBe("");
@@ -789,7 +777,6 @@ describe("formatGitCommitSegment", () => {
       makeTheme(),
       { oid: FULL, detached: false, tag: null },
       { hashLength: 7, onlyDetached: false, showTag: false },
-      "terminal",
       "bold green",
     );
     expect(out).toContain("a1b2c3d");
@@ -800,7 +787,6 @@ describe("formatGitCommitSegment", () => {
       makeTheme(),
       { oid: FULL, detached: true, tag: "v1.2.3" },
       { hashLength: 7, onlyDetached: true, showTag: true },
-      "terminal",
       "bold green",
     );
     expect(out).toContain("a1b2c3d");
@@ -812,7 +798,6 @@ describe("formatGitCommitSegment", () => {
       makeTheme(),
       { oid: FULL, detached: true, tag: "v1.2.3" },
       { hashLength: 7, onlyDetached: true, showTag: false },
-      "terminal",
       "bold green",
     );
     expect(out).not.toContain("v1.2.3");
@@ -828,14 +813,7 @@ describe("formatPackageVersionSegment", () => {
 
   it("returns empty when no package is present", () => {
     expect(
-      formatPackageVersionSegment(
-        makeTheme(),
-        undefined,
-        "terminal",
-        "nerd",
-        "",
-        "208",
-      ),
+      formatPackageVersionSegment(makeTheme(), undefined, "nerd", "", "208"),
     ).toBe("");
   });
 
@@ -843,7 +821,6 @@ describe("formatPackageVersionSegment", () => {
     const out = formatPackageVersionSegment(
       makeTheme(),
       { ecosystem: "nodejs", version: "1.2.3" },
-      "terminal",
       "nerd",
       "",
       "208",
@@ -859,7 +836,6 @@ describe("formatPackageVersionSegment", () => {
     const out = formatPackageVersionSegment(
       makeTheme(),
       { ecosystem: "nodejs", version: "1.2.3" },
-      "terminal",
       "ascii",
       "",
       "208",
@@ -873,7 +849,6 @@ describe("formatPackageVersionSegment", () => {
     const out = formatPackageVersionSegment(
       makeTheme(),
       { ecosystem: "nodejs", version: "1.2.3" },
-      "terminal",
       "nerd",
       "#", // custom override wins over mode default
       "208",

@@ -26,7 +26,6 @@ import {
   type FooterComponentConfig,
   type FooterStyle,
   loadConfig as loadShellConfig,
-  saveColorSourcesPatch,
   saveEditorBorderColorMode,
   saveEditorComponentPatch,
   saveFooterComponentPatch,
@@ -132,14 +131,6 @@ function editorItems(): SettingItem[] {
         "on applies the Minimalist decoration; off restores Pi's native editor.",
       currentValue: config.components.editor.style,
       values: ["on", "off"],
-    },
-    {
-      id: "editorColorSource",
-      label: "Color source",
-      description:
-        "theme resolves colors through the active Pi theme; terminal uses fixed terminal colors.",
-      currentValue: config.components.editor.colorSource,
-      values: ["theme", "terminal"],
     },
     {
       id: "editorBorderColorMode",
@@ -446,24 +437,13 @@ function updateSetting(
     return;
   }
   if (
-    id === "editorColorSource" &&
-    (value === "theme" || value === "terminal")
+    id === "editorBorderColorMode" &&
+    (value === "static" || value === "adaptive")
   ) {
     if (deps.runtime)
-      deps.runtime.setEditorComponent({ colorSource: value }, ctx);
-    else saveColorSourcesPatch({ editor: value });
-    saveNotice(ctx, "Color source", value);
-    return;
-  }
-  if (id === "editorBorderColorMode") {
-    const valid =
-      value === "static" || value === "adaptive" ? value : undefined;
-    if (valid) {
-      if (deps.runtime)
-        deps.runtime.setEditorComponent({ borderColorMode: valid }, ctx);
-      else saveEditorBorderColorMode(valid);
-      saveNotice(ctx, "Border color", value);
-    }
+      deps.runtime.setEditorComponent({ borderColorMode: value }, ctx);
+    else saveEditorBorderColorMode(value);
+    saveNotice(ctx, "Border color", value);
     return;
   }
   if (id === "userMessagesEnabled") {

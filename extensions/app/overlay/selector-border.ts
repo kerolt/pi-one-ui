@@ -4,9 +4,9 @@ import {
   type Theme,
 } from "@earendil-works/pi-coding-agent";
 import {
-  EDITOR_BORDER_STYLE,
-  renderChromeBorder,
+  EDITOR_BORDER_FALLBACK,
   renderEditorBorder,
+  renderThemeStyleOrFallback,
 } from "../../shared/style.ts";
 import type { ZentuiConfig } from "../config/shell.ts";
 import {
@@ -35,10 +35,11 @@ function renderBorderLine(
 ): string {
   const text = "─".repeat(Math.max(1, width));
   if (theme && config) {
-    return renderChromeBorder(
+    // 选择器边框跟随主题 borderMuted 语义色。
+    return renderThemeStyleOrFallback(
       theme,
-      config.components.selectorBorders.colorSource,
-      EDITOR_BORDER_STYLE,
+      undefined,
+      EDITOR_BORDER_FALLBACK,
       text,
     );
   }

@@ -2,7 +2,7 @@ import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { ZentuiConfig } from "../../app/config/shell.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
-  renderStyleForSourceOrFallback,
+  renderThemeStyleOrFallback,
   safeThemeFg,
 } from "../../shared/style.ts";
 import {
@@ -173,7 +173,6 @@ function renderVariable(
   uiTheme: Theme,
   config: ZentuiConfig,
 ): { plain: string; styled: string } {
-  const colorSource = config.components.editor.colorSource;
   const thinking =
     values.thinking.toLowerCase() === "off" ? "" : values.thinking;
   const raw =
@@ -196,9 +195,8 @@ function renderVariable(
   if (name === "model" || name === "model_id" || name === "model_name") {
     return {
       plain,
-      styled: renderStyleForSourceOrFallback(
+      styled: renderThemeStyleOrFallback(
         uiTheme,
-        colorSource,
         config.colors.editorModel,
         EDITOR_ACCENT_FALLBACK,
         plain,
@@ -208,9 +206,8 @@ function renderVariable(
   if (name === "provider") {
     return {
       plain,
-      styled: renderStyleForSourceOrFallback(
+      styled: renderThemeStyleOrFallback(
         uiTheme,
-        colorSource,
         config.colors.editorProvider,
         "text",
         plain,
@@ -220,9 +217,8 @@ function renderVariable(
   if (name === "thinking") {
     return {
       plain,
-      styled: renderStyleForSourceOrFallback(
+      styled: renderThemeStyleOrFallback(
         uiTheme,
-        colorSource,
         editorThinkingStyle(config, plain),
         "muted",
         plain,

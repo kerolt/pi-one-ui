@@ -18,7 +18,6 @@ import {
 } from "./store.ts";
 
 export type ColorSpec = string;
-export type ColorSource = "theme" | "terminal";
 export type { IconMode } from "../../shared/icons.ts";
 
 export type ContextStyle = "text" | "gauge" | "text+gauge";
@@ -70,12 +69,6 @@ export type GitBranchConfig = {
   maxLength: GitBranchMaxLength;
 };
 
-export type ColorSourcesConfig = {
-  starship: ColorSource;
-  editor: ColorSource;
-  userMessages: ColorSource;
-};
-
 export type UiFeaturesConfig = {
   editor: boolean;
   statusLine: boolean;
@@ -119,7 +112,6 @@ export type EditorStylesConfig = {
 
 export type EditorComponentConfig = {
   style: EditorStyle;
-  colorSource: ColorSource;
   borderColorMode: EditorBorderColorMode;
   modelLabel: ModelLabelSource;
   viewportIndicators: boolean;
@@ -136,7 +128,6 @@ export type LabeledUserMessageStyleConfig = Record<string, never>;
 export type UserMessagesComponentConfig = {
   enabled: boolean;
   style: UserMessageStyle;
-  colorSource: ColorSource;
   styles: {
     framed: FramedUserMessageStyleConfig;
     "framed-copy-friendly": FramedCopyFriendlyUserMessageStyleConfig;
@@ -148,7 +139,6 @@ export type UserMessagesComponentConfig = {
 export type SelectorBordersComponentConfig = {
   enabled: boolean;
   style: SelectorBorderStyle;
-  colorSource: ColorSource;
 };
 
 export type StarshipFooterStyleConfig = {
@@ -169,7 +159,6 @@ export type StarshipFooterStyleConfig = {
 
 export type FooterComponentConfig = {
   style: FooterStyle;
-  colorSource: ColorSource;
   modelLabel: ModelLabelSource;
   styles: {
     starship: StarshipFooterStyleConfig;
@@ -210,7 +199,6 @@ export type WorkingLineComponentConfig = {
   animateSpinnerColor: boolean;
   textIntervalMs: number;
   textAnimation: WorkingLineTextAnimation;
-  colorSource: ColorSource;
   messages: WorkingLineMessagesConfig;
   segments: WorkingLineSegmentsConfig;
 };
@@ -326,7 +314,6 @@ export type PolishedTuiConfig = ZentuiConfig & {
   contextThresholds: ContextThresholds;
   pathDisplay: PathDisplayConfig;
   gitBranch: GitBranchConfig;
-  colorSources: ColorSourcesConfig;
   features: UiFeaturesConfig;
   footerSegments: FooterSegmentsConfig;
   gitCommit: GitCommitConfig;
@@ -437,7 +424,6 @@ const defaultStarshipStyle: StarshipFooterStyleConfig = {
 const defaultComponents: ComponentsConfig = {
   editor: {
     style: "on",
-    colorSource: "theme",
     borderColorMode: "static",
     modelLabel: "id",
     viewportIndicators: true,
@@ -448,7 +434,6 @@ const defaultComponents: ComponentsConfig = {
   userMessages: {
     enabled: true,
     style: "framed",
-    colorSource: "theme",
     styles: {
       framed: {},
       "framed-copy-friendly": {},
@@ -464,14 +449,12 @@ const defaultComponents: ComponentsConfig = {
     animateSpinnerColor: false,
     textIntervalMs: DEFAULT_WORKING_LINE_TEXT_INTERVAL_MS,
     textAnimation: "classic",
-    colorSource: "theme",
     messages: { custom: true, values: [...PI_WORKING_LINE_MESSAGES] },
     segments: { tool: true, elapsed: true, thought: true, tokens: true },
   },
-  selectorBorders: { enabled: true, style: "zentui", colorSource: "theme" },
+  selectorBorders: { enabled: true, style: "zentui" },
   footer: {
     style: "starship",
-    colorSource: "theme",
     modelLabel: "id",
     styles: { starship: defaultStarshipStyle },
   },
@@ -516,7 +499,6 @@ export const defaultConfig: PolishedTuiConfig = {
   contextThresholds: defaultStarshipStyle.contextThresholds,
   pathDisplay: defaultStarshipStyle.pathDisplay,
   gitBranch: defaultStarshipStyle.gitBranch,
-  colorSources: { starship: "theme", editor: "theme", userMessages: "theme" },
   features: {
     editor: true,
     statusLine: true,
@@ -814,10 +796,6 @@ function normalizeExtensionStatuses(
   };
 }
 
-function isColorSourceKey(value: string): value is keyof ColorSourcesConfig {
-  return value === "starship" || value === "editor" || value === "userMessages";
-}
-
 function isUiFeatureKey(value: string): value is keyof UiFeaturesConfig {
   return (
     value === "editor" ||
@@ -848,21 +826,6 @@ function isFooterSegmentKey(
     value === "gitCommit" ||
     value === "gitMetrics"
   );
-}
-
-function validColorSourceEntries(
-  record: Record<string, unknown>,
-): Partial<ColorSourcesConfig> {
-  return Object.fromEntries(
-    Object.entries(record).filter(
-      (entry): entry is [keyof ColorSourcesConfig, ColorSource] => {
-        const [key, value] = entry;
-        return (
-          isColorSourceKey(key) && (value === "theme" || value === "terminal")
-        );
-      },
-    ),
-  ) as Partial<ColorSourcesConfig>;
 }
 
 function validUiFeatureEntries(
@@ -922,10 +885,6 @@ function recordValue(value: unknown): ConfigRecord {
 
 function parseBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
-}
-
-function parseColorSource(value: unknown, fallback: ColorSource): ColorSource {
-  return value === "theme" || value === "terminal" ? value : fallback;
 }
 
 function parseSelectorBorderStyle(value: unknown): SelectorBorderStyle {
@@ -1025,10 +984,6 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
         parseBoolean(editor.enabled, true) === false
           ? "off"
           : parseEditorStyle(editor.style),
-      colorSource: parseColorSource(
-        editor.colorSource,
-        defaultComponents.editor.colorSource,
-      ),
       borderColorMode: parseEditorBorderColorMode(editor.borderColorMode),
       modelLabel: parseEditorModelLabel(
         editor.modelLabel,
@@ -1071,10 +1026,6 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
         defaultComponents.userMessages.enabled,
       ),
       style: parseUserMessageStyle(userMessages.style),
-      colorSource: parseColorSource(
-        userMessages.colorSource,
-        defaultComponents.userMessages.colorSource,
-      ),
       styles: {
         framed: {},
         "framed-copy-friendly": {},
@@ -1117,10 +1068,6 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
         workingLine.textAnimation === "disabled"
           ? workingLine.textAnimation
           : defaultComponents.workingLine.textAnimation,
-      colorSource: parseColorSource(
-        workingLine.colorSource,
-        defaultComponents.workingLine.colorSource,
-      ),
       messages: resolveWorkingLineMessages(workingLineMessages),
       segments: {
         tool: parseBoolean(
@@ -1147,17 +1094,9 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
         defaultComponents.selectorBorders.enabled,
       ),
       style: parseSelectorBorderStyle(selectorBorders.style),
-      colorSource: parseColorSource(
-        selectorBorders.colorSource,
-        defaultComponents.selectorBorders.colorSource,
-      ),
     },
     footer: {
       style: parseFooterStyle(footer.style),
-      colorSource: parseColorSource(
-        footer.colorSource,
-        defaultComponents.footer.colorSource,
-      ),
       modelLabel: parseEditorModelLabel(
         footer.modelLabel,
         defaultComponents.footer.modelLabel,
@@ -1220,11 +1159,6 @@ function derivedRuntimeView(config: ZentuiConfig): PolishedTuiConfig {
     editorMetadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
     editorBorderColorMode: config.components.editor.borderColorMode,
     editorModelLabel: config.components.editor.modelLabel,
-    colorSources: {
-      starship: config.components.footer.colorSource,
-      editor: config.components.editor.colorSource,
-      userMessages: config.components.userMessages.colorSource,
-    },
     features: {
       editor: config.components.editor.style === "on",
       statusLine: config.components.footer.style === "starship",
@@ -1418,17 +1352,11 @@ function applyEditorComponentPatch(
   patch: Partial<
     Pick<
       EditorComponentConfig,
-      | "style"
-      | "colorSource"
-      | "borderColorMode"
-      | "modelLabel"
-      | "viewportIndicators"
+      "style" | "borderColorMode" | "modelLabel" | "viewportIndicators"
     >
   >,
 ): void {
   if (patch.style !== undefined) component.style = patch.style;
-  if (patch.colorSource !== undefined)
-    component.colorSource = patch.colorSource;
   if (patch.borderColorMode !== undefined)
     component.borderColorMode = patch.borderColorMode;
   if (patch.modelLabel !== undefined) component.modelLabel = patch.modelLabel;
@@ -1441,11 +1369,7 @@ export function saveEditorComponentPatch(
   patch: Partial<
     Pick<
       EditorComponentConfig,
-      | "style"
-      | "colorSource"
-      | "borderColorMode"
-      | "modelLabel"
-      | "viewportIndicators"
+      "style" | "borderColorMode" | "modelLabel" | "viewportIndicators"
     >
   >,
   path = configPath,
@@ -1481,9 +1405,7 @@ export function saveMinimalistEditorStylePatch(
 }
 
 export function saveUserMessagesComponentPatch(
-  patch: Partial<
-    Pick<UserMessagesComponentConfig, "enabled" | "style" | "colorSource">
-  >,
+  patch: Partial<Pick<UserMessagesComponentConfig, "enabled" | "style">>,
   path = configPath,
 ): PolishedTuiConfig {
   return saveComponentsMutation(
@@ -1491,8 +1413,6 @@ export function saveUserMessagesComponentPatch(
       const component = components.userMessages;
       if (patch.enabled !== undefined) component.enabled = patch.enabled;
       if (patch.style !== undefined) component.style = patch.style;
-      if (patch.colorSource !== undefined)
-        component.colorSource = patch.colorSource;
     },
     path,
     patch.style !== undefined ? "userMessages" : undefined,
@@ -1517,8 +1437,6 @@ export function saveWorkingLineComponentPatch(
       component.textIntervalMs = patch.textIntervalMs;
     if (patch.textAnimation !== undefined)
       component.textAnimation = patch.textAnimation;
-    if (patch.colorSource !== undefined)
-      component.colorSource = patch.colorSource;
     if (patch.messages?.custom !== undefined)
       component.messages.custom = patch.messages.custom;
     if (patch.messages?.values !== undefined) {
@@ -1546,8 +1464,6 @@ export function saveSelectorBordersComponentPatch(
       const component = components.selectorBorders;
       if (patch.enabled !== undefined) component.enabled = patch.enabled;
       if (patch.style !== undefined) component.style = patch.style;
-      if (patch.colorSource !== undefined)
-        component.colorSource = patch.colorSource;
     },
     path,
     patch.style !== undefined ? "selectorBorders" : undefined,
@@ -1555,17 +1471,13 @@ export function saveSelectorBordersComponentPatch(
 }
 
 export function saveFooterComponentPatch(
-  patch: Partial<
-    Pick<FooterComponentConfig, "style" | "colorSource" | "modelLabel">
-  >,
+  patch: Partial<Pick<FooterComponentConfig, "style" | "modelLabel">>,
   path = configPath,
 ): PolishedTuiConfig {
   return saveComponentsMutation(
     (components) => {
       const component = components.footer;
       if (patch.style !== undefined) component.style = patch.style;
-      if (patch.colorSource !== undefined)
-        component.colorSource = patch.colorSource;
       if (patch.modelLabel !== undefined)
         component.modelLabel = patch.modelLabel;
     },
@@ -1628,24 +1540,6 @@ export function saveStarshipFooterStylePatch(
       applyStarshipStylePatch(components.footer.styles.starship, patch),
     path,
   );
-}
-
-export function saveColorSourcesPatch(
-  patch: Partial<ColorSourcesConfig>,
-  path = configPath,
-): PolishedTuiConfig {
-  const valid = validColorSourceEntries(patch);
-  return saveComponentsMutation((components) => {
-    if (valid.starship !== undefined)
-      components.footer.colorSource = valid.starship;
-    if (valid.editor !== undefined) {
-      components.editor.colorSource = valid.editor;
-      components.selectorBorders.colorSource = valid.editor;
-    }
-    if (valid.userMessages !== undefined) {
-      components.userMessages.colorSource = valid.userMessages;
-    }
-  }, path);
 }
 
 export function saveUiFeaturesPatch(

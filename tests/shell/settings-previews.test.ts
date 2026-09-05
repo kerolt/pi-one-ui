@@ -128,8 +128,6 @@ describe("settings previews", () => {
     const render = () =>
       renderEditorSettingsPreview(current, theme(), 72).join("\n");
     const baseline = render();
-    current.components.editor.colorSource = "terminal";
-    expect(render()).not.toBe(baseline);
     current.components.editor.modelLabel = "name";
     expect(plain(renderEditorSettingsPreview(current, theme(), 72))).toContain(
       "Sonnet 4",
@@ -216,15 +214,11 @@ describe("settings previews", () => {
     expect(outputs.labeled).toContain("╭─ User ─");
     expect(outputs.labeled).toContain("╰────");
     const current = config();
-    const terminal = renderUserMessageSettingsPreview(
+    const baseline = renderUserMessageSettingsPreview(
       current,
       theme(),
       72,
     ).join("\n");
-    current.components.userMessages.colorSource = "terminal";
-    expect(
-      renderUserMessageSettingsPreview(current, theme(), 72).join("\n"),
-    ).not.toBe(terminal);
     current.components.userMessages.enabled = false;
     const disabledOutput = plain(
       renderUserMessageSettingsPreview(current, theme(), 72),

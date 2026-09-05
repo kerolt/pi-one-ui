@@ -9,7 +9,7 @@ import type { ZentuiConfig } from "../../../app/config/shell.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   EDITOR_BORDER_FALLBACK,
-  renderStyleForSourceOrFallbackStrict,
+  renderThemeStyleOrFallbackStrict,
 } from "../../../shared/style.ts";
 import { sanitizeUserMessageSourceText } from "./user-message-osc.ts";
 
@@ -74,9 +74,8 @@ function accent(
   text: string,
 ): string {
   return theme
-    ? renderStyleForSourceOrFallbackStrict(
+    ? renderThemeStyleOrFallbackStrict(
         theme,
-        config.components.userMessages.colorSource,
         config.colors.editorAccent,
         EDITOR_ACCENT_FALLBACK,
         text,
@@ -90,9 +89,8 @@ function border(
   text: string,
 ): string {
   return theme
-    ? renderStyleForSourceOrFallbackStrict(
+    ? renderThemeStyleOrFallbackStrict(
         theme,
-        config.components.userMessages.colorSource,
         config.colors.editorBorder,
         EDITOR_BORDER_FALLBACK,
         text,
@@ -210,28 +208,23 @@ export function userMessageStyleCacheKey(config: ZentuiConfig): string {
     case "framed":
       return [
         "framed",
-        messages.colorSource,
         config.colors.editorAccent ?? "",
         config.colors.editorBorder ?? "",
         config.icons.rail,
       ].join("\0");
     case "framed-copy-friendly":
-      return [
-        "framed-copy-friendly",
-        messages.colorSource,
-        config.colors.editorBorder ?? "",
-      ].join("\0");
+      return ["framed-copy-friendly", config.colors.editorBorder ?? ""].join(
+        "\0",
+      );
     case "compact":
       return [
         "compact",
-        messages.colorSource,
         config.colors.editorAccent ?? "",
         config.icons.rail,
       ].join("\0");
     case "labeled":
       return [
         "labeled",
-        messages.colorSource,
         config.colors.editorAccent ?? "",
         config.colors.editorBorder ?? "",
         "User:v1",

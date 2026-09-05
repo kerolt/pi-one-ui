@@ -215,7 +215,6 @@ export class WorkingLineLayoutController {
         ...settled.summary,
         stylePrefix: snapshotWorkingLineHighStyle(
           ctx.ui.theme,
-          config,
           this.context.getConfig().colors,
         ),
       });

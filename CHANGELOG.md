@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the `colorSource` (`theme`/`terminal`) concept from the Editor, user messages, WorkingLine, selector borders, and Footer. Colors are now always rendered with theme semantics: configured `colors.*` values resolve as theme tokens (ANSI names such as `red` map to semantic tokens like `error`), while hex, 256-color indexes, and `fg:`/`bg:` prefixes still render fixed terminal colors.
+- Removed the terminal-only adaptive border ladder and the Color source setting from `/oneui`.
+
+### Changed
+
+- Adaptive Editor borders now prefer the per-level `colors.editorThinking*` configuration, then Pi's native effort coloring, then the default border; thinking labels keep following the border in adaptive mode.
+
+### Migration
+
+- Existing `colorSource` fields in `~/.pi/agent/pi-one-ui.json` are ignored at load time and not rewritten. Configurations that relied on `terminal` fixed colors should move those `colors.*` values to hex, a 256-color index, or an `fg:`/`bg:` prefix; ANSI color names now resolve to theme semantic tokens. See [docs/editor-colors.md](./docs/editor-colors.md) for the full color field reference.
+
 ## [0.5.1] - 2026-09-05
 
 ### Changed

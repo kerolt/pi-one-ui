@@ -101,9 +101,6 @@ function canonicalizeTestConfig(config: PolishedTuiConfig): PolishedTuiConfig {
       editor: {
         ...editor,
         style: flatChanged("editorStyle") ? config.editorStyle : editor.style,
-        colorSource: flatChanged("colorSources")
-          ? config.colorSources.editor
-          : editor.colorSource,
         borderColorMode: flatChanged("editorBorderColorMode")
           ? config.editorBorderColorMode
           : editor.borderColorMode,
@@ -125,9 +122,6 @@ function canonicalizeTestConfig(config: PolishedTuiConfig): PolishedTuiConfig {
         enabled: flatChanged("features")
           ? config.features.editor
           : messages.enabled,
-        colorSource: flatChanged("colorSources")
-          ? config.colorSources.userMessages
-          : messages.colorSource,
         styles: { ...messages.styles },
       },
       workingLine: {
@@ -142,9 +136,6 @@ function canonicalizeTestConfig(config: PolishedTuiConfig): PolishedTuiConfig {
         enabled: flatChanged("features")
           ? config.features.editor
           : selectors.enabled,
-        colorSource: flatChanged("colorSources")
-          ? config.colorSources.editor
-          : selectors.colorSource,
       },
       footer: {
         ...footer,
@@ -153,9 +144,6 @@ function canonicalizeTestConfig(config: PolishedTuiConfig): PolishedTuiConfig {
             ? "starship"
             : "native"
           : footer.style,
-        colorSource: flatChanged("colorSources")
-          ? config.colorSources.starship
-          : footer.colorSource,
         modelLabel: flatChanged("editorModelLabel")
           ? config.editorModelLabel
           : footer.modelLabel,
@@ -406,41 +394,11 @@ function _makeUi(prefix = "") {
   };
 }
 
-function configWithColorSources(
-  colorSources: Partial<PolishedTuiConfig["colorSources"]>,
-): PolishedTuiConfig {
-  const merged = { ...defaultConfig.colorSources, ...colorSources };
-  return {
-    ...defaultConfig,
-    colorSources: merged,
-    components: {
-      ...defaultConfig.components,
-      editor: {
-        ...defaultConfig.components.editor,
-        colorSource: merged.editor,
-      },
-      selectorBorders: {
-        ...defaultConfig.components.selectorBorders,
-        colorSource: merged.editor,
-      },
-      userMessages: {
-        ...defaultConfig.components.userMessages,
-        colorSource: merged.userMessages,
-      },
-      footer: {
-        ...defaultConfig.components.footer,
-        colorSource: merged.starship,
-      },
-    },
-  };
-}
-
 function configWithColors(
   colors: Partial<PolishedTuiConfig["colors"]>,
-  colorSources: Partial<PolishedTuiConfig["colorSources"]> = {},
 ): PolishedTuiConfig {
   return {
-    ...configWithColorSources(colorSources),
+    ...defaultConfig,
     colors: {
       ...defaultConfig.colors,
       ...colors,
@@ -2337,7 +2295,7 @@ describe("Pi docs compliance", () => {
     expect(invalidatedRender).not.toContain("[first:userMessageText]hello");
   });
 
-  it("renders selector borders from their independent canonical color source", () => {
+  it("renders selector borders from theme semantics", () => {
     const prototype = {
       render(width: number) {
         return ["─".repeat(width), "body", "─".repeat(width)];
@@ -2355,34 +2313,6 @@ describe("Pi docs compliance", () => {
     expect(stripTestTags(lines[0])).toBe("────────");
     expect(lines[1]).toBe("body");
     expect(lines.at(-1)).toContain("[borderMuted]────────");
-
-    const terminalPrototype = {
-      render(width: number) {
-        return ["─".repeat(width), "body", "─".repeat(width)];
-      },
-    };
-
-    patchSelectorBorderStyleProduction(
-      terminalPrototype,
-      () => makeTaggedTheme(),
-      () => ({
-        ...defaultConfig,
-        components: {
-          ...defaultConfig.components,
-          editor: { ...defaultConfig.components.editor, colorSource: "theme" },
-          selectorBorders: {
-            ...defaultConfig.components.selectorBorders,
-            colorSource: "terminal",
-          },
-        },
-      }),
-    );
-    const terminalLines = terminalPrototype.render(8);
-
-    expect(terminalLines[0]).toContain("\u001b[90m────────");
-    expect(stripPromptMarks(terminalLines[0])).toBe("────────");
-    expect(terminalLines[1]).toBe("body");
-    expect(terminalLines.at(-1)).toContain("\u001b[90m────────");
   });
 
   it("does not clobber selector lines that are not borders", () => {
@@ -2597,24 +2527,15 @@ describe("Pi docs compliance", () => {
     expect(ModelSelectorComponent.prototype.render).not.toBe(modelPredecessor);
   });
 
-  it("renders user-message borders from the user-message color source", () => {
+  it("renders user-message borders through theme semantics", () => {
     installUserMessageStyle(
       () => makeTaggedTheme(),
-      () => configWithColorSources({ userMessages: "theme" }),
+      () => configWithColors({}),
     );
     const themeRendered = new UserMessageComponent("hello")
       .render(80)
       .join("\n");
     expect(themeRendered).toContain("[borderMuted]────");
-
-    installUserMessageStyle(
-      () => makeTaggedTheme(),
-      () => configWithColorSources({ userMessages: "terminal" }),
-    );
-    const terminalRendered = new UserMessageComponent("hello")
-      .render(80)
-      .join("\n");
-    expect(terminalRendered).toContain("\u001b[90m────");
   });
 
   it("user-message cleanup restores exact render and invalidate predecessors", () => {
@@ -4046,9 +3967,10 @@ describe("Pi docs compliance", () => {
       compactFooterFormat:
         "$cache_read$wrap_sep$cache_write$wrap_sep$subscription$wrap_sep$auto_compaction",
       compactFooterMaxLines: 2 as const,
-      colorSources: {
-        ...defaultConfig.colorSources,
-        starship: "terminal" as const,
+      colors: {
+        ...defaultConfig.colors,
+        // 显式终端 token 在单模式下仍输出固定 ANSI，用于验证紧凑输出带色。
+        tokens: "#ff8800",
       },
     };
     installFooter(ctx as never, state, () => config, {

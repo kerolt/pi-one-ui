@@ -4,7 +4,7 @@ import type {
 } from "@earendil-works/pi-ai";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
-import type { ColorSource, ColorSpec } from "../../app/config/shell.ts";
+import type { ColorSpec } from "../../app/config/shell.ts";
 import { formatCount, formatElapsedDuration } from "../../shared/format.ts";
 import { isSafeSgrStylePrefix } from "../../shared/style.ts";
 import { renderWorkingLineHigh } from "./working-line.ts";
@@ -1218,13 +1218,11 @@ export function renderTurnSummaryEntry(
     return new Text(`${entry.data.stylePrefix}${text}${SGR_RESET}`, 0, 0);
   }
   const options = (themeOptions ?? {}) as {
-    colorSource?: ColorSource;
     workingLineHigh?: ColorSpec;
   };
   return new Text(
     `${renderWorkingLineHigh(
       theme,
-      options.colorSource === "terminal" ? "terminal" : "theme",
       options.workingLineHigh,
       text,
     )}${SGR_RESET}`,

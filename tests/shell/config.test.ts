@@ -26,7 +26,6 @@ import {
   getExtensionStatusPlacement,
   hasUnsupportedComponentStyle,
   mergeConfig,
-  saveColorSourcesPatch,
   saveContextStylePatch,
   saveContextThresholdsPatch,
   saveEditorBorderColorMode,
@@ -56,10 +55,8 @@ import {
 } from "../../extensions/app/config/shell";
 import {
   colorize,
-  renderChromeBorder,
-  renderStyle,
-  renderStyleForSource,
   renderTerminalStyle,
+  renderThemeStyle,
 } from "../../extensions/shared/style";
 
 function configTempFiles(dir: string, filename = "pi-one-ui.json"): string[] {
@@ -94,7 +91,6 @@ describe("canonical config resolution", () => {
     expect(config.components).toEqual({
       editor: {
         style: "on",
-        colorSource: "theme",
         borderColorMode: "static",
         modelLabel: "id",
         viewportIndicators: true,
@@ -111,7 +107,6 @@ describe("canonical config resolution", () => {
       userMessages: {
         enabled: true,
         style: "framed",
-        colorSource: "theme",
         styles: {
           framed: {},
           "framed-copy-friendly": {},
@@ -127,17 +122,15 @@ describe("canonical config resolution", () => {
         animateSpinnerColor: false,
         textIntervalMs: 60,
         textAnimation: "classic",
-        colorSource: "theme",
         messages: {
           custom: true,
           values: [...defaultConfig.components.workingLine.messages.values],
         },
         segments: { tool: true, elapsed: true, thought: true, tokens: true },
       },
-      selectorBorders: { enabled: true, style: "zentui", colorSource: "theme" },
+      selectorBorders: { enabled: true, style: "zentui" },
       footer: {
         style: "starship",
-        colorSource: "theme",
         modelLabel: "id",
         styles: {
           starship: {
@@ -349,11 +342,6 @@ describe("canonical config resolution", () => {
       statusLine: true,
       viewportIndicators: true,
     });
-    expect(config.colorSources).toEqual({
-      starship: "terminal",
-      editor: "terminal",
-      userMessages: "theme",
-    });
     expect(config.editorModelLabel).toBe("name");
     expect(config.contextThresholds).toEqual({ warning: 40, error: 60 });
   });
@@ -531,7 +519,6 @@ describe("working-line config", () => {
       animateSpinnerColor: true,
       textIntervalMs: 40,
       textAnimation: "kitt",
-      colorSource: "terminal",
       messages: { custom: true, values: ["One", "Two"] },
       segments: { tool: false, elapsed: true, thought: true, tokens: false },
     });
@@ -569,7 +556,6 @@ describe("working-line config", () => {
       animateSpinnerColor: false,
       textIntervalMs: 60,
       textAnimation: "classic",
-      colorSource: "theme",
       messages: { custom: true },
       segments: { tool: true, elapsed: true, thought: true, tokens: true },
     });
@@ -633,14 +619,8 @@ describe("canonical snapshot persistence", () => {
   it("supports every typed component saver without discarding inactive styles", () => {
     withConfig(undefined, (path) => {
       saveMinimalistEditorStylePatch({ showGit: false }, path);
-      saveUserMessagesComponentPatch(
-        { enabled: false, colorSource: "terminal" },
-        path,
-      );
-      saveSelectorBordersComponentPatch(
-        { enabled: false, colorSource: "terminal" },
-        path,
-      );
+      saveUserMessagesComponentPatch({ enabled: false }, path);
+      saveSelectorBordersComponentPatch({ enabled: false }, path);
       saveFooterComponentPatch({ style: "native", modelLabel: "name" }, path);
       saveStarshipFooterStylePatch(
         { separator: "chevron", pathDisplay: { mode: "full", depth: 2 } },
@@ -652,11 +632,9 @@ describe("canonical snapshot persistence", () => {
       });
       expect(config.components.userMessages).toMatchObject({
         enabled: false,
-        colorSource: "terminal",
       });
       expect(config.components.selectorBorders).toMatchObject({
         enabled: false,
-        colorSource: "terminal",
       });
       expect(config.components.footer).toMatchObject({
         style: "native",
@@ -721,11 +699,6 @@ describe("mergeConfig", () => {
     expect(config.colors.extensionStatus).toBe("bright-black");
     expect(config.colors.editorAccent).toBeUndefined();
     expect(config.colors.editorBorder).toBeUndefined();
-    expect(config.colorSources).toEqual({
-      starship: "theme",
-      editor: "theme",
-      userMessages: "theme",
-    });
     expect(config.features).toEqual({
       editor: true,
       statusLine: true,
@@ -1159,14 +1132,9 @@ describe("mergeConfig", () => {
     expect(config.colors.editorAccent).toBeUndefined();
     expect(config.colors.editorBorder).toBeUndefined();
     expect(config.colors.editorThinkingHigh).toBe("thinkingHigh");
-    expect(config.colorSources).toEqual({
-      starship: "theme",
-      editor: "terminal",
-      userMessages: "theme",
-    });
   });
 
-  it("saves color source patches without erasing unknown user config", () => {
+  it("ignores legacy colorSource fields and preserves them on unrelated saves", () => {
     const dir = mkdtempSync(join(tmpdir(), "pi-one-ui-config-"));
     const path = join(dir, "pi-one-ui.json");
     try {
@@ -1182,35 +1150,38 @@ describe("mergeConfig", () => {
               gitBranch: "syntaxKeyword",
               cost: "success",
             },
-            components: { editor: { colorSource: "terminal" } },
+            components: {
+              editor: { colorSource: "terminal" },
+              footer: { colorSource: "terminal" },
+            },
           },
           null,
           2,
         )}\n`,
       );
 
-      const config = saveColorSourcesPatch({ starship: "terminal" }, path);
+      const config = saveUserMessagesComponentPatch({ style: "compact" }, path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.colorSources).toEqual({
-        starship: "terminal",
-        editor: "terminal",
-        userMessages: "theme",
-      });
+      // 双 colorSource 概念已移除：解析结果不再携带该字段。
+      expect(config.components.editor).not.toHaveProperty("colorSource");
+      expect(config.components.footer).not.toHaveProperty("colorSource");
+      // 旧字段按只忽略不清理处理：文件内容保持原样，不受无关保存影响。
+      expect(raw.components.editor.colorSource).toBe("terminal");
+      expect(raw.components.footer.colorSource).toBe("terminal");
+      expect(raw.components.userMessages.style).toBe("compact");
       expect(raw.unknown).toBe(true);
       expect(raw.icons.git).toBe("git");
       expect(raw.colors.cwd).toBe("bold cyan");
       expect(raw.colors.futureKey).toBe("future");
       expect(raw.colors.gitBranch).toBe("syntaxKeyword");
       expect(raw.colors.cost).toBe("success");
-      expect(raw.components.footer.colorSource).toBe("terminal");
-      expect(raw.components.editor.colorSource).toBe("terminal");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it("normalizes invalid canonical color sources while preserving unknown fields", () => {
+  it("ignores ill-formed legacy colorSource values while preserving unknown fields", () => {
     const dir = mkdtempSync(join(tmpdir(), "pi-one-ui-config-"));
     const path = join(dir, "pi-one-ui.json");
     try {
@@ -1232,17 +1203,15 @@ describe("mergeConfig", () => {
         )}\n`,
       );
 
-      const config = saveColorSourcesPatch({ userMessages: "terminal" }, path);
+      const config = saveUserMessagesComponentPatch({ style: "framed" }, path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.colorSources).toEqual({
-        starship: "theme",
-        editor: "terminal",
-        userMessages: "terminal",
-      });
-      expect(raw.components.footer.colorSource).toBe("theme");
+      expect(config.components.editor).not.toHaveProperty("colorSource");
+      expect(config.components.footer).not.toHaveProperty("colorSource");
+      // 旧字段原样保留，清理由用户决定。
+      expect(raw.components.footer.colorSource).toBe("neon");
       expect(raw.components.editor.colorSource).toBe("terminal");
-      expect(raw.components.userMessages.colorSource).toBe("terminal");
+      expect(raw.components.userMessages.colorSource).toBe("invalid");
       expect(raw.components.userMessages.futureColorSource).toBe("terminal");
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -1253,18 +1222,16 @@ describe("mergeConfig", () => {
     const dir = mkdtempSync(join(tmpdir(), "pi-one-ui-config-"));
     const path = join(dir, "pi-one-ui.json");
     try {
-      const config = saveColorSourcesPatch({ starship: "terminal" }, path);
+      const config = saveUserMessagesComponentPatch({ style: "compact" }, path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.colorSources).toEqual({
-        starship: "terminal",
-        editor: "theme",
-        userMessages: "theme",
-      });
+      expect(config.components.userMessages.style).toBe("compact");
       expect(Object.keys(raw)).toEqual(["version", "components"]);
-      expect(raw.components.footer.colorSource).toBe("terminal");
-      expect(raw.components.editor.colorSource).toBe("theme");
-      expect(raw.components.userMessages.colorSource).toBe("theme");
+      expect(raw.components.userMessages.style).toBe("compact");
+      // 保存会写入完整的规范化组件快照，但只有本次设置对应字段发生变化。
+      expect(raw.components.editor.style).toBe("on");
+      expect(raw.components.footer.style).toBe("starship");
+      expect(raw.components.selectorBorders.enabled).toBe(true);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -1741,10 +1708,9 @@ describe("style rendering", () => {
     };
 
     expect(colorize(throwingTheme, "doesNotExist", "hello")).toBe("hello");
-    expect(renderStyle(throwingTheme, "doesNotExist", "hello")).toBe("hello");
-    expect(
-      renderStyleForSource(throwingTheme, "theme", "doesNotExist", "hello"),
-    ).toBe("hello");
+    expect(renderThemeStyle(throwingTheme, "doesNotExist", "hello")).toBe(
+      "hello",
+    );
   });
 
   it("maps Starship modifiers to safe theme colors when the theme rejects unknown tokens", () => {
@@ -1760,15 +1726,13 @@ describe("style rendering", () => {
       },
     };
 
-    expect(renderStyleForSource(strictTheme, "theme", "dimmed", "tokens")).toBe(
+    expect(renderThemeStyle(strictTheme, "dimmed", "tokens")).toBe(
       "<muted>tokens</muted>",
     );
-    expect(
-      renderStyleForSource(strictTheme, "theme", "bold purple", "git"),
-    ).toBe("<syntaxKeyword><bold>git</bold></syntaxKeyword>");
-    expect(
-      renderStyleForSource(strictTheme, "theme", "unknownColor", "text"),
-    ).toBe("text");
+    expect(renderThemeStyle(strictTheme, "bold purple", "git")).toBe(
+      "<syntaxKeyword><bold>git</bold></syntaxKeyword>",
+    );
+    expect(renderThemeStyle(strictTheme, "unknownColor", "text")).toBe("text");
   });
 
   it("supports hex colors", () => {
@@ -1786,58 +1750,53 @@ describe("style rendering", () => {
     );
   });
 
-  it("renders Starship styles before falling back to theme tokens", () => {
-    expect(renderStyle(theme, "bold purple", "git")).toBe(
-      "\u001b[1;35mgit\u001b[0m",
+  it("maps ANSI names to theme semantic tokens in single mode", () => {
+    expect(renderThemeStyle(theme, "bold purple", "git")).toBe(
+      "<syntaxKeyword>git</syntaxKeyword>",
     );
-    expect(renderStyle(theme, "syntaxKeyword", "git")).toBe(
+    expect(renderThemeStyle(theme, "syntaxKeyword", "git")).toBe(
       "<syntaxKeyword>git</syntaxKeyword>",
     );
   });
 
   it("renders theme-source Starship colors through Pi theme tokens", () => {
-    expect(renderStyleForSource(theme, "theme", "bold cyan", "cwd")).toBe(
+    expect(renderThemeStyle(theme, "bold cyan", "cwd")).toBe(
       "<syntaxFunction>cwd</syntaxFunction>",
     );
-    expect(renderStyleForSource(theme, "theme", "bold purple", "git")).toBe(
+    expect(renderThemeStyle(theme, "bold purple", "git")).toBe(
       "<syntaxKeyword>git</syntaxKeyword>",
     );
-    expect(renderStyleForSource(theme, "theme", "bold red", "!")).toBe(
-      "<error>!</error>",
-    );
-    expect(renderStyleForSource(theme, "theme", "dimmed", "tokens")).toBe(
+    expect(renderThemeStyle(theme, "bold red", "!")).toBe("<error>!</error>");
+    expect(renderThemeStyle(theme, "dimmed", "tokens")).toBe(
       "<muted>tokens</muted>",
     );
-    expect(renderStyleForSource(theme, "theme", "bold green", "cost")).toBe(
+    expect(renderThemeStyle(theme, "bold green", "cost")).toBe(
       "<success>cost</success>",
     );
-    expect(renderStyleForSource(theme, "theme", "syntaxKeyword", "git")).toBe(
+    expect(renderThemeStyle(theme, "syntaxKeyword", "git")).toBe(
       "<syntaxKeyword>git</syntaxKeyword>",
     );
   });
 
-  it("keeps explicit terminal styles available for terminal source", () => {
-    expect(renderStyleForSource(theme, "terminal", "bold purple", "git")).toBe(
-      "\u001b[1;35mgit\u001b[0m",
-    );
-    expect(renderStyleForSource(theme, "theme", "fg:202", "git")).toBe(
+  it("keeps explicit terminal styles (hex, 256-color, fg/bg) available in single mode", () => {
+    expect(renderThemeStyle(theme, "fg:202", "git")).toBe(
       "\u001b[38;5;202mgit\u001b[0m",
+    );
+    expect(renderThemeStyle(theme, "#ff0000", "git")).toBe(
+      "\u001b[38;2;255;0;0mgit\u001b[0m",
     );
   });
 
-  it("renders theme borders with borderMuted and terminal borders with bright black", () => {
+  it("renders theme borders with borderMuted semantics", () => {
     const thinkingTheme = {
       fg(token: string, text: string) {
         return `<${token}>${text}</${token}>`;
       },
     };
 
-    expect(
-      renderChromeBorder(thinkingTheme, "theme", "bright-black", "────"),
-    ).toBe("<borderMuted>────</borderMuted>");
-    expect(
-      renderChromeBorder(thinkingTheme, "terminal", "bright-black", "────"),
-    ).toBe("\u001b[90m────\u001b[0m");
+    expect(renderThemeStyle(thinkingTheme, "borderMuted", "────")).toBe(
+      "<borderMuted>────</borderMuted>",
+    );
   });
 });
 

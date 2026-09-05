@@ -295,10 +295,9 @@ describe("working-line presets and frame generation", () => {
       current.components.workingLine.spinner = spinner;
       current.components.workingLine.messages.custom = true;
       current.components.workingLine.textAnimation = textAnimation;
-      current.components.workingLine.colorSource = "terminal";
-      current.colors.workingLineLow = "bright-black";
-      current.colors.workingLineMid = "cyan";
-      current.colors.workingLineHigh = "bold green";
+      current.colors.workingLineLow = "240";
+      current.colors.workingLineMid = "45";
+      current.colors.workingLineHigh = "bold 46";
       const generated = buildWorkingLineFrames(
         current.components.workingLine,
         current.colors,
@@ -313,23 +312,23 @@ describe("working-line presets and frame generation", () => {
         const state = generated.frameStates[index];
         const glyph =
           preset.frames[(state?.spinnerTick ?? 0) % preset.frames.length] ?? "";
-        const spinnerPrefix = `\x1b[1;32m${glyph}\x1b[0m `;
+        const spinnerPrefix = `\x1b[1;38;5;46m${glyph}\x1b[0m `;
         expect(frame.startsWith(spinnerPrefix)).toBe(true);
         observedGlyphs.add(glyph);
         const text = frame.slice(spinnerPrefix.length);
-        for (const match of text.matchAll(/\x1b\[1;32m/g)) {
+        for (const match of text.matchAll(/\x1b\[1;38;5;46m/g)) {
           textHighPositions.add(
             visibleWidth(stripTerminalSequences(text.slice(0, match.index))),
           );
         }
       }
       expect(observedGlyphs).toEqual(new Set(preset.frames));
-      expect(generated.frames.some((frame) => frame.includes("\x1b[90m"))).toBe(
-        true,
-      );
-      expect(generated.frames.some((frame) => frame.includes("\x1b[36m"))).toBe(
-        true,
-      );
+      expect(
+        generated.frames.some((frame) => frame.includes("\x1b[38;5;240m")),
+      ).toBe(true);
+      expect(
+        generated.frames.some((frame) => frame.includes("\x1b[38;5;45m")),
+      ).toBe(true);
       expect(textHighPositions.size).toBeGreaterThan(1);
       expect(generated.textWidth).toBe(visibleWidth(generated.row));
       expect(generated.textOrigin).toBe(workingLineSpinnerWidth(spinner) + 1);
@@ -348,10 +347,9 @@ describe("working-line presets and frame generation", () => {
       current.components.workingLine.spinner = spinner;
       current.components.workingLine.textAnimation = animation;
       current.components.workingLine.animateSpinnerColor = true;
-      current.components.workingLine.colorSource = "terminal";
-      current.colors.workingLineLow = "bright-black";
-      current.colors.workingLineMid = "cyan";
-      current.colors.workingLineHigh = "bold green";
+      current.colors.workingLineLow = "240";
+      current.colors.workingLineMid = "45";
+      current.colors.workingLineHigh = "bold 46";
       const generated = buildWorkingLineFrames(
         current.components.workingLine,
         current.colors,
@@ -363,10 +361,10 @@ describe("working-line presets and frame generation", () => {
         workingLineSpinnerWidth(spinner) + 1 + visibleWidth(generated.row),
       );
       expect(
-        generated.frames.some((frame) => frame.startsWith("\x1b[90m")),
+        generated.frames.some((frame) => frame.startsWith("\x1b[38;5;240m")),
       ).toBe(true);
       expect(
-        generated.frames.some((frame) => frame.startsWith("\x1b[1;32m")),
+        generated.frames.some((frame) => frame.startsWith("\x1b[1;38;5;46m")),
       ).toBe(true);
     },
   );
@@ -652,7 +650,6 @@ describe("working-line presets and frame generation", () => {
         current.components.workingLine.spinner = "braille";
         current.components.workingLine.messages.custom = true;
         current.components.workingLine.textAnimation = animation;
-        current.components.workingLine.colorSource = "terminal";
         const maximumStyle = "underline fg:#ffffff bg:#ffffff";
         current.colors.workingLineLow = maximumStyle;
         current.colors.workingLineMid = maximumStyle;
@@ -692,7 +689,6 @@ describe("working-line presets and frame generation", () => {
       current.components.workingLine.spinner = "braille";
       current.components.workingLine.messages.custom = true;
       current.components.workingLine.textAnimation = animation;
-      current.components.workingLine.colorSource = "terminal";
       current.colors.workingLineLow = "dim ".repeat(1000);
       current.colors.workingLineMid = "cyan ".repeat(1000);
       current.colors.workingLineHigh = "bold ".repeat(1000);
@@ -748,7 +744,6 @@ describe("working-line presets and frame generation", () => {
     "persists theme high style with %s",
     (_label, modifiers, expected) => {
       const current = config();
-      current.components.workingLine.colorSource = "theme";
       current.colors.workingLineHigh = [...modifiers, "accent"].join(" ");
       const separateTheme = {
         fg: (_color: string, text: string) => `\x1b[38;5;202m${text}\x1b[0m`,
@@ -756,33 +751,24 @@ describe("working-line presets and frame generation", () => {
         italic: (text: string) => `\x1b[3m${text}\x1b[0m`,
         underline: (text: string) => `\x1b[4m${text}\x1b[0m`,
       };
-      expect(
-        snapshotWorkingLineHighStyle(
-          separateTheme,
-          current.components.workingLine,
-          current.colors,
-        ),
-      ).toBe(expected);
+      expect(snapshotWorkingLineHighStyle(separateTheme, current.colors)).toBe(
+        expected,
+      );
     },
   );
 
   it.each([
-    ["named", "bold italic underline cyan", "\x1b[1;3;4;36m"],
+    ["xterm", "bold italic underline 149", "\x1b[1;3;4;38;5;149m"],
     ["256-color", "bold italic underline fg:202", "\x1b[1;3;4;38;5;202m"],
     ["truecolor", "bold italic underline #bf5700", "\x1b[1;3;4;38;2;191;87;0m"],
   ] as const)(
-    "persists combined terminal %s high style",
+    "persists combined high style for explicit terminal tokens",
     (_label, style, expected) => {
       const current = config();
-      current.components.workingLine.colorSource = "terminal";
       current.colors.workingLineHigh = style;
-      expect(
-        snapshotWorkingLineHighStyle(
-          theme(),
-          current.components.workingLine,
-          current.colors,
-        ),
-      ).toBe(expected);
+      expect(snapshotWorkingLineHighStyle(theme(), current.colors)).toBe(
+        expected,
+      );
     },
   );
 
@@ -931,18 +917,17 @@ describe("working-line presets and frame generation", () => {
 
   it("honors independent working-line palette overrides", () => {
     const current = config();
-    current.components.workingLine.colorSource = "terminal";
     current.components.workingLine.textAnimation = "disabled";
-    current.colors.workingLineMid = "bold red";
-    current.colors.workingLineHigh = "bold green";
+    current.colors.workingLineMid = "bold 196";
+    current.colors.workingLineHigh = "bold 46";
     const [frame] = buildWorkingLineFrames(
       current.components.workingLine,
       current.colors,
       theme(),
       "Ready",
     ).frames;
-    expect(frame).not.toContain("\x1b[1;32m");
-    expect(frame).toContain("\x1b[1;31m· Ready");
+    expect(frame).not.toContain("\x1b[1;38;5;46m");
+    expect(frame).toContain("\x1b[1;38;5;196m· Ready");
   });
 
   it.each(["classic", "kitt"] as const)(

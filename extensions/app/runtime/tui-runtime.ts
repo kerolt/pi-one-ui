@@ -228,7 +228,6 @@ function createLayoutRuntime(
         entry,
         {
           ...options,
-          colorSource: currentConfig.components.workingLine.colorSource,
           workingLineHigh: currentConfig.colors.workingLineHigh,
         },
         theme,

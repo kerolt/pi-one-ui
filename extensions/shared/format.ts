@@ -2,7 +2,6 @@ import { homedir, hostname, userInfo } from "node:os";
 import type { ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import type {
-  ColorSource,
   ColorSpec,
   ContextStyle,
   ContextThresholds,
@@ -18,7 +17,7 @@ import {
   resolvePackageIcon,
   resolveRuntimeSymbol,
 } from "./icons.ts";
-import { renderStyleForSource } from "./style.ts";
+import { renderThemeStyle } from "./style.ts";
 
 /**
  * Starship `git_commit` style — render a short hash, optionally with an
@@ -31,7 +30,6 @@ export function formatGitCommitSegment(
   theme: Pick<Theme, "fg">,
   commit: GitCommitInfo | undefined,
   config: { hashLength: number; onlyDetached: boolean; showTag: boolean },
-  colorSource: ColorSource,
   style: ColorSpec,
 ): string {
   if (!commit?.oid) return "";
@@ -41,7 +39,7 @@ export function formatGitCommitSegment(
   const tag = config.showTag && commit.tag ? commit.tag : "";
   if (!hash && !tag) return "";
   const label = [hash, tag].filter(Boolean).join(" ");
-  return renderStyleForSource(theme, colorSource, style, label);
+  return renderThemeStyle(theme, style, label);
 }
 
 /**
@@ -55,7 +53,6 @@ export function formatGitMetricsSegment(
   theme: Pick<Theme, "fg">,
   metrics: GitMetricsInfo | null | undefined,
   config: { onlyNonzero: boolean },
-  colorSource: ColorSource,
   addedStyle: ColorSpec,
   deletedStyle: ColorSpec,
 ): string {
@@ -65,19 +62,10 @@ export function formatGitMetricsSegment(
   if (!showAdded && !showDeleted) return "";
   const parts: string[] = [];
   if (showAdded) {
-    parts.push(
-      renderStyleForSource(theme, colorSource, addedStyle, `+${metrics.added}`),
-    );
+    parts.push(renderThemeStyle(theme, addedStyle, `+${metrics.added}`));
   }
   if (showDeleted) {
-    parts.push(
-      renderStyleForSource(
-        theme,
-        colorSource,
-        deletedStyle,
-        `−${metrics.deleted}`,
-      ),
-    );
+    parts.push(renderThemeStyle(theme, deletedStyle, `−${metrics.deleted}`));
   }
   return parts.join(" ");
 }
@@ -428,13 +416,12 @@ export function formatRuntimeSegment(
   theme: Pick<Theme, "fg">,
   runtime: RuntimeInfo | undefined,
   prefixStyle: ColorSpec,
-  colorSource: ColorSource,
   mode: IconMode = "auto",
 ): string {
   if (!runtime) return "";
   const symbol = resolveRuntimeSymbol(runtime.name, runtime.symbol, mode);
   const label = runtime.version ? `${symbol} ${runtime.version}` : symbol;
-  return `${renderStyleForSource(theme, colorSource, prefixStyle, "via")} ${renderStyleForSource(theme, colorSource, runtime.style, label)}`;
+  return `${renderThemeStyle(theme, prefixStyle, "via")} ${renderThemeStyle(theme, runtime.style, label)}`;
 }
 
 /**
@@ -450,7 +437,6 @@ export function formatRuntimeSegment(
 export function formatPackageVersionSegment(
   theme: Pick<Theme, "fg">,
   pkg: PackageVersionResult | undefined,
-  colorSource: ColorSource,
   mode: IconMode = "auto",
   configuredIcon: string = "",
   versionStyle: ColorSpec = "208",
@@ -458,7 +444,7 @@ export function formatPackageVersionSegment(
   if (!pkg) return "";
   const icon = resolvePackageIcon(configuredIcon, mode);
   const label = `${icon} ${pkg.version}`;
-  return `${renderStyleForSource(theme, colorSource, "", "is")} ${renderStyleForSource(theme, colorSource, versionStyle, label)}`;
+  return `${renderThemeStyle(theme, "", "is")} ${renderThemeStyle(theme, versionStyle, label)}`;
 }
 
 export type FormatCwdOptions = {

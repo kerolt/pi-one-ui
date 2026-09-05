@@ -48,7 +48,6 @@ function config(overrides: Partial<PolishedTuiConfig> = {}): PolishedTuiConfig {
         style: "minimalist",
         borderColorMode:
           overrides.editorBorderColorMode ?? editor.borderColorMode,
-        colorSource: overrides.colorSources?.editor ?? editor.colorSource,
         styles: {
           ...editor.styles,
           minimalist: {
@@ -227,10 +226,8 @@ describe("minimalist editor frame", () => {
     );
   });
 
-  it("uses configured terminal colors and native fallbacks for the rest", () => {
-    const terminalConfig = config({
-      colorSources: { ...defaultConfig.colorSources, editor: "terminal" },
-    });
+  it("renders defaults and unconfigured colors through theme tokens", () => {
+    const calls: Array<{ color: string; text: string }> = [];
     const output = renderMinimalistFrame({
       width: 120,
       editorLines: ["draft"],
@@ -242,20 +239,21 @@ describe("minimalist editor frame", () => {
         modelLabel: "model-x",
         thinkingLevel: "high",
       },
-      uiTheme: theme(),
-      config: terminalConfig,
+      uiTheme: recordingTheme(calls),
+      config: config(),
     }).join("\n");
 
-    // 有配置默认值的段按终端色渲染(cost/gitBranch/thinking)。
-    expect(output).toContain("\x1b[1;32m$0.123\x1b[0m");
-    expect(output).toContain("\x1b[1;33mhigh\x1b[0m");
-    expect(output).toContain("\x1b[1;34mmain\x1b[0m");
-    // cwd/模型名/边框未配置 → 回落 Pi 原生主题色(测试主题透传,无 ANSI)。
-    expect(output).toContain("model-x");
-    expect(output).not.toContain("\x1b[1;35m");
-    expect(output).toContain("project");
-    expect(output).not.toContain("\x1b[1;36m");
-    expect(output).not.toContain("\x1b[90m╭");
+    // 默认值按 theme 语义映射成语义 token，未配置字段回落原生默认。
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        { color: "success", text: "$0.123" },
+        { color: "warning", text: "high" },
+        { color: "syntaxKeyword", text: "main" },
+        { color: "syntaxFunction", text: "project" },
+        { color: "syntaxKeyword", text: "model-x" },
+      ]),
+    );
+    expect(output).not.toContain("\\x1b[");
   });
 
   it("uses only the canonical editor branch color", () => {
@@ -266,7 +264,8 @@ describe("minimalist editor frame", () => {
         editorThinkingHigh: "yellow",
       },
     }).colors;
-    const fallbackOutput = renderMinimalistFrame({
+    const calls: Array<{ color: string; text: string }> = [];
+    renderMinimalistFrame({
       width: 120,
       editorLines: ["draft"],
       inputText: "draft",
@@ -276,30 +275,35 @@ describe("minimalist editor frame", () => {
         modelLabel: "model-x",
         thinkingLevel: "high",
       },
-      uiTheme: theme(),
-      config: config({
-        colorSources: { ...defaultConfig.colorSources, editor: "terminal" },
-        colors: colorsWithoutEditorBranch,
-      }),
-    }).join("\n");
-    expect(fallbackOutput).toContain("\x1b[95mmodel-x\x1b[0m");
-    expect(fallbackOutput).toContain("\x1b[33mhigh\x1b[0m");
-    expect(fallbackOutput).toContain("\x1b[1;34mmain\x1b[0m");
+      uiTheme: recordingTheme(calls),
+      config: config({ colors: colorsWithoutEditorBranch }),
+    });
+    // 未配置 editorGitBranch → 回退 bold syntaxKeyword；ANSI 色名映射到语义 token。
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        { color: "syntaxKeyword", text: "main" },
+        { color: "syntaxKeyword", text: "model-x" },
+        { color: "warning", text: "high" },
+      ]),
+    );
 
-    const canonicalOutput = renderMinimalistFrame({
+    const canonicalCalls: Array<{ color: string; text: string }> = [];
+    renderMinimalistFrame({
       width: 80,
       editorLines: ["draft"],
       inputText: "draft",
       metadata: { cwd: "", branch: "main" },
-      uiTheme: theme(),
+      uiTheme: recordingTheme(canonicalCalls),
       config: config({
-        colorSources: { ...defaultConfig.colorSources, editor: "terminal" },
         colors: mergeConfig({
           colors: { gitBranch: "cyan", editorGitBranch: "bright-green" },
         }).colors,
       }),
-    }).join("\n");
-    expect(canonicalOutput).toContain("\x1b[92mmain\x1b[0m");
+    });
+    expect(canonicalCalls).toContainEqual({
+      color: "success",
+      text: "main",
+    });
   });
 
   it("puts complete viewport counts first on their matching borders", () => {
@@ -547,7 +551,7 @@ describe("minimalist editor frame", () => {
     expect(lines.every((line) => visibleWidth(line) <= 20)).toBe(true);
   });
 
-  it("keeps adaptive theme borders and thinking labels on the same renderer", () => {
+  it("keeps adaptive borders and thinking labels on the same renderer", () => {
     const colors = {
       ...defaultConfig.colors,
       editorBorder: "error",
@@ -557,10 +561,7 @@ describe("minimalist editor frame", () => {
       colors,
       editorBorderColorMode: "adaptive",
     });
-    const renderWith = (
-      uiTheme: Theme,
-      borderColor?: (text: string) => string,
-    ) =>
+    const frame = (uiTheme: Theme, borderColor?: (text: string) => string) =>
       renderMinimalistFrame({
         width: 80,
         editorLines: ["draft"],
@@ -571,24 +572,39 @@ describe("minimalist editor frame", () => {
         borderColor,
       }).join("\n");
 
-    const adaptive = renderWith(theme(), (text) => `\x1b[36m${text}\x1b[0m`);
-    expect(adaptive).toContain("\x1b[36m╭\x1b[0m");
-    expect(adaptive).toContain("\x1b[36mhigh\x1b[0m");
+    // 配置了 editorThinkingHigh → 边框与标签都用配置色，优先于原生 borderColor。
+    const calls: Array<{ color: string; text: string }> = [];
+    const adaptive = frame(
+      recordingTheme(calls),
+      (text) => `\x1b[36m${text}\x1b[0m`,
+    );
+    expect(calls).toContainEqual({ color: "success", text: "╭" });
+    expect(calls).toContainEqual({ color: "success", text: "high" });
+    expect(adaptive).not.toContain("\x1b[36m");
 
-    for (const failedBorderColor of [
-      undefined,
-      () => {
+    // 未配置 thinking 色且原生 borderColor 失败 → 回落静态边框色。
+    const fallbackCalls: Array<{ color: string; text: string }> = [];
+    renderMinimalistFrame({
+      width: 80,
+      editorLines: ["draft"],
+      inputText: "draft",
+      metadata: { cwd: "", thinkingLevel: "high" },
+      uiTheme: recordingTheme(fallbackCalls),
+      config: config({
+        colors: {
+          ...defaultConfig.colors,
+          editorBorder: "error",
+        },
+        editorBorderColorMode: "adaptive",
+      }),
+      borderColor: () => {
         throw new Error("adaptive color failed");
       },
-      (() => 42) as unknown as (text: string) => string,
-    ]) {
-      const calls: Array<{ color: string; text: string }> = [];
-      renderWith(recordingTheme(calls), failedBorderColor);
-      expect(calls).toContainEqual({ color: "error", text: "╭" });
-      expect(calls).toContainEqual({ color: "error", text: "high" });
-      expect(calls).not.toContainEqual({ color: "success", text: "high" });
-    }
+    });
+    expect(fallbackCalls).toContainEqual({ color: "error", text: "╭" });
+    expect(fallbackCalls).toContainEqual({ color: "error", text: "high" });
 
+    // static：边框用 editorBorder，thinking 标签用 editorThinkingHigh。
     const staticCalls: Array<{ color: string; text: string }> = [];
     renderMinimalistFrame({
       width: 80,
@@ -603,41 +619,27 @@ describe("minimalist editor frame", () => {
     expect(staticCalls).toContainEqual({ color: "success", text: "high" });
   });
 
-  it.each([
-    ["minimal", "\x1b[90m"],
-    ["low", "\x1b[34m"],
-    ["medium", "\x1b[36m"],
-    ["high", "\x1b[33m"],
-    ["xhigh", "\x1b[31m"],
-    ["max", "\x1b[91m"],
-  ] as const)(
-    "uses the terminal adaptive color for %s borders and labels",
-    (level, ansi) => {
-      const output = renderMinimalistFrame({
-        width: 80,
-        editorLines: ["draft"],
-        inputText: "draft",
-        metadata: { cwd: "", thinkingLevel: level },
-        uiTheme: theme(),
-        config: config({
-          editorBorderColorMode: "adaptive",
-          colorSources: { ...defaultConfig.colorSources, editor: "terminal" },
-        }),
-        borderColor: (text) => `[theme]${text}`,
-      }).join("\n");
-      expect(output).toContain(`${ansi}╭\x1b[0m`);
-      expect(output).toContain(`${ansi}${level}\x1b[0m`);
-      expect(output).not.toContain("[theme]");
-    },
-  );
+  it("uses the native effort border when adaptive thinking colors are unconfigured", () => {
+    const output = renderMinimalistFrame({
+      width: 80,
+      editorLines: ["draft"],
+      inputText: "draft",
+      metadata: { cwd: "", thinkingLevel: "high" },
+      uiTheme: theme(),
+      config: config({ editorBorderColorMode: "adaptive" }),
+      borderColor: (text) => `\x1b[36m${text}\x1b[0m`,
+    }).join("\n");
+    expect(output).toContain("\x1b[36m╭\x1b[0m");
+    expect(output).toContain("\x1b[36mhigh\x1b[0m");
+  });
 
   it.each([
-    [{ editorThinkingMax: "bright-purple" }, "max", "\x1b[95m"],
-    [{ editorThinkingXhigh: "bright-cyan" }, "max", "\x1b[96m"],
-    [{ editorThinking: "bright-green" }, "low", "\x1b[92m"],
+    [{ editorThinkingMax: "#ff00ff" }, "max"],
+    [{ editorThinkingXhigh: "#00ffff" }, "xhigh"],
+    [{ editorThinking: "#00ff00" }, "low"],
   ] as const)(
-    "uses configured terminal adaptive thinking colors for both border and %s label",
-    (colors, level, ansi) => {
+    "uses configured adaptive thinking colors for both border and %s label",
+    (colors, level) => {
       const output = renderMinimalistFrame({
         width: 80,
         editorLines: ["draft"],
@@ -647,16 +649,21 @@ describe("minimalist editor frame", () => {
         config: config({
           colors: { ...defaultConfig.colors, ...colors },
           editorBorderColorMode: "adaptive",
-          colorSources: { ...defaultConfig.colorSources, editor: "terminal" },
         }),
       }).join("\n");
+      const ansi =
+        level === "max"
+          ? "\u001b[38;2;255;0;255m"
+          : level === "xhigh"
+            ? "\u001b[38;2;0;255;255m"
+            : "\u001b[38;2;0;255;0m";
       expect(output).toContain(`${ansi}╭\x1b[0m`);
       expect(output).toContain(`${ansi}${level}\x1b[0m`);
     },
   );
 
   it.each([undefined, "", "off"])(
-    "keeps terminal adaptive borders static and omits an inactive thinking level %s",
+    "keeps adaptive borders on the native effort fallback and omits an inactive thinking level %s",
     (thinkingLevel) => {
       const output = renderMinimalistFrame({
         width: 80,
@@ -664,17 +671,13 @@ describe("minimalist editor frame", () => {
         inputText: "draft",
         metadata: { cwd: "", thinkingLevel },
         uiTheme: theme(),
-        config: config({
-          editorBorderColorMode: "adaptive",
-          colorSources: { ...defaultConfig.colorSources, editor: "terminal" },
-        }),
+        config: config({ editorBorderColorMode: "adaptive" }),
         borderColor: (text) => `[theme]${text}`,
       }).join("\n");
-      // 未配置边框 → 原生回退(测试主题透传,无固定 ANSI 与 theme 标记)。
-      expect(output).toContain("╭");
-      expect(output).not.toContain("\x1b[90m");
-      expect(output).not.toContain("[theme]");
+      // thinking 关闭 → 边框回落原生 borderColor，不渲染标签。
+      expect(output).toContain("[theme]╭");
       expect(output).not.toContain("off");
+      expect(output).not.toContain("undefined");
     },
   );
 

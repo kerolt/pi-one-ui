@@ -277,7 +277,7 @@ describe("pure user-message styles", () => {
     }
   });
 
-  it("supports theme and terminal color sources", () => {
+  it("supports theme semantics and explicit terminal tokens", () => {
     const themed = config("labeled");
     const themeLines = renderUserMessageStyle({
       text: "hello",
@@ -287,16 +287,15 @@ describe("pure user-message styles", () => {
     });
     expect(themeLines.join("\n")).toContain("\x1b[");
 
-    const terminal = config("compact");
-    terminal.components.userMessages.colorSource = "terminal";
-    terminal.colors.editorAccent = "fg:202";
-    const terminalLines = renderUserMessageStyle({
+    const explicit = config("compact");
+    explicit.colors.editorAccent = "fg:202";
+    const explicitLines = renderUserMessageStyle({
       text: "hello",
       width: 20,
       theme: ansiTheme(),
-      config: terminal,
+      config: explicit,
     });
-    expect(terminalLines.join("\n")).toContain("\x1b[");
+    expect(explicitLines.join("\n")).toContain("\x1b[");
   });
 
   it("uses only style-relevant cache-key inputs", () => {

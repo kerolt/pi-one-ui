@@ -84,7 +84,7 @@ pi install git:github.com/kerolt/pi-one-ui
 ```
 
 
-推荐通过 `/oneui` 设置面板修改配置。面板采用更靠近顶部的居中布局；切换 Editor 开关、颜色源或边框模式时会保持打开并在 Editor 替换后恢复焦点，持久化失败时则恢复列表中的有效旧值。当前配置仍使用 v1 结构，例如：
+推荐通过 `/oneui` 设置面板修改配置。面板采用更靠近顶部的居中布局；切换 Editor 开关或边框模式时会保持打开并在 Editor 替换后恢复焦点，持久化失败时则恢复列表中的有效旧值。当前配置仍使用 v1 结构，例如：
 
 ```json
 {
@@ -92,7 +92,6 @@ pi install git:github.com/kerolt/pi-one-ui
   "components": {
     "editor": {
       "style": "on",
-      "colorSource": "theme",
       "borderColorMode": "static"
     },
     "userMessages": {
@@ -113,7 +112,7 @@ pi install git:github.com/kerolt/pi-one-ui
 }
 ```
 
-Editor 只保留 `minimalist` 一种装饰样式，通过 `style` 开关控制：`on` 启用 Minimalist 装饰，`off` 恢复 Pi 原生编辑器（边框默认跟随主题与 effort 变色；若显式配置了 `colors.editorBorder`，off 模式下也会按 `colorSource` 应用该颜色，覆盖原生 effort 变色）。旧配置的 `enabled: false` 会迁移为 `style: "off"`，`opencode`/`minimalist` 会迁移为 `style: "on"`，`styles.opencode` 嵌套配置与 `opencode-copy-friendly`、`accent-rail` 一并失效。`borderColorMode` 支持 `static`（固定 `colors.editorBorder`）与 `adaptive`（边框随 effort 档位变化）；`colorSource` 支持 `theme`（颜色取当前主题 token）与 `terminal`（固定终端色）。cwd、模型名与边框（static）未显式配置时优先使用主题的 `cwd`/`editorModel`/`editorBorder` token（可指向 vars 变量或 hex），主题未定义则回落 Pi 原生默认；terminal 源未配置时同样回落 Pi 原生颜色（配置了终端色名/hex 才固定渲染）。上下文占用相关信息由 Footer 统一展示。
+Editor 只保留 `minimalist` 一种装饰样式，通过 `style` 开关控制：`on` 启用 Minimalist 装饰，`off` 恢复 Pi 原生编辑器（边框默认跟随主题与 effort 变色；若显式配置了 `colors.editorBorder`，off 模式下也会按 theme 语义应用该颜色，覆盖原生 effort 变色）。旧配置的 `enabled: false` 会迁移为 `style: "off"`，`opencode`/`minimalist` 会迁移为 `style: "on"`，`styles.opencode` 嵌套配置与 `opencode-copy-friendly`、`accent-rail` 一并失效。颜色统一按 theme 语义渲染：`colors.*` 配置值优先作为主题 token 解析（ANSI 色名如 `red` 会映射为语义色 `error`），未配置时优先主题专有 token（`cwd`/`editorModel`/`editorBorder`，可指向 vars 变量），主题未定义则回落 Pi 原生默认；需要固定终端色时可直接写 hex、256 色索引或 `fg:`/`bg:` 前缀。`borderColorMode` 支持 `static`（固定 `colors.editorBorder`）与 `adaptive`（边框优先用 `colors.editorThinking*` 分档配置，未配置则随 Pi 原生 effort 档位变化）。历史配置中的 `colorSource` 字段（`theme`/`terminal`）已移除并忽略，不主动改写用户文件。详细的颜色字段清单、取值语法与自定义方式见 [docs/editor-colors.md](./docs/editor-colors.md)。上下文占用相关信息由 Footer 统一展示。
 
 WorkingLine 的 token segment 会在一次模型响应持续至少 500ms 后追加实时输出速率，例如 `⚡12 tok/s`。速率按当前响应独立计算，在下一次 `turn_start` 时重置；关闭 token segment 时也会一并隐藏。
 

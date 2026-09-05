@@ -1,5 +1,5 @@
 import type { ThemeColor } from "@earendil-works/pi-coding-agent";
-import type { ColorSource, ColorSpec } from "../app/config/shell.ts";
+import type { ColorSpec } from "../app/config/shell.ts";
 
 type ThemeLike = {
   fg(color: string, text: string): string;
@@ -10,25 +10,15 @@ type ThemeLike = {
 
 export type { ThemeLike };
 
-export const EDITOR_ACCENT_STYLE = "blue";
-export const EDITOR_BORDER_STYLE = "bright-black";
 export const MAX_SAFE_SGR_PREFIX_CODE_UNITS = 96;
 export const MAX_SAFE_SGR_PREFIX_SEQUENCES = 4;
 
-export type SourceStyleFallback = {
-  theme: ColorSpec;
-  terminal: ColorSpec;
-};
-
-export const EDITOR_ACCENT_FALLBACK: SourceStyleFallback = {
-  theme: "accent",
-  terminal: EDITOR_ACCENT_STYLE,
-};
-
-export const EDITOR_BORDER_FALLBACK: SourceStyleFallback = {
-  theme: "borderMuted",
-  terminal: EDITOR_BORDER_STYLE,
-};
+/**
+ * 单模式下的默认回退色。Editor 与用户消息的强调/边框默认跟随主题
+ * 语义色（unconfigured 时与 Pi 原生默认一致）。
+ */
+export const EDITOR_ACCENT_FALLBACK: ColorSpec = "accent";
+export const EDITOR_BORDER_FALLBACK: ColorSpec = "borderMuted";
 
 function isHexColor(value: string): boolean {
   return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
@@ -80,6 +70,10 @@ const terminalStyleModifiers = new Map([
   ["underline", 4],
 ]);
 
+/**
+ * ANSI 色名到主题语义 token 的映射：theme 语义下写 `red` 得到主题错误色，
+ * 写 `green` 得到主题成功色，保证默认值与主题观感一致。
+ */
 const themeColorNameMap = new Map([
   ["red", "error"],
   ["bright-red", "error"],
@@ -168,6 +162,10 @@ function terminalColorToAnsi(
   return undefined;
 }
 
+/**
+ * 显式终端 token：hex、0-255 数字、fg:/bg: 前缀。这类值在 theme 语义下
+ * 仍直接输出固定终端色，不经过主题。
+ */
 function isExplicitTerminalColorToken(token: string): boolean {
   const normalized = token.toLowerCase();
   if (normalized.startsWith("fg:") || normalized.startsWith("bg:")) return true;
@@ -351,19 +349,12 @@ export function renderTerminalStyle(style: string, text: string): string {
 }
 
 /**
- * Apply Starship-style terminal styling first, falling back to Pi theme tokens for
- * legacy config values such as "accent" or "syntaxKeyword".
+ * 单模式颜色渲染：配置值按 theme 语义解释。
+ * - 含显式终端 token（hex/数字/fg:/bg:）→ 直接输出固定终端色；
+ * - 其余按主题 token 解析（ANSI 色名映射到语义 token，如 red→error），
+ *   修饰符通过主题的 bold/italic/underline 应用；
+ * - 空值原样返回。
  */
-export function renderStyle(
-  theme: ThemeLike,
-  style: ColorSpec,
-  text: string,
-): string {
-  if (style.trim() === "") return text;
-  const styled = renderTerminalStyle(style, text);
-  return styled === text ? colorize(theme, style, text) : styled;
-}
-
 export function renderThemeStyle(
   theme: ThemeLike,
   style: ColorSpec,
@@ -380,16 +371,6 @@ export function renderThemeStyle(
   return safeThemeFg(theme, color, applyThemeModifiers(theme, tokens, text));
 }
 
-function renderStyleStrict(
-  theme: ThemeLike,
-  style: ColorSpec,
-  text: string,
-): string {
-  if (style.trim() === "") return text;
-  const styled = renderTerminalStyle(style, text);
-  return styled === text ? theme.fg(style, text) : styled;
-}
-
 function renderThemeStyleStrict(
   theme: ThemeLike,
   style: ColorSpec,
@@ -404,32 +385,30 @@ function renderThemeStyleStrict(
   return theme.fg(color, applyThemeModifiers(theme, tokens, text));
 }
 
-export function renderStyleForSource(
+/**
+ * 配置优先、未配置回退默认的渲染入口（fallback 为单一主题语义色）。
+ */
+export function renderThemeStyleOrFallback(
   theme: ThemeLike,
-  source: ColorSource,
-  style: ColorSpec,
+  style: ColorSpec | undefined,
+  fallback: ColorSpec,
   text: string,
 ): string {
-  return source === "terminal"
-    ? renderStyle(theme, style, text)
-    : renderThemeStyle(theme, style, text);
+  return renderThemeStyle(theme, style ?? fallback, text);
 }
 
-export function renderStyleForSourceOrFallback(
+export function renderThemeStyleOrFallbackStrict(
   theme: ThemeLike,
-  source: ColorSource,
   style: ColorSpec | undefined,
-  fallback: ColorSpec | SourceStyleFallback,
+  fallback: ColorSpec,
   text: string,
 ): string {
-  const fallbackStyle =
-    typeof fallback === "string" ? fallback : fallback[source];
-  return renderStyleForSource(theme, source, style ?? fallbackStyle, text);
+  return renderThemeStyleStrict(theme, style ?? fallback, text);
 }
 
 /**
  * 主题画板存在性探测：pi Theme 暴露 fgColors Map；测试或其他实现可
- * 提供 hasThemeToken 回调，缺失时保守按“无该 token”处理。
+ * 提供 hasThemeToken 回调，缺失时保守按"无该 token"处理。
  */
 function themeHasToken(theme: ThemeLike, token: string): boolean {
   if (
@@ -447,25 +426,21 @@ function themeHasToken(theme: ThemeLike, token: string): boolean {
 
 /**
  * 颜色统一渲染入口（配置优先，其次主题 token，最后原生默认）：
- * - 配置了 spec：按 colorSource 现有语义解释（theme=token/hex，terminal=终端色）；
- * - 未配置且 theme 源：主题定义了 themeToken 时用主题色（可指向 vars 变量），
- *   否则回落原生默认 themeDefault；
- * - 未配置且 terminal 源：使用固定终端默认 terminalDefault。
+ * - 配置了 spec：按 theme 语义解释（token/hex/数字/fg:/bg:）；
+ * - 未配置：主题定义了 themeToken（cwd/editorModel/editorBorder）时用主题色，
+ *   否则回落原生默认 themeDefault。
  */
 export function renderSourceColor(
   theme: ThemeLike,
-  source: ColorSource,
   spec: ColorSpec | undefined,
   themeToken: string,
   themeDefault: ColorSpec,
   text: string,
 ): string {
   if (typeof spec === "string" && spec.trim() !== "") {
-    return renderStyleForSource(theme, source, spec, text);
+    return renderThemeStyle(theme, spec, text);
   }
-  // 未配置时:theme 源优先主题专有 token,terminal 源与主题缺 token 时
-  // 都回落 Pi 原生默认(主题语义色),保证两种 colorSource 默认观感一致。
-  if (source !== "terminal" && themeHasToken(theme, themeToken)) {
+  if (themeHasToken(theme, themeToken)) {
     try {
       return theme.fg(themeToken, text);
     } catch {
@@ -475,54 +450,6 @@ export function renderSourceColor(
   return renderThemeStyle(theme, themeDefault, text);
 }
 
-export function renderStyleForSourceOrFallbackStrict(
-  theme: ThemeLike,
-  source: ColorSource,
-  style: ColorSpec | undefined,
-  fallback: ColorSpec | SourceStyleFallback,
-  text: string,
-): string {
-  const fallbackStyle =
-    typeof fallback === "string" ? fallback : fallback[source];
-  const resolvedStyle = style ?? fallbackStyle;
-  return source === "terminal"
-    ? renderStyleStrict(theme, resolvedStyle, text)
-    : renderThemeStyleStrict(theme, resolvedStyle, text);
-}
-
-export function renderEditorAccent(text: string): string {
-  return renderTerminalStyle(EDITOR_ACCENT_STYLE, text);
-}
-
 export function renderEditorBorder(text: string): string {
-  return renderTerminalStyle(EDITOR_BORDER_STYLE, text);
-}
-
-export function renderAccentLine(
-  theme: ThemeLike,
-  source: ColorSource,
-  text: string,
-): string {
-  return renderStyleForSourceOrFallback(
-    theme,
-    source,
-    undefined,
-    EDITOR_ACCENT_FALLBACK,
-    text,
-  );
-}
-
-export function renderChromeBorder(
-  theme: ThemeLike,
-  source: ColorSource,
-  terminalFallbackStyle: ColorSpec,
-  text: string,
-): string {
-  return renderStyleForSourceOrFallback(
-    theme,
-    source,
-    undefined,
-    { theme: "borderMuted", terminal: terminalFallbackStyle },
-    text,
-  );
+  return renderTerminalStyle("bright-black", text);
 }

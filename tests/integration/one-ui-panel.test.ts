@@ -267,7 +267,6 @@ test("/oneui keeps the panel open and refocuses after an Editor style change", a
   );
   expect(overlayManager.hasActive()).toBe(true);
   expect(harness.operations).toStrictEqual(["apply", "focus"]);
-  expect(component.render(80).join("\n")).toContain("Color source");
   expect(component.render(80).join("\n")).toContain("Border color");
 
   component.handleInput("\x1b");

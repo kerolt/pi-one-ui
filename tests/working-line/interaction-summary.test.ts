@@ -1742,7 +1742,7 @@ describe("turn summary entry", () => {
     expect(isTurnSummaryData(data)).toBe(true);
     const rendered = renderTurnSummaryEntry(
       { data },
-      { colorSource: "theme", workingLineHigh: "green" },
+      { workingLineHigh: "green" },
       { fg: () => "changed-theme" },
     )?.render(100)[0];
     expect(rendered).toContain("\x1b[1;38;5;202m Turn took 0s · ↑2 ↓3\x1b[0m");

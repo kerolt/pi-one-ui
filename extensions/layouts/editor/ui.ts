@@ -16,7 +16,7 @@ import type { ZentuiConfig } from "../../app/config/shell.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   EDITOR_BORDER_FALLBACK,
-  renderStyleForSourceOrFallback,
+  renderThemeStyleOrFallback,
   safeThemeFg,
 } from "../../shared/style.ts";
 import { renderEditorMetadataFormat } from "./editor-metadata-format.ts";
@@ -289,7 +289,7 @@ export function renderWithAutocompleteCapture<T>(
 
 /**
  * off 模式的原生边框覆盖：仅在 style=off 且用户显式配置了 colors.editorBorder
- * 时返回按 colorSource 解释的边框渲染函数；未配置或 on 模式返回 undefined
+ * 时返回按 theme 语义解释的边框渲染函数；未配置或 on 模式返回 undefined
  * （保持 Pi 原生 effort/主题变色不动）。
  */
 export function offEditorBorderColor(
@@ -301,13 +301,7 @@ export function offEditorBorderColor(
   const spec = config.colors.editorBorder;
   if (typeof spec !== "string" || spec.trim() === "") return undefined;
   return (text) =>
-    renderStyleForSourceOrFallback(
-      uiTheme,
-      editor.colorSource,
-      spec,
-      EDITOR_BORDER_FALLBACK,
-      text,
-    );
+    renderThemeStyleOrFallback(uiTheme, spec, EDITOR_BORDER_FALLBACK, text);
 }
 
 function clampRenderedLines(lines: string[], width: number): string[] {
@@ -326,9 +320,8 @@ function getEditorChromeWidths(
   uiTheme: Theme,
   reset: string,
 ) {
-  const rail = `${renderStyleForSourceOrFallback(
+  const rail = `${renderThemeStyleOrFallback(
     uiTheme,
-    config.components.editor.colorSource,
     config.colors.editorAccent,
     EDITOR_ACCENT_FALLBACK,
     config.icons.rail,

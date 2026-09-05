@@ -11,8 +11,7 @@ import { formatCount } from "../../shared/format.ts";
 import {
   isSafeSgrStylePrefix,
   isSupportedColorSpec,
-  renderStyleForSourceOrFallback,
-  type SourceStyleFallback,
+  renderThemeStyleOrFallback,
   type ThemeLike,
 } from "../../shared/style.ts";
 import { PI_WORKING_LINE_MESSAGES } from "./working-line-messages.ts";
@@ -40,13 +39,10 @@ export const MAX_WORKING_LINE_STYLE_TOKENS = 4;
 export const MAX_WORKING_LINE_STYLE_CODE_UNITS = 48;
 export const MAX_WORKING_LINE_ENTRIES_EXAMINED = 256;
 
-const WORKING_LINE_FALLBACKS: Record<
-  "low" | "mid" | "high",
-  SourceStyleFallback
-> = {
-  low: { theme: "dim", terminal: "bright-black" },
-  mid: { theme: "muted", terminal: "cyan" },
-  high: { theme: "bold accent", terminal: "bold cyan" },
+const WORKING_LINE_FALLBACKS: Record<"low" | "mid" | "high", ColorSpec> = {
+  low: "dim",
+  mid: "muted",
+  high: "bold accent",
 };
 const CLASSIC_PADDING_CELLS = 4;
 const CLASSIC_HIGHLIGHT_HALF_WIDTH = 4;
@@ -478,9 +474,8 @@ function renderTier(
   tier: Tier,
   text: string,
 ): string {
-  return renderStyleForSourceOrFallback(
+  return renderThemeStyleOrFallback(
     theme,
-    config.colorSource,
     normalizeWorkingLineStyleSpec(styleForTier(colors, tier)),
     WORKING_LINE_FALLBACKS[tier],
     text,
@@ -490,13 +485,11 @@ function renderTier(
 /** Resolve the fixed, nonanimated high-tier style used by persisted Turn summaries. */
 export function renderWorkingLineHigh(
   theme: ThemeLike,
-  colorSource: WorkingLineComponentConfig["colorSource"],
   style: ColorSpec | undefined,
   text: string,
 ): string {
-  return renderStyleForSourceOrFallback(
+  return renderThemeStyleOrFallback(
     theme,
-    colorSource,
     normalizeWorkingLineStyleSpec(style),
     WORKING_LINE_FALLBACKS.high,
     text,
@@ -505,13 +498,11 @@ export function renderWorkingLineHigh(
 
 export function snapshotWorkingLineHighStyle(
   theme: ThemeLike,
-  config: WorkingLineComponentConfig,
   colors: PolishedTuiColors,
 ): string {
   const sentinel = "\u{f0000}";
   const rendered = renderWorkingLineHigh(
     theme,
-    config.colorSource,
     colors.workingLineHigh,
     sentinel,
   );
@@ -1334,16 +1325,11 @@ export class WorkingLineController {
       config.spinner,
       config.spinnerIntervalMs,
       ...(config.textAnimation === "disabled"
-        ? [
-            config.textAnimation,
-            config.colorSource,
-            rootConfig.colors.workingLineMid,
-          ]
+        ? [config.textAnimation, rootConfig.colors.workingLineMid]
         : [
             config.textIntervalMs,
             config.textAnimation,
             config.animateSpinnerColor,
-            config.colorSource,
             rootConfig.colors.workingLineLow,
             rootConfig.colors.workingLineMid,
             rootConfig.colors.workingLineHigh,
