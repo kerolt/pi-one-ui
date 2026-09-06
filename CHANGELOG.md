@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-09-06
+
 ### Added
 
 - Built-in `/effort` command for selecting the thinking effort level (interactive picker, argument autocomplete, and model-clamping feedback), gated by `renderer.enableEffortCommand` (default `true`) and toggleable from the `/oneui` Features section. Replaces the need for a standalone local effort extension — remove any self-installed `/effort` extension to avoid duplicate command registration.
@@ -113,7 +115,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/kerolt/pi-one-ui/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kerolt/pi-one-ui/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/kerolt/pi-one-ui/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/kerolt/pi-one-ui/compare/v0.4.0...v0.5.0
