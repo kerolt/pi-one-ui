@@ -6,42 +6,42 @@
 
 [简体中文](./README.md) | English
 
-`pi-one-ui` is a unified TUI extension package for [Pi](https://pi.dev). It started as an effort to build a simple and polished terminal interface by combining, at the source level:
+`pi-one-ui` is a unified TUI extension package for [Pi](https://pi.dev), designed to deliver a clean, beautiful, and efficient terminal experience. It originated as a source-level combination of:
 
-- the terminal shell capabilities of [pi-zentui](https://github.com/lmilojevicc/pi-zentui)
+- the terminal shell and layout capabilities of [pi-zentui](https://github.com/lmilojevicc/pi-zentui)
 - the conversation rendering and productivity features of [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions)
 
-The result is a single installable and configurable Pi package that continues to evolve through module refactoring, tighter ownership, and independent improvements.
+The result is a single installable and configurable Pi package that continues to evolve through architectural refactoring, strict boundary ownership, and ongoing optimization.
 
 ## Features
 
 ### Unified interface layout
 
-`pi-one-ui` organizes the Pi interface into the following layouts:
+`pi-one-ui` organizes the Pi interface into a clean hierarchy:
 
 ```text
 Header → Context → WorkingLine → Editor → Footer
 ```
 
-- **Header**: startup information, logo, and shortcut hints.
-- **Context**: the conversation area, including user messages, assistant messages, thinking, tools, diffs, Markdown, and summaries.
-- **WorkingLine**: working state, spinner, token/thought/elapsed information, live output rate, and turn summaries.
-- **Editor**: input editor, completion, metadata, and the Minimalist style (Pi native is one toggle away).
-- **Footer**: current directory, Git, runtime, token, cost, and extension status information.
-- **Overlay**: temporary interfaces such as the settings panel and Context Inspector, managed by a shared OverlayManager.
+- **Header**: Startup information, logo, and shortcut hints.
+- **Context**: Conversation content area, including user messages, assistant messages, thinking blocks, tool calls, diffs, Markdown, and turn summaries.
+- **WorkingLine**: Working state indicator, spinner, token/thought/elapsed statistics, live output throughput, and turn summaries.
+- **Editor**: Input editor, completion menu, metadata display, and the Minimalist style (with effortless toggle to Pi native).
+- **Footer**: Current directory, Git status, runtime info, token/cost tracking, and extension statuses.
+- **Overlay**: Temporary views such as the settings panel and Context Inspector, managed centrally by OverlayManager.
 
 ### Built-in functionality
 
 | Feature                | Description                                                                                 | Entry point       |
 | ---------------------- | ------------------------------------------------------------------------------------------- | ----------------- |
-| Unified settings panel | Organizes settings by Header, Context, WorkingLine, Editor, Footer, and Features            | `/oneui`          |
-| Context Inspector      | Shows context usage and previews the system prompt, memory, skills, tools, and messages     | `/context`        |
-| Session reference      | Searches previous Pi sessions or SubAgents and injects their useful context                 | `@` completion    |
-| Subagent autocomplete  | Completes SubAgent names and delegation hints                                               | `@` completion    |
-| Tool / Diff renderer   | Provides unified rendering for tool calls, results, collapsed content, and Edit/Write diffs | Automatic         |
-| Subagent live renderer | Preserves pi-subagents' dedicated progress cards and keeps them out of generic tool groups  | Automatic         |
-| Markdown enhancement   | Adds Mermaid, admonitions, URL linking, and related rendering improvements                  | Automatic         |
-| Built-in themes        | Provides CC Dark and CC Light themes                                                        | `/theme`          |
+| Unified settings panel | Centrally manages settings for Header, Context, WorkingLine, Editor, Footer, and Features    | `/oneui`          |
+| Context Inspector      | Shows context usage and previews system prompt, memory, skills, tools, and message contents | `/context`        |
+| Session reference      | Searches previous Pi sessions or subagents and injects their relevant context               | `@` completion    |
+| Subagent autocomplete  | Provides subagent name completion and delegation hints                                      | `@` completion    |
+| Tool / Diff renderer   | Unified rendering for tool executions, results, collapsible blocks, and Edit/Write diffs   | Automatic         |
+| Subagent live renderer | Preserves subagents' dedicated progress cards without grouping them into generic tool calls | Automatic         |
+| Markdown enhancement   | Adds Mermaid diagrams, admonitions, clickable URL linking, and rendering improvements       | Automatic         |
+| Built-in themes        | Includes CC Dark and CC Light themes                                                        | `/theme`          |
 | Compatibility aliases  | Optionally provides common command aliases                                                  | `/clear`, `/exit` |
 
 ## Quick start
@@ -77,13 +77,22 @@ Then open the unified settings panel:
 
 ## Configuration
 
-The configuration file is located at:
+### Configuration methods
+
+`pi-one-ui` uses a single canonical v1 configuration file:
 
 ```text
 ~/.pi/agent/pi-one-ui.json
 ```
 
-Using the `/oneui` settings panel is recommended. The panel uses a top-centered layout, stays open while Editor enablement or style changes are applied, restores focus after Editor replacement, and restores the effective list value when persistence fails. The current configuration uses the v1 structure, for example:
+You can configure the extension in two ways:
+
+1. **Interactive settings panel (recommended)**: Run `/oneui` in Pi to adjust common component toggles, styles, and border modes via a visual menu. Changes take effect immediately and are persisted automatically.
+2. **Direct JSON editing**: Advanced users can edit the JSON configuration file directly for finer-grained control. After saving edits, run `/reload` in Pi to apply changes. When the file does not exist, safe runtime defaults are used in memory.
+
+### Basic configuration example
+
+Below is a typical v1 configuration structure:
 
 ```json
 {
@@ -93,15 +102,15 @@ Using the `/oneui` settings panel is recommended. The panel uses a top-centered 
       "style": "on",
       "borderColorMode": "static"
     },
-    "userMessages": {
-      "enabled": true,
-      "style": "framed"
+    "footer": {
+      "style": "starship"
     },
     "workingLine": {
       "enabled": true
     },
-    "footer": {
-      "style": "starship"
+    "userMessages": {
+      "enabled": true,
+      "style": "framed"
     }
   },
   "renderer": {
@@ -111,34 +120,29 @@ Using the `/oneui` settings panel is recommended. The panel uses a top-centered 
 }
 ```
 
-The Editor keeps a single `minimalist` decoration style controlled by `style`: `on` enables the Minimalist decoration, `off` restores Pi's native editor (the border follows the theme and effort coloring by default; when `colors.editorBorder` is explicitly configured, the off mode applies that color through theme semantics, overriding the native effort coloring). Legacy configurations migrate automatically: `enabled: false` becomes `style: "off"`, and `opencode`/`minimalist` become `style: "on"`; the `styles.opencode` block and the retired `opencode-copy-friendly`/`accent-rail` styles are ignored. Colors are always rendered with theme semantics: configured `colors.*` values resolve first as theme tokens (ANSI names such as `red` map to the semantic `error` token), unconfigured fields use the theme's dedicated tokens (`cwd`/`editorModel`/`editorBorder`, possibly referencing `vars`) and fall back to Pi's native defaults when the theme does not define them; fixed terminal colors are still available by writing hex, a 256-color index, or an `fg:`/`bg:` prefix. `borderColorMode` supports `static` (fixed `colors.editorBorder`) and `adaptive` (border uses the per-level `colors.editorThinking*` when configured and otherwise follows Pi's native effort coloring). The legacy `colorSource` field (`theme`/`terminal`) is removed and ignored; existing user files are not rewritten. For the complete color field reference, value syntax, and customization guide, see [docs/editor-colors.md](./docs/editor-colors.md). Context-usage information is presented by Footer.
+### Advanced configuration & documentation guide
 
-The WorkingLine token segment appends live output throughput, such as `⚡12 tok/s`, after a model response has run for at least 500ms. Throughput is calculated independently for the current response and resets on the next `turn_start`; disabling the token segment hides it as well.
+To keep the configuration section clean and focused, in-depth options, template variables, and color references are organized in dedicated documentation:
 
-Available layout and renderer options may change between versions, so prefer configuring them through `/oneui`.
-
-### Canonical configuration policy
-
-`pi-one-ui` reads and writes only:
-
-```text
-~/.pi/agent/pi-one-ui.json
-```
-
-It does not automatically read, merge, or migrate historical configuration files, and it does not parse legacy flat fields or old style identifiers. If the file does not exist, runtime defaults are used in memory. The file is created only after the first settings change through `/oneui`. All persisted changes use the current v1 `components` and `renderer` structure.
+- **Component options & layout customization**: see [Editor & Footer Configuration Guide (docs/configuration.md)](./docs/configuration.md)
+  - **Editor**: Configure `style` (`on` for Minimalist decoration / `off` for Pi native), `borderColorMode` (`static` or `adaptive` to thinking effort), `modelLabel`, and granular Minimalist displays (directory path format, session name, timer, cost, Git status, etc.).
+  - **Footer**: Starship-style layout powered by format templates (`$cwd`, `$git_branch`, `$tokens`, `$cost`, etc.), individual `segments` toggles, customizable separators, and context-usage indicators (gauge or text).
+  - **WorkingLine**: Built-in live output throughput tracking (appends e.g. `⚡12 tok/s` when a model response runs for at least 500ms, reset per turn).
+- **Color system & theme customization**: see [Editor Colors Reference (docs/editor-colors.md)](./docs/editor-colors.md)
+  - All colors resolve through unified theme semantics. Configured `colors.*` values resolve as theme tokens (adapting automatically across themes), while ANSI names map to semantic tokens (e.g. `red` to `error`). Fixed terminal colors can be specified using hex codes, 256-color indexes, or `fg:`/`bg:` prefixes.
+  - Full support for adaptive thinking-effort border colors (from Low to Max) and labels.
+- **Migration from legacy versions**: Field cleanups from 0.5.x/0.6.0 (such as merging `opencode` into `minimalist`, or removing `colorSource`) are covered in [docs/configuration.md: Changes and Migration](./docs/configuration.md#6-变更与迁移).
 
 ## Upstream origins and project evolution
 
-`pi-one-ui` originally combined source from the following open-source projects. Many thanks to their maintainers and contributors for providing the initial foundation.
+`pi-one-ui` was originally built upon source code from two open-source projects. We express our sincere appreciation to both upstream projects and their contributors:
 
 | Upstream project                                                | Capabilities incorporated into `pi-one-ui`                                                 | Reference baseline        |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------- |
-| [pi-zentui](https://github.com/lmilojevicc/pi-zentui)           | Starship-style Footer, Opencode-style Editor, layouts, and shell capabilities              | v0.21.0, commit `5341b38` |
+| [pi-zentui](https://github.com/lmilojevicc/pi-zentui)           | Starship-style Footer, Editor layouts, and shell interaction capabilities                  | v0.21.0, commit `5341b38` |
 | [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code-style Context renderer, Tool/Diff rendering, Context Inspector, and references | v0.8.67, commit `dba37e5` |
 
-Production code lives in `extensions/`. The project has since unified its entry point, configuration storage, lifecycle, layout ownership, overlays, and input routing. The current implementation is no longer equivalent to either upstream project and does not automatically track upstream changes.
-
-The upstream projects provided the original foundation. Continued development focuses on turning these capabilities into one coherent product with clear seams and sustainable maintenance.
+Production code lives in `extensions/`. `pi-one-ui` has unified the composition entry point, configuration storage, lifecycle management, layout ownership, overlay orchestration, and input routing. The project now evolves independently and no longer tracks upstream changes directly.
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed module boundaries, event flow, and ownership conventions.
 

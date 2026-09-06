@@ -6,42 +6,42 @@
 
 简体中文 | [English](./README.en.md)
 
-`pi-one-ui` 是一个面向 [Pi](https://pi.dev) 的统一 TUI 扩展包。项目的初衷是希望打造一个简单美观的 TUI 界面，最初通过源码级融合，将：
+`pi-one-ui` 是面向 [Pi](https://pi.dev) 的统一 TUI 扩展包，旨在打造简洁、美观且高效的终端交互界面。项目最初通过源码级融合，将：
 
-- [pi-zentui](https://github.com/lmilojevicc/pi-zentui)`pi-zentui` 的终端外壳能力
+- [pi-zentui](https://github.com/lmilojevicc/pi-zentui) 的终端外壳与布局能力
 - [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) 的对话内容渲染及生产力功能
 
-整合到同一个可安装、可配置的 Pi package 中，并在此基础上持续进行模块重构、职责收敛和独立优化。
+整合为开箱即用、统一可配置的单一扩展包，并在此基础上持续进行模块重构、职责收敛和体验优化。
 
 ## 特性
 
 ### 统一的界面布局
 
-`pi-one-ui` 将 Pi 的交互界面划分为以下布局：
+`pi-one-ui` 将 Pi 的交互界面划分为以下布局层级：
 
 ```text
 Header → Context → WorkingLine → Editor → Footer
 ```
 
 - **Header**：启动信息、Logo 和快捷键提示。
-- **Context**：对话内容区，包含用户消息、Assistant 消息、Thinking、Tool、Diff、Markdown 和 Summary。
-- **WorkingLine**：工作状态、spinner、token/thought/elapsed、实时输出速率和回合摘要。
-- **Editor**：输入编辑器、completion、metadata，以及 Minimalist 样式（可切换 Pi 原生）。
-- **Footer**：目录、Git、runtime、token、cost 和扩展状态等信息。
-- **Overlay**：设置面板、Context Inspector 等临时浮层由统一的 OverlayManager 管理。
+- **Context**：对话内容区，包含用户消息、Assistant 消息、Thinking 思考过程、Tool 执行、Diff 对比、Markdown 及回合摘要。
+- **WorkingLine**：工作状态指示、Spinner、Token/思考时长统计、实时吞吐速率及回合摘要。
+- **Editor**：输入编辑器、补全建议、元数据展示及 Minimalist 极简样式（支持一键切换 Pi 原生）。
+- **Footer**：工作目录、Git 状态、运行时信息、Token/费用统计及扩展状态等。
+- **Overlay**：设置面板、Context Inspector 等临时浮层，统一由 OverlayManager 调度管理。
 
 ### 内置功能
 
 | 功能                  | 说明                                                                   | 入口              |
 | --------------------- | ---------------------------------------------------------------------- | ----------------- |
-| 统一设置面板          | 按 Header、Context、WorkingLine、Editor、Footer 和 Features 组织设置   | `/oneui`          |
-| Context Inspector     | 查看上下文占用，并预览 System prompt、Memory、Skills、Tools 和消息内容 | `/context`        |
-| Session reference     | 搜索并注入历史 Pi session 或 SubAgent 的有效上下文                     | `@` 补全          |
-| Subagent autocomplete | 提供 SubAgent 名称补全和委派提示                                       | `@` 补全          |
-| Tool / Diff renderer  | 工具调用、结果、折叠内容和 Edit/Write diff 的统一展示                  | 自动生效          |
-| Subagent live renderer | 保留 pi-subagents 专用进度卡，并避免纳入通用工具分组                    | 自动生效          |
-| Markdown enhancement  | 支持 Mermaid、提示框和 URL 链接化等增强渲染                            | 自动生效          |
-| Built-in themes       | 提供 CC Dark 和 CC Light 主题                                          | `/theme`          |
+| 统一设置面板          | 集中管理 Header、Context、WorkingLine、Editor、Footer 等组件及功能设置   | `/oneui`          |
+| Context Inspector     | 查看上下文占用，并预览 System prompt、Memory、Skills、Tools 及消息内容 | `/context`        |
+| Session reference     | 搜索并引用注入历史 Pi 会话或 Subagent 的有效上下文                     | `@` 补全          |
+| Subagent autocomplete | 提供 Subagent 名称补全与委派提示                                       | `@` 补全          |
+| Tool / Diff renderer  | 工具调用、执行结果、折叠内容与 Edit/Write Diff 的统一美化渲染          | 自动生效          |
+| Subagent live renderer | 保留 subagents 专用进度卡片，避免混入通用工具分组                    | 自动生效          |
+| Markdown enhancement  | 支持 Mermaid 图表、提示框与 URL 链接化等增强渲染                       | 自动生效          |
+| Built-in themes       | 内置 CC Dark 和 CC Light 主题                                          | `/theme`          |
 | Compatibility aliases | 可选提供常用命令别名                                                   | `/clear`、`/exit` |
 
 ## 快速开始
@@ -77,14 +77,22 @@ pi install git:github.com/kerolt/pi-one-ui
 
 ## 配置
 
-配置文件位于：
+### 配置方式
+
+`pi-one-ui` 统一使用 Canonical v1 格式的配置文件：
 
 ```text
 ~/.pi/agent/pi-one-ui.json
 ```
 
+提供两种配置途径：
 
-推荐通过 `/oneui` 设置面板修改配置。面板采用更靠近顶部的居中布局；切换 Editor 开关或边框模式时会保持打开并在 Editor 替换后恢复焦点，持久化失败时则恢复列表中的有效旧值。当前配置仍使用 v1 结构，例如：
+1. **交互式设置面板（推荐）**：在 Pi 会话中运行 `/oneui`，即可在可视化面板中即时调整常用组件开关、样式和边框模式。修改即刻生效并自动持久化。
+2. **手动编辑配置文件**：高级用户可直接编辑 JSON 配置文件以启用更多细粒度选项。修改保存后，在 Pi 中执行 `/reload` 即可生效。文件不存在时将直接使用内置默认值。
+
+### 基础配置示例
+
+以下为一个典型的 v1 配置文件结构：
 
 ```json
 {
@@ -94,15 +102,15 @@ pi install git:github.com/kerolt/pi-one-ui
       "style": "on",
       "borderColorMode": "static"
     },
-    "userMessages": {
-      "enabled": true,
-      "style": "framed"
+    "footer": {
+      "style": "starship"
     },
     "workingLine": {
       "enabled": true
     },
-    "footer": {
-      "style": "starship"
+    "userMessages": {
+      "enabled": true,
+      "style": "framed"
     }
   },
   "renderer": {
@@ -112,36 +120,31 @@ pi install git:github.com/kerolt/pi-one-ui
 }
 ```
 
-Editor 只保留 `minimalist` 一种装饰样式，通过 `style` 开关控制：`on` 启用 Minimalist 装饰，`off` 恢复 Pi 原生编辑器（边框默认跟随主题与 effort 变色；若显式配置了 `colors.editorBorder`，off 模式下也会按 theme 语义应用该颜色，覆盖原生 effort 变色）。旧配置的 `enabled: false` 会迁移为 `style: "off"`，`opencode`/`minimalist` 会迁移为 `style: "on"`，`styles.opencode` 嵌套配置与 `opencode-copy-friendly`、`accent-rail` 一并失效。颜色统一按 theme 语义渲染：`colors.*` 配置值优先作为主题 token 解析（ANSI 色名如 `red` 会映射为语义色 `error`），未配置时优先主题专有 token（`cwd`/`editorModel`/`editorBorder`，可指向 vars 变量），主题未定义则回落 Pi 原生默认；需要固定终端色时可直接写 hex、256 色索引或 `fg:`/`bg:` 前缀。`borderColorMode` 支持 `static`（固定 `colors.editorBorder`）与 `adaptive`（边框优先用 `colors.editorThinking*` 分档配置，未配置则随 Pi 原生 effort 档位变化）。历史配置中的 `colorSource` 字段（`theme`/`terminal`）已移除并忽略，不主动改写用户文件。详细的颜色字段清单、取值语法与自定义方式见 [docs/editor-colors.md](./docs/editor-colors.md)。上下文占用相关信息由 Footer 统一展示。
+### 深度配置与文档指引
 
-WorkingLine 的 token segment 会在一次模型响应持续至少 500ms 后追加实时输出速率，例如 `⚡12 tok/s`。速率按当前响应独立计算，在下一次 `turn_start` 时重置；关闭 token segment 时也会一并隐藏。
+各项组件开关、模板变量与颜色字段的完整规范拆分收录于独立文档中，便于按需查阅：
 
-不同布局和渲染器的可用选项会随版本变化，建议优先使用 `/oneui` 面板进行配置。
-
-### Canonical 配置约定
-
-`pi-one-ui` 只读取和写入：
-
-```text
-~/.pi/agent/pi-one-ui.json
-```
-
-不会自动读取、合并或迁移其他历史配置文件，也不会解析旧版扁平字段和旧 style 名称。配置文件不存在时，运行时直接使用内置默认值；首次通过 `/oneui` 修改设置时才创建文件。所有持久化修改统一写入当前 v1 的 `components` 和 `renderer` 结构。
+- **组件开关与排版定制**：详见 [Editor 与 Footer 配置指南 (docs/configuration.md)](./docs/configuration.md)
+  - **Editor**：支持 `style`（`on` 极简装饰 / `off` 原生）、`borderColorMode`（固定色 / 思考档位自适应）、`modelLabel` 及 Minimalist 装饰细节（目录层级、会话名、耗时、费用、Git 状态等）。
+  - **Footer**：支持 Starship 风格排版，提供丰富的模板变量（`$cwd`、`$git_branch`、`$tokens`、`$cost` 等），支持通过 `format` 自定义或通过 `segments` 控制各段开关，并可自由配置上下文占用率的展示形式（gauge / text）。
+  - **WorkingLine**：内置实时输出速率检测（单次响应持续 >=500ms 自动追加如 `⚡12 tok/s`，按回合独立重置）。
+- **颜色体系与主题定制**：详见 [Editor 颜色配置说明 (docs/editor-colors.md)](./docs/editor-colors.md)
+  - 所有颜色统一按 Theme 语义解释，优先解析为当前主题语义 Token（随主题自动切换），ANSI 色名自动映射为语义色（如 `red` 对应 `error`）；如需固定色彩，可直接指定 Hex、256 色索引或 `fg:`/`bg:` 前缀。
+  - 支持完整的 Thinking 思考档位（Low 至 Max）自适应边框与标签分级配色。
+- **历史版本迁移**：旧版升级带来的字段收敛（如 `opencode` 样式统一合并入 `minimalist`、`colorSource` 双模式移除等）参见 [docs/configuration.md 变更与迁移节](./docs/configuration.md#6-变更与迁移)。
 
 ## 上游来源与项目演进
 
-`pi-one-ui` 以以下两个开源项目的源码为初始基础，并对它们进行源码级融合。在此再次感谢两个上游项目及其贡献者，他们为 `pi-one-ui` 提供了最初的实现基础。
+`pi-one-ui` 最初以两个开源项目的源码为基础进行整合。由衷感谢两个上游项目及其贡献者的出色工作：
 
-| 上游项目                                                        | 融入 `pi-one-ui` 的主要能力                                                | 参照baseline              |
+| 上游项目                                                        | 融入 `pi-one-ui` 的主要能力                                                | 参照 Baseline              |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------- |
-| [pi-zentui](https://github.com/lmilojevicc/pi-zentui)           | Starship 风格 Footer、Opencode 风格 Editor、布局和 shell 能力              | v0.21.0，commit `5341b38` |
-| [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code 风格 Context renderer、Tool/Diff、Context Inspector 和引用功能 | v0.8.67，commit `dba37e5` |
+| [pi-zentui](https://github.com/lmilojevicc/pi-zentui)           | Starship 风格 Footer、Editor 基础布局与 Shell 交互能力                      | v0.21.0，commit `5341b38` |
+| [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code 风格 Context 渲染器、Tool/Diff 视图、Context Inspector 与会话引用 | v0.8.67，commit `dba37e5` |
 
-融合后的生产代码位于 `extensions/`。项目已经在原始实现之上统一入口、配置存储、生命周期、Layout ownership、Overlay 和输入路由，并会继续独立演进；当前实现不再等同于任一上游项目，也不会自动跟随上游同步。
+融合后的生产代码位于 `extensions/`。`pi-one-ui` 在原始实现之上完成了入口统一、配置存储规范化、生命周期治理、Layout Ownership 收敛、Overlay 统一调度与输入路由解耦，并持续独立演进。当前实现已完全独立于上游，不依赖也不自动同步上游分支。
 
-感谢两个上游项目及其贡献者。它们为 `pi-one-ui` 提供了最初的实现基础，而本项目后续的工作重点是将这些能力收敛为一个边界清晰、可持续维护的统一产品。
-
-更详细的模块边界、事件流和 ownership 约定参见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
+更详细的模块边界、事件流与 Ownership 约定参见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
 ## 本地开发
 
