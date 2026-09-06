@@ -5,6 +5,7 @@ test("renderer config keeps the unified package defaults", () => {
   const config = normalizeConfig({});
   expect(config.mode).toBe("on");
   expect(config.diffViewMode).toBe("auto");
+  expect(config.enableEffortCommand).toBe(true);
 });
 
 test("renderer config ignores removed legacy field aliases", () => {

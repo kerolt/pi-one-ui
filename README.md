@@ -43,6 +43,7 @@ Header → Context → WorkingLine → Editor → Footer
 | Markdown enhancement  | 支持 Mermaid 图表、提示框与 URL 链接化等增强渲染                       | 自动生效          |
 | Built-in themes       | 内置 CC Dark 和 CC Light 主题                                          | `/theme`          |
 | Compatibility aliases | 可选提供常用命令别名                                                   | `/clear`、`/exit` |
+| Effort command        | 交互式或直接切换当前模型的 Thinking 思考档位                          | `/effort`         |
 
 ## 快速开始
 

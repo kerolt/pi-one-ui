@@ -16,6 +16,7 @@ import { type ConfigRecord, configStore } from "../../app/config/store.ts";
 // shell
 import piAliases from "../../features/aliases.ts";
 import context from "../../features/context-inspector/index.ts";
+import effortCommand from "../../features/effort-command.ts";
 import { installFlushDockedBash } from "../../features/flush-docked-bash.ts";
 import sessionReference from "../../features/session-reference/index.ts";
 // feature
@@ -154,6 +155,9 @@ export default function (
 ): void {
   // shell chrome
   if (config.enableAliases) piAliases(pi);
+  if (config.enableEffortCommand) {
+    effortCommand(pi);
+  }
   installFlushDockedBash();
   // The thinking controller is queried directly by the context render stack.
   markdownEnhance(pi);

@@ -43,6 +43,7 @@ Header → Context → WorkingLine → Editor → Footer
 | Markdown enhancement   | Adds Mermaid diagrams, admonitions, clickable URL linking, and rendering improvements       | Automatic         |
 | Built-in themes        | Includes CC Dark and CC Light themes                                                        | `/theme`          |
 | Compatibility aliases  | Optionally provides common command aliases                                                  | `/clear`, `/exit` |
+| Effort command         | Interactively or directly switch the active model's thinking effort level                   | `/effort`         |
 
 ## Quick start
 

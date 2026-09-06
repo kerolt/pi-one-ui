@@ -62,6 +62,7 @@ export type Config = {
   enableContextCommand: boolean;
   enableAgentSummary: boolean;
   enableAliases: boolean;
+  enableEffortCommand: boolean;
 };
 
 function rendererConfigFrom(record: ConfigRecord): ConfigRecord {
@@ -166,6 +167,7 @@ export const DEFAULT_CONFIG: Config = {
   enableContextCommand: true,
   enableAgentSummary: true,
   enableAliases: true,
+  enableEffortCommand: true,
 };
 
 function pickEnum<T extends string>(
@@ -296,6 +298,7 @@ export function normalizeConfig(input: unknown): Config {
     enableContextCommand: source.enableContextCommand !== false,
     enableAgentSummary: source.enableAgentSummary !== false,
     enableAliases: source.enableAliases !== false,
+    enableEffortCommand: source.enableEffortCommand !== false,
   };
 }
 
@@ -350,6 +353,7 @@ export function formatConfigStatus(source: Config = config): string {
     `context=${source.enableContextCommand ? "on" : "off"}`,
     `agentSummary=${source.enableAgentSummary ? "on" : "off"}`,
     `aliases=${source.enableAliases ? "on" : "off"}`,
+    `effort=${source.enableEffortCommand ? "on" : "off"}`,
   ].join(" · ");
 }
 

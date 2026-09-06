@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Built-in `/effort` command for selecting the thinking effort level (interactive picker, argument autocomplete, and model-clamping feedback), gated by `renderer.enableEffortCommand` (default `true`) and toggleable from the `/oneui` Features section. Replaces the need for a standalone local effort extension — remove any self-installed `/effort` extension to avoid duplicate command registration.
+
 ## [0.6.0] - 2026-09-05
 
 ### Removed

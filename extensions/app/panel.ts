@@ -303,6 +303,13 @@ function featureItems(config: ContextConfig): SettingItem[] {
       currentValue: onOff(config.enableAliases),
       values: ["on", "off"],
     },
+    {
+      id: "enableEffortCommand",
+      label: "Effort command",
+      description: "Register the /effort thinking-level command.",
+      currentValue: onOff(config.enableEffortCommand),
+      values: ["on", "off"],
+    },
   ];
 }
 
@@ -547,6 +554,7 @@ function updateSetting(
     id === "enableContextCommand" ||
     id === "enableAgentSummary" ||
     id === "enableAliases" ||
+    id === "enableEffortCommand" ||
     id === "showStartupHeader"
   ) {
     const patch = { [id]: isOn(value) } as Partial<ContextConfig>;
