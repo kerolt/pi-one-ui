@@ -117,6 +117,12 @@ pi install git:github.com/kerolt/pi-one-ui
   "renderer": {
     "mode": "on",
     "diffViewMode": "auto"
+  },
+  "panel": {
+    "anchor": "top-center",
+    "width": "85%",
+    "maxHeight": "90%",
+    "margin": { "top": 6, "right": 1, "bottom": 1, "left": 1 }
   }
 }
 ```
@@ -129,6 +135,11 @@ pi install git:github.com/kerolt/pi-one-ui
   - **Editor**：支持 `style`（`on` 极简装饰 / `off` 原生）、`borderColorMode`（固定色 / 思考档位自适应）、`modelLabel` 及 Minimalist 装饰细节（目录层级、会话名、耗时、费用、Git 状态等）。
   - **Footer**：支持 Starship 风格排版，提供丰富的模板变量（`$cwd`、`$git_branch`、`$tokens`、`$cost` 等），支持通过 `format` 自定义或通过 `segments` 控制各段开关，并可自由配置上下文占用率的展示形式（gauge / text）。
   - **WorkingLine**：内置实时输出速率检测（单次响应持续 >=500ms 自动追加如 `⚡12 tok/s`，按回合独立重置）。
+- **设置面板（`/oneui`）定制**：通过顶层 `panel` 字段控制浮层位置与尺寸，全部字段可省略（缺省值见上文示例）。
+  - `anchor`：锚点，支持 `center`、`top-left`、`top-right`、`bottom-left`、`bottom-right`、`top-center`、`bottom-center`、`left-center`、`right-center`。
+  - `width` / `maxHeight`：列数 / 行数，或 `"85%"` 形式的百分比字符串。
+  - `margin`：距终端边缘的外边距，可以是四边统一数字，也可以是按 `top`/`right`/`bottom`/`left` 分别配置的对象。
+  - 修改保存后下次打开 `/oneui` 即生效，无需 `/reload`。
 - **颜色体系与主题定制**：详见 [Editor 颜色配置说明 (docs/editor-colors.md)](./docs/editor-colors.md)
   - 所有颜色统一按 Theme 语义解释，优先解析为当前主题语义 Token（随主题自动切换），ANSI 色名自动映射为语义色（如 `red` 对应 `error`）；如需固定色彩，可直接指定 Hex、256 色索引或 `fg:`/`bg:` 前缀。
   - 支持完整的 Thinking 思考档位（Low 至 Max）自适应边框与标签分级配色。

@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Built-in `/effort` command for selecting the thinking effort level (interactive picker, argument autocomplete, and model-clamping feedback), gated by `renderer.enableEffortCommand` (default `true`) and toggleable from the `/oneui` Features section. Replaces the need for a standalone local effort extension — remove any self-installed `/effort` extension to avoid duplicate command registration.
+- The `/oneui` settings panel overlay placement is now configurable via the optional top-level `panel` key in `pi-one-ui.json` (`anchor`, `width`, `maxHeight`, `margin`), replacing the previously hardcoded `top-center`/`85%`/`90%` layout. Invalid values fall back to the defaults, and edits apply the next time the panel opens.
 
 ## [0.6.0] - 2026-09-05
 

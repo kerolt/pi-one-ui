@@ -117,6 +117,12 @@ Below is a typical v1 configuration structure:
   "renderer": {
     "mode": "on",
     "diffViewMode": "auto"
+  },
+  "panel": {
+    "anchor": "top-center",
+    "width": "85%",
+    "maxHeight": "90%",
+    "margin": { "top": 6, "right": 1, "bottom": 1, "left": 1 }
   }
 }
 ```
@@ -129,6 +135,11 @@ To keep the configuration section clean and focused, in-depth options, template 
   - **Editor**: Configure `style` (`on` for Minimalist decoration / `off` for Pi native), `borderColorMode` (`static` or `adaptive` to thinking effort), `modelLabel`, and granular Minimalist displays (directory path format, session name, timer, cost, Git status, etc.).
   - **Footer**: Starship-style layout powered by format templates (`$cwd`, `$git_branch`, `$tokens`, `$cost`, etc.), individual `segments` toggles, customizable separators, and context-usage indicators (gauge or text).
   - **WorkingLine**: Built-in live output throughput tracking (appends e.g. `⚡12 tok/s` when a model response runs for at least 500ms, reset per turn).
+- **Settings panel (`/oneui`) customization**: the optional top-level `panel` section controls the overlay placement and size (all fields default to the values shown in the example above).
+  - `anchor`: one of `center`, `top-left`, `top-right`, `bottom-left`, `bottom-right`, `top-center`, `bottom-center`, `left-center`, `right-center`.
+  - `width` / `maxHeight`: absolute column/row counts, or percentage strings like `"85%"`.
+  - `margin`: distance from the terminal edges — either a single number for all sides, or an object with per-edge `top`/`right`/`bottom`/`left` values.
+  - Saved changes apply the next time `/oneui` opens; no `/reload` needed.
 - **Color system & theme customization**: see [Editor Colors Reference (docs/editor-colors.md)](./docs/editor-colors.md)
   - All colors resolve through unified theme semantics. Configured `colors.*` values resolve as theme tokens (adapting automatically across themes), while ANSI names map to semantic tokens (e.g. `red` to `error`). Fixed terminal colors can be specified using hex codes, 256-color indexes, or `fg:`/`bg:` prefixes.
   - Full support for adaptive thinking-effort border colors (from Low to Max) and labels.

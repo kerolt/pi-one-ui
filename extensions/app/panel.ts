@@ -13,6 +13,7 @@ import {
   renderEditorSettingsPreview,
   renderUserMessageSettingsPreview,
 } from "./commands/settings-previews.ts";
+import { loadPanelOverlayConfig } from "./config/panel.ts";
 import {
   type CompactStyleMode,
   type Config as ContextConfig,
@@ -606,6 +607,8 @@ export async function showOneUiPanel(
 
   unifiedPanelOpen = true;
   try {
+    // Read fresh on every open so pi-one-ui.json edits apply without /reload.
+    const panelOverlay = loadPanelOverlayConfig();
     let panelHandle: { focus: () => void } | undefined;
     await overlayManager.run(() =>
       ctx.ui.custom(
@@ -688,15 +691,10 @@ export async function showOneUiPanel(
         {
           overlay: true,
           overlayOptions: {
-            anchor: "top-center",
-            width: "85%",
-            maxHeight: "90%",
-            margin: {
-              top: 6,
-              right: 1,
-              bottom: 1,
-              left: 1,
-            },
+            anchor: panelOverlay.anchor,
+            width: panelOverlay.width,
+            maxHeight: panelOverlay.maxHeight,
+            margin: panelOverlay.margin,
           },
           onHandle: (handle: { focus: () => void }) => {
             panelHandle = handle;

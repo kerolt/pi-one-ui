@@ -12,7 +12,12 @@ type PanelComponent = {
   handleInput(data: string): void;
 };
 type PanelOptions = {
-  overlayOptions?: { anchor?: string };
+  overlayOptions?: {
+    anchor?: string;
+    width?: number | string;
+    maxHeight?: number | string;
+    margin?: unknown;
+  };
   onHandle?: (handle: { focus: () => void }) => void;
 };
 type ShowOneUiPanel =
@@ -123,6 +128,44 @@ test("/oneui settings are top-anchored and rendered with a border", async () => 
   harness.component().handleInput("\x1b");
   await opened;
   expect(harness.operations).toStrictEqual(["close"]);
+});
+
+test("/oneui reads the overlay placement from pi-one-ui.json", async () => {
+  sharedConfigStore.update((record) => {
+    record.panel = {
+      anchor: "bottom-right",
+      width: "60%",
+      maxHeight: 40,
+      margin: 2,
+    };
+  });
+
+  try {
+    const harness = createPanelHarness({});
+    const opened = harness.open();
+
+    // 面板打开时实时读取配置，无需 /reload。
+    expect(harness.options()?.overlayOptions).toStrictEqual({
+      anchor: "bottom-right",
+      width: "60%",
+      maxHeight: 40,
+      margin: 2,
+    });
+
+    harness.component().handleInput("\x1b");
+    await opened;
+  } finally {
+    sharedConfigStore.update((record) => {
+      delete record.panel;
+    });
+  }
+
+  // 配置移除后回落到默认的顶部锚点。
+  const fallback = createPanelHarness({});
+  const reopened = fallback.open();
+  expect(fallback.options()?.overlayOptions?.anchor).toBe("top-center");
+  fallback.component().handleInput("\x1b");
+  await reopened;
 });
 
 test("renderer config commits to memory only after persistence succeeds", () => {
