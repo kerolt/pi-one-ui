@@ -262,6 +262,9 @@ function renderBottomRight(
   uiTheme: Theme,
   config: ZentuiConfig,
 ): string {
+  if (config.components.editor.styles.minimalist.showCwd === false) {
+    return "";
+  }
   const cwd = sanitizeEditorMetadataText(minimalistCwdLabel(metadata, config));
   return cwd
     ? renderSourceColor(uiTheme, config.colors.cwd, "cwd", "bold cyan", cwd)

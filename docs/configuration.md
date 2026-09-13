@@ -1,6 +1,6 @@
 # Editor 与 Footer 配置指南
 
-> 适用版本：pi-one-ui >= 0.6.0。颜色相关的完整字段清单、取值语法与自定义方式见 [editor-colors.md](./editor-colors.md)。
+> 适用版本：pi-one-ui >= 0.6.0。`showCwd` 为 Unreleased 新增配置，尚未包含在 0.6.1 发布版中。颜色相关的完整字段清单、取值语法与自定义方式见 [editor-colors.md](./editor-colors.md)。
 
 本文介绍 Editor 与 Footer 两个组件的可配置项：每个开关的作用、取值、默认值，以及完整配置示例。
 
@@ -28,7 +28,8 @@
 
 | 字段 | 默认 | 作用 |
 |---|---|---|
-| `pathDisplay` | `compact` | 路径显示模式：`compact` 只显示当前目录名，`project` 显示项目根加相对路径，`full` 显示完整路径 |
+| `showCwd` | `true` | 是否在右下角显示工作目录；设为 `false` 隐藏，不影响 Git 信息或 Footer（Unreleased 新增） |
+| `pathDisplay` | `compact` | `showCwd: true` 时的路径格式：`compact` 只显示当前目录名，`project` 显示项目根加相对路径，`full` 显示完整路径 |
 | `showSessionName` | `true` | 左上角显示会话名 |
 | `showTimer` | `true` | 显示 Agent 运行时长 |
 | `showCost` | `true` | 右上角显示 token 花费 |
@@ -55,6 +56,39 @@
   }
 }
 ```
+
+#### 隐藏 Editor 目录，在 Footer 左侧显示
+
+`showCwd` 只接受布尔值；省略或填写非法值时默认显示。隐藏目录后仍保留 `pathDisplay`，重新开启时继续使用之前的格式。
+
+将以下配置合并到 `~/.pi/agent/pi-one-ui.json`，保存后执行 `/reload` 或重启 Pi。此选项通过 JSON 设置，`/oneui` 的 Editor 预览会遵循它，面板暂不提供独立开关。
+
+```json
+{
+  "version": 1,
+  "components": {
+    "editor": {
+      "style": "on",
+      "styles": {
+        "minimalist": {
+          "showCwd": false
+        }
+      }
+    },
+    "footer": {
+      "style": "starship",
+      "styles": {
+        "starship": {
+          "segments": { "cwd": true },
+          "pathDisplay": { "mode": "full", "depth": 0 }
+        }
+      }
+    }
+  }
+}
+```
+
+如果 Footer 已设置自定义 `format` 或 `compactFormat`，还需在相应模板的左侧加入 `$cwd`；仅开启 `segments.cwd` 不会覆盖模板。
 
 ### 2.3 边框颜色
 
@@ -224,7 +258,8 @@ Footer 共用颜色：`sessionName`、`gitBranch`、`gitStatus`、`contextNormal
 
 | 目标 | 做法 |
 |---|---|
-| 只要 Editor，不要额外标签 | `showSessionName`/`showTimer`/`showCost`/`showGit` 按需关掉 |
+| 隐藏 Editor 工作目录 | `editor.styles.minimalist.showCwd: false`（Unreleased），Footer 的目录显示独立配置 |
+| 隐藏 Editor 的可选装饰 | `showCwd`/`showSessionName`/`showTimer`/`showCost`/`showGit` 按需关掉，模型与 thinking 标签保留 |
 | 恢复原生编辑器 | `editor.style: "off"`（显式配 `editorBorder` 可只覆盖边框色） |
 | 边框随思考档位变色 | `editor.borderColorMode: "adaptive"` + `editorThinking*` |
 | 自定义 footer 排版 | `footer.styles.starship.format` 写模板 |

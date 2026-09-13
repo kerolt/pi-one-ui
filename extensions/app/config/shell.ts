@@ -97,6 +97,8 @@ export type FooterSegmentsConfig = {
 
 export type MinimalistEditorStyleConfig = {
   pathDisplay: MinimalistPathDisplayMode;
+  /** Controls the Editor directory label independently of its format and the Footer. */
+  showCwd: boolean;
   showSessionName: boolean;
   showTimer: boolean;
   showCost: boolean;
@@ -395,6 +397,7 @@ const defaultFooterSegments: FooterSegmentsConfig = {
 
 const defaultMinimalistStyle: MinimalistEditorStyleConfig = {
   pathDisplay: "compact",
+  showCwd: true,
   showSessionName: true,
   showTimer: true,
   showCost: true,
@@ -1001,6 +1004,10 @@ function resolveComponents(config: ConfigRecord): ComponentsConfig {
             minimalist.pathDisplay === "full"
               ? minimalist.pathDisplay
               : defaultMinimalistStyle.pathDisplay,
+          showCwd: parseBoolean(
+            minimalist.showCwd,
+            defaultMinimalistStyle.showCwd,
+          ),
           showSessionName: parseBoolean(
             minimalist.showSessionName,
             defaultMinimalistStyle.showSessionName,
@@ -1386,6 +1393,9 @@ function applyMinimalistStylePatch(
   patch: Partial<MinimalistEditorStyleConfig>,
 ): void {
   if (patch.pathDisplay !== undefined) style.pathDisplay = patch.pathDisplay;
+  if (patch.showCwd !== undefined) {
+    style.showCwd = patch.showCwd;
+  }
   if (patch.showSessionName !== undefined)
     style.showSessionName = patch.showSessionName;
   if (patch.showTimer !== undefined) style.showTimer = patch.showTimer;

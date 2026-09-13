@@ -2,6 +2,7 @@ import { homedir } from "node:os";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
+import { renderEditorSettingsPreview } from "../../extensions/app/commands/settings-previews.ts";
 import {
   defaultConfig,
   mergeConfig,
@@ -485,6 +486,87 @@ describe("minimalist editor frame", () => {
     );
     expect(pathLine("project")).toContain("~/workspace/repo/src/lib");
     expect(pathLine("full")).toContain("~/workspace/repo/src/lib");
+  });
+
+  it.each(["compact", "project", "full"] as const)(
+    "hides and restores the cwd label without changing other content in %s mode",
+    (pathDisplay) => {
+      const currentConfig = mergeConfig({
+        components: {
+          editor: { styles: { minimalist: { pathDisplay } } },
+        },
+      });
+      const options = {
+        width: 120,
+        editorLines: ["draft"],
+        autocompleteLines: ["suggestion"],
+        inputText: "draft",
+        metadata: {
+          cwd: "/workspace/project/cwd-marker",
+          projectRoot: "/workspace/project",
+          branch: "main",
+          dirty: true,
+          ahead: 2,
+          behind: 1,
+          modelLabel: "model-x",
+          costLabel: "$1.000",
+        },
+        uiTheme: theme(),
+        config: currentConfig,
+      };
+      const visible = renderMinimalistFrame(options);
+      expect(visible.at(-1)).toContain("cwd-marker");
+
+      currentConfig.components.editor.styles.minimalist.showCwd = false;
+      const hidden = renderMinimalistFrame(options);
+      expect(hidden.join("\n")).not.toContain("cwd-marker");
+      expect(hidden.at(-1)).toContain("main * ↑2 ↓1");
+      expect(hidden.at(-1)).toMatch(/^╰.*╯$/);
+      // Only the directory label changes; input, completion and top metadata stay intact.
+      expect(hidden.slice(0, -1)).toEqual(visible.slice(0, -1));
+      expect(hidden.every((line) => visibleWidth(line) <= options.width)).toBe(
+        true,
+      );
+      expect(
+        currentConfig.components.editor.styles.minimalist.pathDisplay,
+      ).toBe(pathDisplay);
+
+      currentConfig.components.editor.styles.minimalist.showCwd = true;
+      expect(renderMinimalistFrame(options)).toEqual(visible);
+    },
+  );
+
+  it.each([5, 8, 20, 80])(
+    "keeps a complete plain bottom border when cwd and Git are hidden at width %i",
+    (width) => {
+      const lines = renderMinimalistFrame({
+        width,
+        editorLines: ["draft"],
+        inputText: "draft",
+        metadata: { cwd: "/workspace/cwd-marker", branch: "main" },
+        uiTheme: theme(),
+        config: mergeConfig({
+          components: {
+            editor: {
+              styles: { minimalist: { showCwd: false, showGit: false } },
+            },
+          },
+        }),
+      });
+      // An absent label must not leave padding, a placeholder, or broken corners.
+      expect(lines.at(-1)).toBe(`╰${"─".repeat(width - 2)}╯`);
+      expect(lines.every((line) => visibleWidth(line) <= width)).toBe(true);
+    },
+  );
+
+  it("uses the same cwd visibility setting in the Editor panel preview", () => {
+    const currentConfig = mergeConfig({});
+    const visible = renderEditorSettingsPreview(currentConfig, theme(), 72);
+    expect(visible.at(-1)).toContain("src");
+    currentConfig.components.editor.styles.minimalist.showCwd = false;
+    const hidden = renderEditorSettingsPreview(currentConfig, theme(), 72);
+    expect(hidden.at(-1)).not.toContain("src");
+    expect(hidden.slice(0, -1)).toEqual(visible.slice(0, -1));
   });
 
   it("supports focused visibility controls", () => {

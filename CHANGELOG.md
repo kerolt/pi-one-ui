@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added `components.editor.styles.minimalist.showCwd` to independently show or hide the Editor's working-directory label, including the `/oneui` preview. It defaults to `true`, so existing configurations need no migration. Setting it to `false` preserves `pathDisplay` and leaves Git metadata and Footer directory settings unchanged; edit the JSON configuration and run `/reload` to apply it.
+
 ### Fixed
 
 - Restore keyboard focus to the visible Editor after `/oneui` replaces an editor while changing its settings, including native-to-custom transitions, third-party wrappers, and replacement rollback. Closing the panel no longer sends subsequent typing to the detached previous editor in regular or fullscreen mode; existing overlays and later editor owners retain focus.

@@ -132,7 +132,7 @@ pi install git:github.com/kerolt/pi-one-ui
 各项组件开关、模板变量与颜色字段的完整规范拆分收录于独立文档中，便于按需查阅：
 
 - **组件开关与排版定制**：详见 [Editor 与 Footer 配置指南 (docs/configuration.md)](./docs/configuration.md)
-  - **Editor**：支持 `style`（`on` 极简装饰 / `off` 原生）、`borderColorMode`（固定色 / 思考档位自适应）、`modelLabel` 及 Minimalist 装饰细节（目录层级、会话名、耗时、费用、Git 状态等）。
+  - **Editor**：支持 `style`（`on` 极简装饰 / `off` 原生）、`borderColorMode`（固定色 / 思考档位自适应）、`modelLabel` 及 Minimalist 装饰细节（目录显示与格式、会话名、耗时、费用、Git 状态等）。`components.editor.styles.minimalist.showCwd`（Unreleased，默认 `true`）可单独隐藏工作目录，不影响 Footer；`pathDisplay` 继续控制目录格式。
   - **Footer**：支持 Starship 风格排版，提供丰富的模板变量（`$cwd`、`$git_branch`、`$tokens`、`$cost` 等），支持通过 `format` 自定义或通过 `segments` 控制各段开关，并可自由配置上下文占用率的展示形式（gauge / text）。
   - **WorkingLine**：内置实时输出速率检测（单次响应持续 >=500ms 自动追加如 `⚡12 tok/s`，按回合独立重置）。
 - **设置面板（`/oneui`）定制**：通过顶层 `panel` 字段控制浮层位置与尺寸，全部字段可省略（缺省值见上文示例）。

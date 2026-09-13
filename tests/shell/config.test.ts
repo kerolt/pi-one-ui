@@ -97,6 +97,7 @@ describe("canonical config resolution", () => {
         styles: {
           minimalist: {
             pathDisplay: "compact",
+            showCwd: true,
             showSessionName: true,
             showTimer: true,
             showCost: true,
