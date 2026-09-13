@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-13
+
 ### Added
 
 - Added `components.editor.styles.minimalist.showCwd` to independently show or hide the Editor's working-directory label, including the `/oneui` preview. It defaults to `true`, so existing configurations need no migration. Setting it to `false` preserves `pathDisplay` and leaves Git metadata and Footer directory settings unchanged; edit the JSON configuration and run `/reload` to apply it.
@@ -13,6 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Restore keyboard focus to the visible Editor after `/oneui` replaces an editor while changing its settings, including native-to-custom transitions, third-party wrappers, and replacement rollback. Closing the panel no longer sends subsequent typing to the detached previous editor in regular or fullscreen mode; existing overlays and later editor owners retain focus.
+
+### Migration
+
+- No configuration migration is required. Existing configurations keep showing the Editor directory; set `components.editor.styles.minimalist.showCwd` to `false` only if you want to hide it. Footer directory settings remain independent.
+- For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.7.0`. Fully exit and restart Pi after updating the package. Subsequent JSON configuration edits can be applied with `/reload`.
 
 ## [0.6.1] - 2026-09-06
 
@@ -123,7 +130,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/kerolt/pi-one-ui/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/kerolt/pi-one-ui/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kerolt/pi-one-ui/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/kerolt/pi-one-ui/compare/v0.5.0...v0.5.1

@@ -1,6 +1,6 @@
 # Editor 与 Footer 配置指南
 
-> 适用版本：pi-one-ui >= 0.6.0。`showCwd` 为 Unreleased 新增配置，尚未包含在 0.6.1 发布版中。颜色相关的完整字段清单、取值语法与自定义方式见 [editor-colors.md](./editor-colors.md)。
+> 适用版本：pi-one-ui >= 0.6.0。`showCwd` 从 0.7.0 起支持。颜色相关的完整字段清单、取值语法与自定义方式见 [editor-colors.md](./editor-colors.md)。
 
 本文介绍 Editor 与 Footer 两个组件的可配置项：每个开关的作用、取值、默认值，以及完整配置示例。
 
@@ -28,7 +28,7 @@
 
 | 字段 | 默认 | 作用 |
 |---|---|---|
-| `showCwd` | `true` | 是否在右下角显示工作目录；设为 `false` 隐藏，不影响 Git 信息或 Footer（Unreleased 新增） |
+| `showCwd` | `true` | 是否在右下角显示工作目录；设为 `false` 隐藏，不影响 Git 信息或 Footer（0.7.0 新增） |
 | `pathDisplay` | `compact` | `showCwd: true` 时的路径格式：`compact` 只显示当前目录名，`project` 显示项目根加相对路径，`full` 显示完整路径 |
 | `showSessionName` | `true` | 左上角显示会话名 |
 | `showTimer` | `true` | 显示 Agent 运行时长 |
@@ -258,7 +258,7 @@ Footer 共用颜色：`sessionName`、`gitBranch`、`gitStatus`、`contextNormal
 
 | 目标 | 做法 |
 |---|---|
-| 隐藏 Editor 工作目录 | `editor.styles.minimalist.showCwd: false`（Unreleased），Footer 的目录显示独立配置 |
+| 隐藏 Editor 工作目录 | `editor.styles.minimalist.showCwd: false`（0.7.0 起），Footer 的目录显示独立配置 |
 | 隐藏 Editor 的可选装饰 | `showCwd`/`showSessionName`/`showTimer`/`showCost`/`showGit` 按需关掉，模型与 thinking 标签保留 |
 | 恢复原生编辑器 | `editor.style: "off"`（显式配 `editorBorder` 可只覆盖边框色） |
 | 边框随思考档位变色 | `editor.borderColorMode: "adaptive"` + `editorThinking*` |

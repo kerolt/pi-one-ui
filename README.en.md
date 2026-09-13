@@ -76,6 +76,20 @@ Then open the unified settings panel:
 /oneui
 ```
 
+### Upgrading to 0.7.0
+
+This release adds an Editor working-directory visibility switch and fixes invisible input after changing Editor settings and closing `/oneui`. Existing configurations need no migration; the directory remains visible by default.
+
+For an unpinned npm installation, run:
+
+```bash
+pi update npm:pi-one-ui
+```
+
+If your installation pins a version, run `pi install npm:pi-one-ui@0.7.0` to update the pin. Fully exit and restart Pi after updating the package.
+
+To hide the Editor directory, set `components.editor.styles.minimalist.showCwd: false`; Footer directory visibility is configured independently. See the complete example in the [configuration guide](./docs/configuration.md#隐藏-editor-目录在-footer-左侧显示).
+
 ## Configuration
 
 ### Configuration methods
@@ -132,7 +146,7 @@ Below is a typical v1 configuration structure:
 To keep the configuration section clean and focused, in-depth options, template variables, and color references are organized in dedicated documentation:
 
 - **Component options & layout customization**: see [Editor & Footer Configuration Guide (docs/configuration.md)](./docs/configuration.md)
-  - **Editor**: Configure `style` (`on` for Minimalist decoration / `off` for Pi native), `borderColorMode` (`static` or `adaptive` to thinking effort), `modelLabel`, and granular Minimalist displays (directory visibility and format, session name, timer, cost, Git status, etc.). `components.editor.styles.minimalist.showCwd` (Unreleased, default `true`) can hide the directory independently of the Footer; `pathDisplay` continues to select its format.
+  - **Editor**: Configure `style` (`on` for Minimalist decoration / `off` for Pi native), `borderColorMode` (`static` or `adaptive` to thinking effort), `modelLabel`, and granular Minimalist displays (directory visibility and format, session name, timer, cost, Git status, etc.). `components.editor.styles.minimalist.showCwd` (since 0.7.0, default `true`) can hide the directory independently of the Footer; `pathDisplay` continues to select its format.
   - **Footer**: Starship-style layout powered by format templates (`$cwd`, `$git_branch`, `$tokens`, `$cost`, etc.), individual `segments` toggles, customizable separators, and context-usage indicators (gauge or text).
   - **WorkingLine**: Built-in live output throughput tracking (appends e.g. `⚡12 tok/s` when a model response runs for at least 500ms, reset per turn).
 - **Settings panel (`/oneui`) customization**: the optional top-level `panel` section controls the overlay placement and size (all fields default to the values shown in the example above).
