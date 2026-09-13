@@ -21,6 +21,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - No configuration migration is required. Existing configurations keep showing the Editor directory; set `components.editor.styles.minimalist.showCwd` to `false` only if you want to hide it. Footer directory settings remain independent.
 - For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.7.0`. Fully exit and restart Pi after updating the package. Subsequent JSON configuration edits can be applied with `/reload`.
 
+### Release verification
+
+- Release source: [`10ac3de`](https://github.com/kerolt/pi-one-ui/commit/10ac3dea3f0ac804fef94cbeea937c6f1ae0d347). [CI](https://github.com/kerolt/pi-one-ui/actions/runs/34740987283) and [Publish](https://github.com/kerolt/pi-one-ui/actions/runs/34741047850) completed successfully; `npm run verify` passed 1,165 tests and `npm run pack:check` confirmed 121 package files.
+- At publication, npm `latest` resolved to `0.7.0` with the matching release `gitHead` and [provenance metadata](https://registry.npmjs.org/-/npm/v1/attestations/pi-one-ui@0.7.0). The provenance statement was published at [Sigstore log index 2814335389](https://search.sigstore.dev/?logIndex=2814335389).
+
 ## [0.6.1] - 2026-09-06
 
 ### Added
