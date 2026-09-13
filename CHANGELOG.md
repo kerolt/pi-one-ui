@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Restore keyboard focus to the visible Editor after `/oneui` replaces an editor while changing its settings, including native-to-custom transitions, third-party wrappers, and replacement rollback. Closing the panel no longer sends subsequent typing to the detached previous editor in regular or fullscreen mode; existing overlays and later editor owners retain focus.
+
 ## [0.6.1] - 2026-09-06
 
 ### Added

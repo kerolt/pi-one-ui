@@ -1,10 +1,13 @@
 import {
   type ExtensionCommandContext,
   type ExtensionContext,
+  type ExtensionUIContext,
   getSettingsListTheme,
 } from "@earendil-works/pi-coding-agent";
 import {
+  type Component,
   matchesKey,
+  type OverlayHandle,
   type SettingItem,
   SettingsList,
   truncateToWidth,
@@ -609,10 +612,22 @@ export async function showOneUiPanel(
   try {
     // Read fresh on every open so pi-one-ui.json edits apply without /reload.
     const panelOverlay = loadPanelOverlayConfig();
-    let panelHandle: { focus: () => void } | undefined;
+    let panelHandle: Pick<OverlayHandle, "focus" | "unfocus"> | undefined;
     await overlayManager.run(() =>
       ctx.ui.custom(
         (tui, theme, _keybindings, done) => {
+          // Pi's concrete renderers expose focus inspection beyond the narrow TUI port.
+          const focusTui = tui as typeof tui & {
+            getFocusedComponent?: () => Component | null;
+            isOverlayFocused?: () => boolean;
+          };
+          const originalFocus = focusTui.getFocusedComponent?.();
+          let editorFocus:
+            | {
+                component: Component;
+                factory: ReturnType<ExtensionUIContext["getEditorComponent"]>;
+              }
+            | undefined;
           let activeIndex = 0;
           let list: SettingsList;
           const createList = () => {
@@ -621,6 +636,16 @@ export async function showOneUiPanel(
               10,
               getSettingsListTheme(),
               (id, value) => {
+                const updatesEditor =
+                  id === "editorStyle" || id === "editorBorderColorMode";
+                if (updatesEditor && originalFocus !== undefined) {
+                  // Suspend automatic overlay focus restoration while Pi may replace
+                  // and roll back an editor, keeping the final instance observable.
+                  panelHandle?.unfocus?.({
+                    target: editorFocus?.component ?? originalFocus,
+                  });
+                }
+                const previousFocus = focusTui.getFocusedComponent?.();
                 try {
                   updateSetting(id, value, ctx, deps);
                   list.updateValue(id, value);
@@ -629,13 +654,50 @@ export async function showOneUiPanel(
                   createList();
                   list.selectItem(id);
                 } finally {
-                  if (id === "editorStyle") {
+                  if (updatesEditor) {
+                    // Replacements (including rollback) focus the new instance, but the
+                    // overlay still retains its old preFocus. Capture before refocusing.
+                    const nextFocus = focusTui.getFocusedComponent?.();
+                    if (
+                      nextFocus &&
+                      nextFocus !== previousFocus &&
+                      !focusTui.isOverlayFocused?.()
+                    ) {
+                      try {
+                        editorFocus = {
+                          component: nextFocus,
+                          factory: ctx.ui.getEditorComponent(),
+                        };
+                      } catch {
+                        editorFocus = undefined;
+                      }
+                    }
                     panelHandle?.focus();
                   }
                   tui.requestRender();
                 }
               },
-              () => done(undefined),
+              () => {
+                done(undefined);
+                // Only correct this panel's stale return target; other overlays and
+                // later editor owners keep their focus. Stale session contexts may throw.
+                if (
+                  !editorFocus ||
+                  tui.hasOverlay() ||
+                  focusTui.getFocusedComponent?.() !== originalFocus
+                ) {
+                  return;
+                }
+                try {
+                  if (ctx.ui.getEditorComponent() !== editorFocus.factory) {
+                    return;
+                  }
+                } catch {
+                  return;
+                }
+                tui.setFocus(editorFocus.component);
+                tui.requestRender();
+              },
             );
           };
           createList();
@@ -696,7 +758,7 @@ export async function showOneUiPanel(
             maxHeight: panelOverlay.maxHeight,
             margin: panelOverlay.margin,
           },
-          onHandle: (handle: { focus: () => void }) => {
+          onHandle: (handle: OverlayHandle) => {
             panelHandle = handle;
           },
         },

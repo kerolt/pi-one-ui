@@ -1,11 +1,30 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { initTheme } from "@earendil-works/pi-coding-agent";
-import { visibleWidth } from "@earendil-works/pi-tui";
+import {
+  CustomEditor,
+  type ExtensionUIContext,
+  InteractiveMode,
+  initTheme,
+} from "@earendil-works/pi-coding-agent";
+import {
+  type Component,
+  Container,
+  type EditorComponent,
+  type OverlayHandle,
+  type Terminal,
+  TuiAltScreen,
+  TuiMainScreen,
+  visibleWidth,
+} from "@earendil-works/pi-tui";
 import { afterAll, beforeAll, expect, test, vi } from "vitest";
-
 import { overlayManager } from "../../extensions/app/overlay/overlay-manager.ts";
+import { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle.ts";
+import { KeybindingsManager } from "../../node_modules/@earendil-works/pi-coding-agent/dist/core/keybindings.js";
+import {
+  theme as editorTheme,
+  getEditorTheme,
+} from "../../node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/theme/theme.js";
 
 type PanelComponent = {
   render(width: number): string[];
@@ -18,7 +37,7 @@ type PanelOptions = {
     maxHeight?: number | string;
     margin?: unknown;
   };
-  onHandle?: (handle: { focus: () => void }) => void;
+  onHandle?: (handle: Pick<OverlayHandle, "focus" | "unfocus">) => void;
 };
 type ShowOneUiPanel =
   typeof import("../../extensions/app/panel.ts").showOneUiPanel;
@@ -34,6 +53,10 @@ let setRendererConfig: (next: RendererConfig) => void;
 let sharedConfigStore: ConfigStore;
 let showOneUiPanel: ShowOneUiPanel;
 let updateRendererConfig: (partial: Partial<RendererConfig>) => void;
+let shell: typeof import("../../extensions/app/config/shell.ts");
+let EditorLayoutController: typeof import("../../extensions/layouts/editor/controller.ts").EditorLayoutController;
+let createInitialState: typeof import("../../extensions/services/session-state.ts").createInitialState;
+let emptyGitStatus: typeof import("../../extensions/services/git-data.ts").emptyGitStatus;
 
 beforeAll(async () => {
   agentDir = await mkdtemp(join(tmpdir(), "pi-one-ui-panel-test-"));
@@ -49,6 +72,14 @@ beforeAll(async () => {
   ({ configStore: sharedConfigStore } = await import(
     "../../extensions/app/config/store.ts"
   ));
+  shell = await import("../../extensions/app/config/shell.ts");
+  ({ EditorLayoutController } = await import(
+    "../../extensions/layouts/editor/controller.ts"
+  ));
+  ({ createInitialState } = await import(
+    "../../extensions/services/session-state.ts"
+  ));
+  ({ emptyGitStatus } = await import("../../extensions/services/git-data.ts"));
 });
 
 afterAll(async () => {
@@ -60,6 +91,8 @@ afterAll(async () => {
 function createPanelHarness(options: {
   runtime?: Record<string, unknown>;
   onClose?: () => void;
+  tui?: TuiMainScreen | TuiAltScreen;
+  ui?: Partial<ExtensionUIContext>;
 }) {
   let component: PanelComponent | undefined;
   let received: PanelOptions | undefined;
@@ -72,20 +105,34 @@ function createPanelHarness(options: {
   const ctx = {
     mode: "tui",
     hasUI: true,
+    cwd: process.cwd(),
+    sessionManager: { getSessionName: () => "" },
     ui: {
+      ...options.ui,
       notify(message: string, level?: string) {
         notifications.push({ message, level });
       },
       custom(factory: (...args: unknown[]) => unknown, panelOptions: unknown) {
         received = panelOptions as PanelOptions;
         return new Promise<void>((resolve) => {
-          component = factory({ requestRender() {} }, theme, {}, () => {
-            operations.push("close");
-            options.onClose?.();
-            resolve();
-          }) as PanelComponent;
+          component = factory(
+            options.tui ?? { requestRender() {} },
+            theme,
+            {},
+            () => {
+              operations.push("close");
+              options.tui?.hideOverlay();
+              options.onClose?.();
+              resolve();
+            },
+          ) as PanelComponent;
+          const handle = options.tui?.showOverlay(component as Component);
           received?.onHandle?.({
-            focus: () => operations.push("focus"),
+            focus: () => {
+              operations.push("focus");
+              handle?.focus();
+            },
+            unfocus: (unfocusOptions) => handle?.unfocus(unfocusOptions),
           });
         });
       },
@@ -100,6 +147,7 @@ function createPanelHarness(options: {
       if (!component) throw new Error("Panel component was not created");
       return component;
     },
+    ctx,
     notifications,
     open,
     operations,
@@ -315,4 +363,250 @@ test("/oneui keeps the panel open and refocuses after an Editor style change", a
   component.handleInput("\x1b");
   await opened;
   expect(harness.operations).toStrictEqual(["apply", "focus", "close"]);
+});
+
+type EditorFactory = Parameters<ExtensionUIContext["setEditorComponent"]>[0];
+type PiEditorHost = {
+  ui: TuiMainScreen | TuiAltScreen;
+  editor: EditorComponent;
+  defaultEditor: CustomEditor;
+  editorContainer: Container;
+  editorComponentFactory?: EditorFactory;
+  keybindings: KeybindingsManager;
+  disposeActiveSelector(): void;
+};
+
+/** Uses Pi's real editor replacement and TUI focus stack without starting a terminal. */
+function createLiveEditorPanelHarness(
+  mode: "regular" | "fullscreen",
+  style: "on" | "off",
+) {
+  shell.saveEditorComponentPatch({ style });
+  const terminal = {
+    columns: 100,
+    rows: 40,
+    hideCursor() {},
+    write() {},
+  } as Terminal;
+  const tui =
+    mode === "regular"
+      ? new TuiMainScreen(terminal)
+      : new TuiAltScreen(terminal);
+  const keybindings = new KeybindingsManager();
+  const defaultEditor = new CustomEditor(tui, getEditorTheme(), keybindings);
+  defaultEditor.setText("draft ");
+  const editorContainer = new Container();
+  editorContainer.addChild(defaultEditor);
+  tui.addChild(editorContainer);
+  tui.setFocus(defaultEditor);
+  const host: PiEditorHost = {
+    ui: tui,
+    editor: defaultEditor,
+    defaultEditor,
+    editorContainer,
+    keybindings,
+    disposeActiveSelector() {},
+  };
+  // Exercise the installed Pi behavior rather than duplicating its focus restoration.
+  const replaceEditor = (
+    InteractiveMode.prototype as unknown as {
+      setCustomEditorComponent: (
+        this: PiEditorHost,
+        factory: EditorFactory,
+      ) => void;
+    }
+  ).setCustomEditorComponent.bind(host);
+  const lifecycle = new SessionLifecycle();
+  lifecycle.start();
+  const state = createInitialState(emptyGitStatus());
+  const controller = new EditorLayoutController({
+    getConfig: shell.loadConfig,
+    saveComponent: shell.saveEditorComponentPatch,
+    getState: () => state,
+    sessionLifecycle: lifecycle,
+    render: { request: () => tui.requestRender() },
+    getThinkingLevel: () => "off",
+    getAgentDurationMs: () => 0,
+    isAgentActive: () => false,
+    isAgentDurationActive: () => false,
+    subscribeAgentDuration: () => () => {},
+    getProjectRoot: () => undefined,
+    onProjectRequirementChanged() {},
+    onModelLabelChanged() {},
+  });
+  const harness = createPanelHarness({
+    tui,
+    ui: {
+      theme: editorTheme,
+      getEditorComponent: () => host.editorComponentFactory,
+      setEditorComponent: replaceEditor,
+      getEditorText: () =>
+        host.editor.getExpandedText?.() ?? host.editor.getText(),
+      setEditorText: (text) => host.editor.setText(text),
+    },
+    runtime: {
+      setEditorComponent: (
+        patch: Parameters<typeof controller.setComponent>[0],
+      ) => controller.setComponent(patch, harness.ctx as never),
+    },
+  });
+  controller.install(harness.ctx as never);
+  return {
+    ...harness,
+    tui,
+    host,
+    replaceEditor,
+    dispose: () => controller.cleanup(harness.ctx as never),
+  };
+}
+
+test.each(["regular", "fullscreen"] as const)(
+  "/oneui restores visible Editor input after native-to-custom replacement in %s mode",
+  async (mode) => {
+    const harness = createLiveEditorPanelHarness(mode, "off");
+    const previous = harness.host.editor;
+    const opened = harness.open();
+    try {
+      goToEditor(harness.component());
+      harness.component().handleInput(" ");
+      expect(harness.host.editor).not.toBe(previous);
+      expect(harness.tui.getFocusedComponent()).toBe(harness.component());
+      // Further in-place changes must retain the new Editor as the return target.
+      harness.component().handleInput(" ");
+      harness.component().handleInput(" ");
+      harness.component().handleInput("\x1b[B");
+      harness.component().handleInput(" ");
+    } finally {
+      harness.component().handleInput("\x1b");
+      await opened;
+    }
+    try {
+      expect(harness.tui.getFocusedComponent() === harness.host.editor).toBe(
+        true,
+      );
+      harness.tui.getFocusedComponent()?.handleInput?.("visible");
+      expect(harness.host.editor.getText()).toBe("draft visible");
+      expect(harness.host.editorContainer.render(100).join("\n")).toContain(
+        "draft visible",
+      );
+      expect(previous.getText()).toBe("draft ");
+      expect(overlayManager.hasActive()).toBe(false);
+      // Reopening without a change must not reuse a prior panel's focus snapshot.
+      const reopened = harness.open();
+      harness.component().handleInput("\x1b");
+      await reopened;
+      expect(harness.tui.getFocusedComponent()).toBe(harness.host.editor);
+    } finally {
+      harness.dispose();
+    }
+  },
+);
+
+test.each(["regular", "fullscreen"] as const)(
+  "/oneui preserves Editor identity across owned style toggles in %s mode",
+  async (mode) => {
+    const harness = createLiveEditorPanelHarness(mode, "on");
+    const previous = harness.host.editor;
+    const opened = harness.open();
+    try {
+      goToEditor(harness.component());
+      harness.component().handleInput(" ");
+      harness.component().handleInput(" ");
+    } finally {
+      harness.component().handleInput("\x1b");
+      await opened;
+    }
+    try {
+      expect(harness.host.editor).toBe(previous);
+      expect(harness.tui.getFocusedComponent()).toBe(previous);
+      harness.tui.getFocusedComponent()?.handleInput?.("visible");
+      expect(harness.host.editorContainer.render(100).join("\n")).toContain(
+        "draft visible",
+      );
+    } finally {
+      harness.dispose();
+    }
+  },
+);
+
+test.each(["success", "rollback"] as const)(
+  "/oneui restores the current third-party Editor after a replacement %s",
+  async (outcome) => {
+    const harness = createLiveEditorPanelHarness("regular", "off");
+    const thirdPartyFactory: EditorFactory = (tui, theme, keybindings) =>
+      new CustomEditor(tui, theme, keybindings);
+    harness.replaceEditor(thirdPartyFactory);
+    const previous = harness.host.editor;
+    const replace = vi.spyOn(harness.ctx.ui, "setEditorComponent");
+    if (outcome === "rollback") {
+      replace.mockImplementationOnce((factory) => {
+        harness.replaceEditor(factory);
+        throw new Error("replacement failed after mounting");
+      });
+    }
+    const opened = harness.open();
+    try {
+      goToEditor(harness.component());
+      harness.component().handleInput(" ");
+    } finally {
+      harness.component().handleInput("\x1b");
+      await opened;
+      replace.mockRestore();
+    }
+    try {
+      expect(harness.host.editor).not.toBe(previous);
+      if (outcome === "rollback") {
+        expect(harness.host.editorComponentFactory).toBe(thirdPartyFactory);
+      }
+      expect(harness.tui.getFocusedComponent() === harness.host.editor).toBe(
+        true,
+      );
+      harness.tui.getFocusedComponent()?.handleInput?.("visible");
+      expect(harness.host.editorContainer.render(100).join("\n")).toContain(
+        "draft visible",
+      );
+    } finally {
+      harness.dispose();
+    }
+  },
+);
+
+test("/oneui does not steal focus from another overlay on close", async () => {
+  const harness = createLiveEditorPanelHarness("regular", "off");
+  const other: Component = { render: () => ["Other overlay"], invalidate() {} };
+  const otherHandle = harness.tui.showOverlay(other);
+  const opened = harness.open();
+  try {
+    goToEditor(harness.component());
+    harness.component().handleInput(" ");
+  } finally {
+    harness.component().handleInput("\x1b");
+    await opened;
+  }
+  try {
+    expect(harness.tui.getFocusedComponent()).toBe(other);
+  } finally {
+    otherHandle.hide();
+    harness.dispose();
+  }
+});
+
+test("/oneui leaves a later Editor owner's focus untouched", async () => {
+  const harness = createLiveEditorPanelHarness("regular", "off");
+  const opened = harness.open();
+  try {
+    goToEditor(harness.component());
+    harness.component().handleInput(" ");
+    harness.replaceEditor(
+      (tui, theme, keybindings) => new CustomEditor(tui, theme, keybindings),
+    );
+  } finally {
+    harness.component().handleInput("\x1b");
+    await opened;
+  }
+  try {
+    expect(harness.tui.getFocusedComponent()).toBe(harness.host.editor);
+  } finally {
+    harness.dispose();
+  }
 });
