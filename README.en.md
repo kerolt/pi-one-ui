@@ -76,9 +76,11 @@ Then open the unified settings panel:
 /oneui
 ```
 
-### Upgrading to 0.7.0
+### Upgrading to 0.7.1
 
-This release adds an Editor working-directory visibility switch and fixes invisible input after changing Editor settings and closing `/oneui`. Existing configurations need no migration; the directory remains visible by default.
+This release centralizes component composition, settings application, and session lifecycle management. Each preset saves and applies all related component settings in one update, Header settings apply immediately, and session replacement cleans up overlays and input listeners.
+
+Existing canonical v1 configurations and commands remain compatible; no migration is required. Corrupt or unreadable configuration files now produce an explicit error.
 
 For an unpinned npm installation, run:
 
@@ -86,9 +88,7 @@ For an unpinned npm installation, run:
 pi update npm:pi-one-ui
 ```
 
-If your installation pins a version, run `pi install npm:pi-one-ui@0.7.0` to update the pin. Fully exit and restart Pi after updating the package.
-
-To hide the Editor directory, set `components.editor.styles.minimalist.showCwd: false`; Footer directory visibility is configured independently. See the complete example in the [configuration guide](./docs/configuration.md#隐藏-editor-目录在-footer-左侧显示).
+If your installation pins a version, run `pi install npm:pi-one-ui@0.7.1` to update the pin. Fully exit and restart Pi after updating the package.
 
 ## Configuration
 

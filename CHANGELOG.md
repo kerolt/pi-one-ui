@@ -6,8 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-21
+
 ### Changed
 
+- Centralize component composition, settings application, and session lifecycle management in app, with settings and Context Inspector views owned by Overlay Layout.
 - Apply presets with one canonical configuration write and update every affected Layout. Component settings, including Header visibility, apply through their owning Layout; Feature registration switches still require `/reload`.
 - Report corrupt or unreadable configuration files during loading, and distinguish a failed save from a saved configuration that could not be applied to the UI.
 - Coalesce shared Layout redraw requests while preserving forced redraws and session ownership.
@@ -19,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Migration
 
 - No configuration migration is required. Existing canonical v1 files and command names remain supported.
+- For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.7.1`. Fully exit and restart Pi after updating the package.
 
 ## [0.7.0] - 2026-09-13
 
@@ -149,7 +153,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/kerolt/pi-one-ui/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/kerolt/pi-one-ui/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/kerolt/pi-one-ui/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kerolt/pi-one-ui/compare/v0.5.1...v0.6.0

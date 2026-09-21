@@ -76,9 +76,11 @@ pi install git:github.com/kerolt/pi-one-ui
 /oneui
 ```
 
-### 升级到 0.7.0
+### 升级到 0.7.1
 
-本次新增 Editor 工作目录显示开关，并修复修改 Editor 配置后关闭 `/oneui` 导致输入不可见的问题。现有配置无需迁移，工作目录仍默认显示。
+本次集中管理组件装配、设置应用与会话生命周期。Preset 会一次保存并应用所有相关组件配置，Header 设置即时生效；会话切换时会清理 Overlay 与输入监听。
+
+现有 canonical v1 配置和命令保持兼容，无需迁移。配置文件损坏或无法读取时会明确报告错误。
 
 未固定版本的 npm 安装可执行：
 
@@ -86,9 +88,7 @@ pi install git:github.com/kerolt/pi-one-ui
 pi update npm:pi-one-ui
 ```
 
-若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.7.0` 更新版本指定。更新安装包后，完整退出并重启 Pi。
-
-如需隐藏 Editor 目录，设置 `components.editor.styles.minimalist.showCwd: false`；Footer 中的目录显示独立配置。完整示例见 [配置指南](./docs/configuration.md#隐藏-editor-目录在-footer-左侧显示)。
+若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.7.1` 更新版本指定。更新安装包后，完整退出并重启 Pi。
 
 ## 配置
 
