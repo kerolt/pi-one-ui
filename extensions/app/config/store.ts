@@ -173,6 +173,17 @@ export function mutateConfigFile(
 
 export type ConfigStoreListener = (record: ConfigRecord) => void;
 
+/** 文件已经提交；调用方可以显示已保存的配置及应用错误。 */
+export class ConfigApplicationError extends AggregateError {
+  constructor(
+    readonly record: ConfigRecord,
+    errors: unknown[],
+  ) {
+    super(errors, "Configuration was saved but could not be applied");
+    this.name = "ConfigApplicationError";
+  }
+}
+
 /**
  * Process-wide raw configuration store. Domain config modules own parsing and
  * selectors; this module owns canonical persistence.
@@ -205,7 +216,17 @@ export class ConfigStore {
       state.record,
       state.kind === "valid" ? state.mode : undefined,
     );
-    for (const listener of this.listeners) listener(state.record);
+    const errors: unknown[] = [];
+    for (const listener of [...this.listeners]) {
+      try {
+        listener(state.record);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length > 0) {
+      throw new ConfigApplicationError(state.record, errors);
+    }
     return state.record;
   }
 

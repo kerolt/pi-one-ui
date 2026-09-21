@@ -1,6 +1,9 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it } from "vitest";
-import { defaultConfig } from "../../extensions/app/config/shell";
+import {
+  DEFAULT_EDITOR_METADATA_FORMAT,
+  defaultConfig,
+} from "../../extensions/app/config/shell";
 import {
   type EditorMetadataValues,
   renderEditorMetadataFormat,
@@ -81,10 +84,10 @@ describe("renderEditorMetadataFormat", () => {
   });
 
   it("preserves the default layout and hides thinking when off", () => {
-    expect(
-      render(defaultConfig.editorMetadataFormat, { thinking: "off" }),
-    ).toBe("[accent]Model Label[border]  [text]Provider");
-    expect(render(defaultConfig.editorMetadataFormat)).toBe(
+    expect(render(DEFAULT_EDITOR_METADATA_FORMAT, { thinking: "off" })).toBe(
+      "[accent]Model Label[border]  [text]Provider",
+    );
+    expect(render(DEFAULT_EDITOR_METADATA_FORMAT)).toBe(
       "[accent]Model Label[border]  [text]Provider[border]  [muted]high",
     );
   });

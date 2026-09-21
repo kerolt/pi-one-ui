@@ -3,187 +3,84 @@ import type {
   ExtensionContext,
   Theme,
 } from "@earendil-works/pi-coding-agent";
-import { config } from "../../app/config/renderer.ts";
+import { type Config, config } from "../../app/config/renderer.ts";
 import {
   hasUnsupportedComponentStyle,
-  loadConfig,
-  mergeConfig,
-  saveUserMessagesComponentPatch,
-  type UserMessagesComponentConfig,
   type ZentuiConfig,
 } from "../../app/config/shell.ts";
-import { type ConfigRecord, configStore } from "../../app/config/store.ts";
-// shell
-import piAliases from "../../features/aliases.ts";
-import context from "../../features/context-inspector/index.ts";
-import effortCommand from "../../features/effort-command.ts";
-import { installFlushDockedBash } from "../../features/flush-docked-bash.ts";
-import sessionReference from "../../features/session-reference/index.ts";
-// feature
-import agentAutocomplete from "../../features/subagent-autocomplete.ts";
-import {
-  installUserMessageStyle,
-  removeUserMessageStyle,
-} from "./message/user-message.ts";
-// renderer
+import { installUserMessageStyle } from "./message/user-message.ts";
 import registerContextRenderer, {
   getCompactThinkingConfig,
+  type RendererExtensionOptions,
+  type RendererRuntimeController,
 } from "./renderer/index.ts";
 import markdownEnhance from "./renderer/markdown-enhance.ts";
 import agentSummary from "./summary/index.ts";
 import { installCompactThinking } from "./thinking/compact-thinking.ts";
 
-export type ContextRuntimeController = {
-  setMode: (mode: "on" | "compact" | "off", ctx: ExtensionContext) => void;
-  updateConfig: (
-    partial: Partial<typeof config>,
-    ctx: ExtensionContext,
-  ) => void;
-  setUserMessagesComponent: (
-    patch: Partial<UserMessagesComponentConfig>,
-    ctx: ExtensionContext,
-  ) => void;
+export type ContextRuntimeController = RendererRuntimeController & {
+  applyConfig(ctx: ExtensionContext, previous: Config): void;
 };
-
 export type ContextExtensionOptions = {
-  /**
-   * Exposes live context refresh to the unified settings panel.
-   */
-  onRuntimeController?: (controller: ContextRuntimeController) => void;
+  readonly getConfig: () => ZentuiConfig;
+  readonly services?: RendererExtensionOptions["services"];
 };
 
-let contextConfig: ZentuiConfig = loadConfig();
-let activeTheme: Theme | undefined;
-let cleanupUserMessageStyle: () => void = () => {};
-let userMessageStyleInstalled = false;
-let unsubscribeConfig: () => void = () => {};
-
-/**
- * Reports whether a session context can safely install TUI-owned patches.
- */
-function isTuiContext(ctx: ExtensionContext): boolean {
-  return ctx.mode === "tui" && ctx.hasUI;
-}
-
-/**
- * Installs the Context-owned User Message renderer once for the active session.
- */
-function installContextUserMessages(): void {
-  if (userMessageStyleInstalled || !activeTheme) return;
-  try {
-    cleanupUserMessageStyle = installUserMessageStyle(
-      () => activeTheme,
-      () => contextConfig,
-    );
-    userMessageStyleInstalled = true;
-  } catch {
-    cleanupUserMessageStyle = () => {};
-    userMessageStyleInstalled = false;
-  }
-}
-
-/**
- * Removes the Context-owned User Message renderer and clears its patch state.
- */
-function uninstallContextUserMessages(): void {
-  try {
-    cleanupUserMessageStyle();
-  } finally {
-    cleanupUserMessageStyle = () => {};
-    userMessageStyleInstalled = false;
-    removeUserMessageStyle();
-  }
-}
-
-/**
- * Reconciles User Message ownership with the latest shell configuration.
- */
-function reconcileContextUserMessages(): void {
-  const enabled =
-    contextConfig.components.userMessages.enabled &&
-    !hasUnsupportedComponentStyle(contextConfig, "userMessages");
-  if (enabled) installContextUserMessages();
-  else uninstallContextUserMessages();
-}
-
-/**
- * Starts the Context session binding and subscribes it to shared config updates.
- */
-function startContextSession(ctx: ExtensionContext): void {
-  if (!isTuiContext(ctx)) return;
-  activeTheme = ctx.ui.theme;
-  contextConfig = loadConfig();
-  unsubscribeConfig();
-  unsubscribeConfig = configStore.subscribe((record: ConfigRecord) => {
-    contextConfig = mergeConfig(record);
-    reconcileContextUserMessages();
-  });
-  reconcileContextUserMessages();
-}
-
-/**
- * Applies a User Message configuration patch owned by Context.
- *
- * @param patch User Message configuration changes.
- * @param _ctx Active Pi extension context.
- */
-function setContextUserMessages(
-  patch: Partial<UserMessagesComponentConfig>,
-  _ctx: ExtensionContext,
-): void {
-  contextConfig = saveUserMessagesComponentPatch(patch);
-  if (patch.enabled !== undefined || patch.style !== undefined)
-    reconcileContextUserMessages();
-}
-
-/**
- * Releases Context session bindings and restores the original User Message patch.
- */
-function stopContextSession(): void {
-  unsubscribeConfig();
-  unsubscribeConfig = () => {};
-  uninstallContextUserMessages();
-  activeTheme = undefined;
-}
-
-/**
- * Registers the Context layout, its renderer stack and its feature hooks.
- */
-export default function (
+/** Context 仅组织自身内容组件，Feature 的启用由 app 决定。 */
+export default function registerContext(
   pi: ExtensionAPI,
-  options: ContextExtensionOptions = {},
-): void {
-  // shell chrome
-  if (config.enableAliases) piAliases(pi);
-  if (config.enableEffortCommand) {
-    effortCommand(pi);
-  }
-  installFlushDockedBash();
-  // The thinking controller is queried directly by the context render stack.
+  options: ContextExtensionOptions,
+): ContextRuntimeController {
+  let activeTheme: Theme | undefined;
+  let cleanupUserMessages: (() => void) | undefined;
+  const reconcile = (): void => {
+    const current = options.getConfig();
+    const enabled =
+      current.components.userMessages.enabled &&
+      !hasUnsupportedComponentStyle(current, "userMessages");
+    if (!enabled || !activeTheme) {
+      cleanupUserMessages?.();
+      cleanupUserMessages = undefined;
+      return;
+    }
+    if (!cleanupUserMessages) {
+      cleanupUserMessages = installUserMessageStyle(
+        () => activeTheme,
+        options.getConfig,
+      );
+    }
+  };
+
   markdownEnhance(pi);
-  registerContextRenderer(
-    pi,
-    undefined,
-    installCompactThinking(pi, getCompactThinkingConfig()),
-    {
-      onRuntimeController: (controller) =>
-        options.onRuntimeController?.({
-          ...controller,
-          setUserMessagesComponent: setContextUserMessages,
-        }),
-    },
-  );
-
-  // features
-  if (config.enableContextCommand) context(pi);
-  if (config.enableSessionReference) sessionReference(pi);
-  if (config.enableSubagentAutocomplete) agentAutocomplete(pi);
-  if (config.enableAgentSummary) agentSummary(pi);
-
+  const thinking = installCompactThinking(pi, getCompactThinkingConfig());
+  const renderer = registerContextRenderer(pi, undefined, thinking, {
+    services: options.services,
+  });
+  if (config.enableAgentSummary) {
+    agentSummary(pi);
+  }
   pi.on("session_start", (_event, ctx) => {
-    startContextSession(ctx);
+    if (ctx.mode !== "tui" || !ctx.hasUI) {
+      return;
+    }
+    activeTheme = ctx.ui.theme;
+    reconcile();
   });
   pi.on("session_shutdown", () => {
-    stopContextSession();
+    cleanupUserMessages?.();
+    cleanupUserMessages = undefined;
+    activeTheme = undefined;
   });
+  return {
+    ...renderer,
+    applyConfig(ctx, previous) {
+      reconcile();
+      thinking.updateConfig(getCompactThinkingConfig());
+      if (config.mode !== previous.mode) {
+        renderer.setMode(config.mode, ctx);
+      } else {
+        renderer.updateConfig(config, ctx);
+      }
+    },
+  };
 }

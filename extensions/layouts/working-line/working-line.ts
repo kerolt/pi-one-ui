@@ -1,4 +1,3 @@
-import { stripVTControlCharacters } from "node:util";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import type {
   ColorSpec,
@@ -7,6 +6,7 @@ import type {
   WorkingLineTextAnimation,
   ZentuiConfig,
 } from "../../app/config/shell.ts";
+import { PI_WORKING_LINE_MESSAGES } from "../../app/config/working-line-messages.ts";
 import { formatCount } from "../../shared/format.ts";
 import {
   isSafeSgrStylePrefix,
@@ -14,30 +14,39 @@ import {
   renderThemeStyleOrFallback,
   type ThemeLike,
 } from "../../shared/style.ts";
-import { PI_WORKING_LINE_MESSAGES } from "./working-line-messages.ts";
+import {
+  normalizeWorkingLineMessage,
+  normalizeWorkingLineMessages,
+  segmentGraphemes,
+  truncateGraphemes,
+} from "../../shared/working-line-text.ts";
 import { WORKING_LINE_SPINNERS } from "./working-line-spinners.ts";
+
+export {
+  MAX_WORKING_LINE_ENTRIES_EXAMINED,
+  MAX_WORKING_LINE_MESSAGE_CELLS,
+  MAX_WORKING_LINE_MESSAGES,
+  MAX_WORKING_LINE_NORMALIZED_CODE_UNITS,
+  MAX_WORKING_LINE_RAW_CODE_UNITS,
+  normalizeWorkingLineMessage,
+  normalizeWorkingLineMessages,
+} from "../../shared/working-line-text.ts";
 
 export { WORKING_LINE_SPINNERS } from "./working-line-spinners.ts";
 
 export const BUILT_IN_WORKING_LINE_MESSAGES = PI_WORKING_LINE_MESSAGES;
 export const WORKING_LINE_FALLBACK_MESSAGE = "Working…";
 
-export const MAX_WORKING_LINE_MESSAGES = 48;
 /** Complete Loader row, including its two margins and Pi's indicator separator. */
 export const MAX_WORKING_LINE_ROW_CELLS = 80;
 /** Indicator payload budget inside the complete Loader row. */
 export const MAX_WORKING_LINE_FRAME_CELLS = MAX_WORKING_LINE_ROW_CELLS - 3;
-export const MAX_WORKING_LINE_MESSAGE_CELLS = 43;
 export const MAX_WORKING_LINE_TOOL_CELLS = 18;
 export const MAX_WORKING_LINE_FRAMES = 1024;
 export const MAX_WORKING_LINE_FRAME_CODE_UNITS = 512 * 1024;
-export const MAX_WORKING_LINE_RAW_CODE_UNITS = 4096;
-/** Keeps combining-rich visible text bounded before it is copied into every animation frame. */
-export const MAX_WORKING_LINE_NORMALIZED_CODE_UNITS = 256;
 /** Three modifiers plus one color are sufficient for each Working-line tier. */
 export const MAX_WORKING_LINE_STYLE_TOKENS = 4;
 export const MAX_WORKING_LINE_STYLE_CODE_UNITS = 48;
-export const MAX_WORKING_LINE_ENTRIES_EXAMINED = 256;
 
 const WORKING_LINE_FALLBACKS: Record<"low" | "mid" | "high", ColorSpec> = {
   low: "dim",
@@ -139,112 +148,6 @@ export class AgentDurationClock {
     clearInterval(this.timer);
     this.timer = undefined;
   }
-}
-
-function segmentGraphemes(value: string): Iterable<string> {
-  try {
-    const Segmenter = Intl.Segmenter;
-    if (typeof Segmenter === "function") {
-      const segments = new Segmenter(undefined, {
-        granularity: "grapheme",
-      }).segment(value);
-      return {
-        *[Symbol.iterator]() {
-          for (const part of segments) yield part.segment;
-        },
-      };
-    }
-  } catch {
-    // Without Intl.Segmenter, treat the complete value as one conservative grapheme.
-  }
-  return [value];
-}
-
-function truncateGraphemes(
-  value: string,
-  maximumCells: number,
-  maximumCodeUnits = Number.POSITIVE_INFINITY,
-): string {
-  let width = 0;
-  let codeUnits = 0;
-  const output: string[] = [];
-  for (const grapheme of segmentGraphemes(value)) {
-    if (width >= maximumCells) break;
-    const nextWidth = visibleWidth(grapheme);
-    if (width + nextWidth > maximumCells) break;
-    if (codeUnits + grapheme.length > maximumCodeUnits) break;
-    output.push(grapheme);
-    width += nextWidth;
-    codeUnits += grapheme.length;
-  }
-  while (output.length > 0 && /^\s+$/u.test(output.at(-1) ?? "")) output.pop();
-  return output.join("");
-}
-
-function boundRawWorkingLineInput(value: string): string {
-  if (value.length <= MAX_WORKING_LINE_RAW_CODE_UNITS) return value;
-  const prefix = value.slice(0, MAX_WORKING_LINE_RAW_CODE_UNITS);
-  const graphemes = [...segmentGraphemes(prefix)];
-  // The last segmented item may be only the prefix of a grapheme that crosses the raw bound.
-  graphemes.pop();
-  return graphemes.join("");
-}
-
-function trimGraphemeWhitespace(value: string): string {
-  const graphemes = [...segmentGraphemes(value)];
-  while (graphemes.length > 0 && /^\s+$/u.test(graphemes[0] ?? ""))
-    graphemes.shift();
-  while (graphemes.length > 0 && /^\s+$/u.test(graphemes.at(-1) ?? ""))
-    graphemes.pop();
-  return graphemes.join("");
-}
-
-function stripC1TerminalSequences(value: string): string {
-  return value
-    .replaceAll(
-      /[\u0090\u0098\u009d\u009e\u009f][\s\S]*?(?:\u0007|\u009c|\x1b\\|$)/g,
-      "",
-    )
-    .replaceAll(/\u009b[0-?]*[ -/]*[@-~]/g, "");
-}
-
-/** Normalize untrusted user-authored text before it can reach Pi's working row. */
-export function normalizeWorkingLineMessage(value: unknown): string {
-  if (typeof value !== "string") return "";
-  const bounded = boundRawWorkingLineInput(value);
-  const withoutTerminalSequences = stripVTControlCharacters(
-    stripC1TerminalSequences(bounded),
-  );
-  const withoutControls = withoutTerminalSequences
-    .replaceAll(/[\u0000-\u001f\u007f-\u009f]/g, " ")
-    .replaceAll(
-      /[\u034f\u061c\u200b\u200e\u200f\u202a-\u202e\u2060\u2066-\u206f]/g,
-      "",
-    );
-  const normalized = trimGraphemeWhitespace(
-    withoutControls.normalize("NFC").replaceAll(/\s+/gu, " "),
-  );
-  const truncated = truncateGraphemes(
-    normalized,
-    MAX_WORKING_LINE_MESSAGE_CELLS,
-    MAX_WORKING_LINE_NORMALIZED_CODE_UNITS,
-  );
-  return visibleWidth(truncated) > 0 ? truncated : "";
-}
-
-export function normalizeWorkingLineMessages(values: unknown): string[] {
-  if (!Array.isArray(values)) return [];
-  const output: string[] = [];
-  const seen = new Set<string>();
-  const examined = Math.min(values.length, MAX_WORKING_LINE_ENTRIES_EXAMINED);
-  for (let index = 0; index < examined; index += 1) {
-    const normalized = normalizeWorkingLineMessage(values[index]);
-    if (!normalized || seen.has(normalized)) continue;
-    seen.add(normalized);
-    output.push(normalized);
-    if (output.length === MAX_WORKING_LINE_MESSAGES) break;
-  }
-  return output;
 }
 
 export function effectiveWorkingLineMessages(

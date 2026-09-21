@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Apply presets with one canonical configuration write and update every affected Layout. Component settings, including Header visibility, apply through their owning Layout; Feature registration switches still require `/reload`.
+- Report corrupt or unreadable configuration files during loading, and distinguish a failed save from a saved configuration that could not be applied to the UI.
+- Coalesce shared Layout redraw requests while preserving forced redraws and session ownership.
+
+### Fixed
+
+- Close managed overlays and input listeners during session replacement, and prevent Context Inspector from reopening a preview's parent window in an ended session.
+
+### Migration
+
+- No configuration migration is required. Existing canonical v1 files and command names remain supported.
+
 ## [0.7.0] - 2026-09-13
 
 ### Added

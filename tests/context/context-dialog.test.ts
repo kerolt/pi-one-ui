@@ -10,11 +10,13 @@ import { expect, test } from "vitest";
 import {
   capParts,
   collectContextBreakdown,
+  resolveUsedTokens,
+} from "../../extensions/features/context-inspector/index.ts";
+import {
   escCloseHitbox,
   hasActiveTextPreview,
-  resolveUsedTokens,
   showTextPreview,
-} from "../../extensions/features/context-inspector/index.ts";
+} from "../../extensions/layouts/overlay/context-inspector.ts";
 
 initTheme("dark");
 

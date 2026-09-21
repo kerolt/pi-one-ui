@@ -1,15 +1,19 @@
 import { config } from "../../../../app/config/renderer.ts";
-import { inputRouter } from "../../../../app/overlay/input-router.ts";
-import { overlayManager } from "../../../../app/overlay/overlay-manager.ts";
 import {
-  hasActiveTextPreview,
-  showTextPreview,
-} from "../../../../features/context-inspector/index.ts";
+  type InputRouter,
+  inputRouter,
+} from "../../../../app/overlay/input-router.ts";
+import {
+  type OverlayManager,
+  overlayManager,
+} from "../../../../app/overlay/overlay-manager.ts";
+import type { RenderScheduler } from "../../../../app/runtime/render-scheduler.ts";
 import { isLazyProxyTui } from "../../../../tools/fullscreen-detect.ts";
 import {
   patchRegistry,
   TOOL_MOUSE_OWNER_KEY,
 } from "../../../../tools/patch-keys.ts";
+import { showTextPreview } from "../../../overlay/context-inspector.ts";
 import { ThinkingPreviewBlock } from "../../thinking/compact-thinking.ts";
 import {
   isCompactAssistantComponent,
@@ -101,6 +105,7 @@ const DEFAULT_TOOL_MOUSE_OWNER = {};
 export const TOOL_MOUSE_DISABLE = "\x1b[?1006l\x1b[?1003l\x1b[?1000l";
 
 let toolMouseUi: any = null;
+let toolMouseOverlays = overlayManager;
 let toolMouseInputUnsubscribe: (() => void) | null = null;
 let toolMouseRenderPatchTui: any = null;
 let toolMouseRenderPatchOriginal: ((...args: any[]) => any) | null = null;
@@ -144,7 +149,7 @@ function tryOpenToolIoShowMore(region: InteractionRegion): boolean {
   const title = section === "input" ? "Tool Input" : "Tool Output";
   const content =
     section === "input" ? ioView.getInputBody() : ioView.getOutputBody();
-  void showTextPreview({ ui }, title, content || "(empty)");
+  void showTextPreview({ ui }, title, content || "(empty)", toolMouseOverlays);
   return true;
 }
 
@@ -498,7 +503,7 @@ function patchFullscreenViewportInput(tui: any): void {
       const packets = parseSgrMousePackets(data);
       // 官方 fullscreen 会消费全部鼠标；文本预览 overlay 活动时放行给 focused
       // custom component，使 [esc] 点击和滚轮可用。
-      if (packets && tui.hasOverlay?.() && hasActiveTextPreview())
+      if (packets && tui.hasOverlay?.() && toolMouseOverlays.hasActive())
         return undefined;
       if (packets && !tui.hasOverlay?.()) {
         for (const packet of packets) {
@@ -942,9 +947,19 @@ export function resetToolHoverState(): void {
  * @param ctx Active TUI extension context.
  * @param owner Ownership token used to make teardown safe across reloads.
  */
+export type ToolMouseServices = {
+  input: InputRouter;
+  overlays: OverlayManager;
+  render?: RenderScheduler;
+};
+
 export function installToolMouseInteraction(
   ctx: any,
   owner: object = DEFAULT_TOOL_MOUSE_OWNER,
+  services: ToolMouseServices = {
+    input: inputRouter,
+    overlays: overlayManager,
+  },
 ): void {
   teardownToolMouseInteraction(toolMouseInstallationOwner ?? owner);
   if (ctx?.mode !== "tui" || !ctx?.hasUI) return;
@@ -958,9 +973,11 @@ export function installToolMouseInteraction(
   patchRegistry.install(TOOL_MOUSE_OWNER_KEY, owner);
   setHoveredToolCallId(null);
   toolMouseUi = ctx.ui;
+  toolMouseOverlays = services.overlays;
   // 0.84+ 的 tui 是惰性 Proxy：regular 保留原生 scrollback；fullscreen
   // 由官方 LayoutFrame 命中，并由扩展补齐 hover 所需的 all-motion 上报。
   ctx.ui.setWidget(TOOL_MOUSE_WIDGET_KEY, (tui: any, theme: any) => {
+    services.render?.register(owner, (force) => tui.requestRender(force));
     setToolMouseTui(tui);
     setToolTuiFullscreen(fullscreenLazyTui(tui));
     if (isLazyProxyTui(tui)) {
@@ -987,17 +1004,15 @@ export function installToolMouseInteraction(
     setScrollButtonWidget(widget);
     return widget;
   });
-  const removeMouseRoute = inputRouter.register(
+  const removeInput = services.input.bind(
+    ctx.ui,
     (data) =>
-      overlayManager.hasActive() ? undefined : handleToolMouseInput(data),
+      services.overlays.hasActive() ? undefined : handleToolMouseInput(data),
     100,
   );
-  const removeHostInput = ctx.ui.onTerminalInput((data: string) =>
-    inputRouter.dispatch(data),
-  );
   toolMouseInputUnsubscribe = () => {
-    removeHostInput();
-    removeMouseRoute();
+    removeInput();
+    services.render?.register(owner, undefined);
   };
 }
 

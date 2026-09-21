@@ -2,7 +2,7 @@ import type { ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
 import {
   hasUnsupportedComponentStyle,
   type PolishedTuiConfig,
-} from "../config/shell.ts";
+} from "../../app/config/shell.ts";
 import { installSelectorBorderStyle } from "./selector-border.ts";
 
 /**

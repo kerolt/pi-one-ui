@@ -1,11 +1,10 @@
 import { expect, test } from "vitest";
-import { LayoutRegistry } from "../../extensions/app/ownership/layout-registry.ts";
 import {
   EventCoordinator,
   RUNTIME_EVENTS,
 } from "../../extensions/app/runtime/event-coordinator.ts";
 import { RenderScheduler } from "../../extensions/app/runtime/render-scheduler.ts";
-import { RuntimeStateStore } from "../../extensions/app/runtime/runtime-state.ts";
+import { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle.ts";
 
 test("EventCoordinator installs each runtime event once and dispatches in order", async () => {
   const registrations: Array<{
@@ -58,35 +57,37 @@ test("RenderScheduler coalesces requests and retains forced redraw priority", as
   expect(queued.length).toBe(0);
 });
 
-test("RuntimeStateStore rejects stale shutdown and notifies session transitions", () => {
-  const store = new RuntimeStateStore();
-  const states: string[] = [];
-  store.subscribe((state) =>
-    states.push(`${state.phase}:${state.generation}:${state.mode ?? ""}`),
-  );
-
-  const first = store.start("tui");
-  const second = store.start("tui");
-  store.shutdown(first);
-  expect(store.isCurrent(second)).toBe(true);
-  store.shutdown(second);
-
-  expect(states).toStrictEqual(["active:1:tui", "active:2:tui", "idle:2:"]);
+test("SessionLifecycle invalidates callbacks when a new session starts", async () => {
+  const lifecycle = new SessionLifecycle();
+  const calls: number[] = [];
+  const first = lifecycle.start();
+  lifecycle.queueMicrotask(() => calls.push(first));
+  const second = lifecycle.start();
+  lifecycle.queueMicrotask(() => calls.push(second));
+  await Promise.resolve();
+  expect(calls).toEqual([second]);
+  expect(lifecycle.isCurrent(first)).toBe(false);
+  lifecycle.shutdown();
+  lifecycle.shutdown();
+  expect(lifecycle.isCurrent(second)).toBe(false);
 });
 
-test("LayoutRegistry permits one token per layout and safe release", () => {
-  const registry = new LayoutRegistry();
-  const first = {};
-  const second = {};
-  const release = registry.claim("footer", first);
-
-  expect(registry.ownerOf("footer")).toBe("footer");
-  expect(() => registry.claim("footer", second)).toThrow(/already owned/);
-  release();
-  release();
-  expect(registry.isClaimed("footer")).toBe(false);
-
-  const releaseSecond = registry.claim("footer", second);
-  expect(registry.isClaimed("footer")).toBe(true);
-  releaseSecond();
+test("RenderScheduler coalesces component requests and rejects stale session callbacks", async () => {
+  const scheduler = new RenderScheduler();
+  const renders: boolean[] = [];
+  const editor = {};
+  const footer = {};
+  scheduler.register(editor, (force) => renders.push(force));
+  scheduler.request();
+  scheduler.reset();
+  scheduler.register(footer, (force) => renders.push(force));
+  scheduler.request();
+  scheduler.request(true);
+  await Promise.resolve();
+  expect(renders).toEqual([true]);
+  scheduler.register(footer, undefined);
+  scheduler.request();
+  await Promise.resolve();
+  expect(renders).toEqual([true]);
+  scheduler.dispose();
 });

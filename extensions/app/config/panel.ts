@@ -109,9 +109,5 @@ export function normalizePanelOverlay(input: unknown): PanelOverlayConfig {
  * every /oneui open so JSON edits apply without `/reload`.
  */
 export function loadPanelOverlayConfig(): PanelOverlayConfig {
-  try {
-    return normalizePanelOverlay(configStore.read().panel);
-  } catch {
-    return normalizePanelOverlay(undefined);
-  }
+  return normalizePanelOverlay(configStore.read().panel);
 }

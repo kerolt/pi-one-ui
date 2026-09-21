@@ -19,6 +19,7 @@ import {
 } from "@earendil-works/pi-tui";
 import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import { overlayManager } from "../../extensions/app/overlay/overlay-manager.ts";
+import { RenderScheduler } from "../../extensions/app/runtime/render-scheduler.ts";
 import { SessionLifecycle } from "../../extensions/app/runtime/session-lifecycle.ts";
 import { KeybindingsManager } from "../../node_modules/@earendil-works/pi-coding-agent/dist/core/keybindings.js";
 import {
@@ -40,7 +41,7 @@ type PanelOptions = {
   onHandle?: (handle: Pick<OverlayHandle, "focus" | "unfocus">) => void;
 };
 type ShowOneUiPanel =
-  typeof import("../../extensions/app/panel.ts").showOneUiPanel;
+  typeof import("../../extensions/app/settings/panel.ts").showOneUiPanel;
 type RendererConfig =
   typeof import("../../extensions/app/config/renderer.ts").config;
 type ConfigStore =
@@ -57,13 +58,17 @@ let shell: typeof import("../../extensions/app/config/shell.ts");
 let EditorLayoutController: typeof import("../../extensions/layouts/editor/controller.ts").EditorLayoutController;
 let createInitialState: typeof import("../../extensions/services/session-state.ts").createInitialState;
 let emptyGitStatus: typeof import("../../extensions/services/git-data.ts").emptyGitStatus;
+let SettingsController: typeof import("../../extensions/app/settings/controller.ts").SettingsController;
 
 beforeAll(async () => {
   agentDir = await mkdtemp(join(tmpdir(), "pi-one-ui-panel-test-"));
   previousAgentDir = process.env.PI_CODING_AGENT_DIR;
   process.env.PI_CODING_AGENT_DIR = agentDir;
   initTheme("dark");
-  ({ showOneUiPanel } = await import("../../extensions/app/panel.ts"));
+  ({ showOneUiPanel } = await import("../../extensions/app/settings/panel.ts"));
+  ({ SettingsController } = await import(
+    "../../extensions/app/settings/controller.ts"
+  ));
   ({
     config: rendererConfig,
     setConfig: setRendererConfig,
@@ -89,7 +94,7 @@ afterAll(async () => {
 });
 
 function createPanelHarness(options: {
-  runtime?: Record<string, unknown>;
+  update?: InstanceType<typeof SettingsController>["update"];
   onClose?: () => void;
   tui?: TuiMainScreen | TuiAltScreen;
   ui?: Partial<ExtensionUIContext>;
@@ -138,11 +143,16 @@ function createPanelHarness(options: {
       },
     },
   };
+  const settings = new SettingsController(sharedConfigStore);
   const open = () =>
     showOneUiPanel(ctx as never, {
-      runtime: options.runtime as never,
+      settings: {
+        snapshot: () => settings.snapshot(),
+        update: options.update ?? ((id, value) => settings.update(id, value)),
+      },
     });
   return {
+    settings,
     component: () => {
       if (!component) throw new Error("Panel component was not created");
       return component;
@@ -243,7 +253,7 @@ test("/oneui leaves the effective value unchanged when persistence fails", async
     throw new Error("config is corrupt");
   });
   const harness = createPanelHarness({
-    runtime: { setUserMessagesComponent },
+    update: setUserMessagesComponent,
   });
   const opened = harness.open();
   const component = harness.component();
@@ -254,13 +264,13 @@ test("/oneui leaves the effective value unchanged when persistence fails", async
 
   expect(setUserMessagesComponent).toHaveBeenNthCalledWith(
     1,
-    { enabled: false },
-    expect.anything(),
+    "userMessagesEnabled",
+    "off",
   );
   expect(setUserMessagesComponent).toHaveBeenNthCalledWith(
     2,
-    { enabled: false },
-    expect.anything(),
+    "userMessagesEnabled",
+    "off",
   );
   expect(harness.notifications).toStrictEqual([
     {
@@ -293,12 +303,10 @@ test("/oneui rebuilds a failed Context row from the effective config", async () 
     .mockImplementation(() => {
       throw new Error("disk offline");
     });
-  const updateContextConfig = vi.fn((patch: Partial<RendererConfig>) =>
-    updateRendererConfig(patch),
+  const updateContextConfig = vi.fn((id: string, value: string) =>
+    harness.settings.update(id, value),
   );
-  const harness = createPanelHarness({
-    runtime: { updateContextConfig },
-  });
+  const harness = createPanelHarness({ update: updateContextConfig });
   const opened = harness.open();
   const component = harness.component();
 
@@ -312,13 +320,13 @@ test("/oneui rebuilds a failed Context row from the effective config", async () 
 
     expect(updateContextConfig).toHaveBeenNthCalledWith(
       1,
-      { diffViewMode: expectedDiffViewMode },
-      expect.anything(),
+      "diffViewMode",
+      expectedDiffViewMode,
     );
     expect(updateContextConfig).toHaveBeenNthCalledWith(
       2,
-      { diffViewMode: expectedDiffViewMode },
-      expect.anything(),
+      "diffViewMode",
+      expectedDiffViewMode,
     );
     expect(rendererConfig).toStrictEqual(snapshot);
     expect(harness.notifications).toHaveLength(2);
@@ -338,13 +346,11 @@ test("/oneui rebuilds a failed Context row from the effective config", async () 
 });
 
 test("/oneui keeps the panel open and refocuses after an Editor style change", async () => {
-  const setEditorComponent = vi.fn(() => {
+  const setEditorComponent = vi.fn((id: string, value: string) => {
     harness.operations.push("apply");
-    return { applied: true };
+    return harness.settings.update(id, value);
   });
-  const harness = createPanelHarness({
-    runtime: { setEditorComponent },
-  });
+  const harness = createPanelHarness({ update: setEditorComponent });
   const opened = harness.open();
   const component = harness.component();
 
@@ -352,10 +358,7 @@ test("/oneui keeps the panel open and refocuses after an Editor style change", a
   // Editor 部分第一项即样式开关（on/off），空格直接切换。
   component.handleInput(" ");
 
-  expect(setEditorComponent).toHaveBeenCalledWith(
-    { style: "off" },
-    expect.anything(),
-  );
+  expect(setEditorComponent).toHaveBeenCalledWith("editorStyle", "off");
   expect(overlayManager.hasActive()).toBe(true);
   expect(harness.operations).toStrictEqual(["apply", "focus"]);
   expect(component.render(80).join("\n")).toContain("Border color");
@@ -419,12 +422,12 @@ function createLiveEditorPanelHarness(
   const lifecycle = new SessionLifecycle();
   lifecycle.start();
   const state = createInitialState(emptyGitStatus());
+  const render = new RenderScheduler();
   const controller = new EditorLayoutController({
     getConfig: shell.loadConfig,
-    saveComponent: shell.saveEditorComponentPatch,
     getState: () => state,
     sessionLifecycle: lifecycle,
-    render: { request: () => tui.requestRender() },
+    render,
     getThinkingLevel: () => "off",
     getAgentDurationMs: () => 0,
     isAgentActive: () => false,
@@ -444,10 +447,13 @@ function createLiveEditorPanelHarness(
         host.editor.getExpandedText?.() ?? host.editor.getText(),
       setEditorText: (text) => host.editor.setText(text),
     },
-    runtime: {
-      setEditorComponent: (
-        patch: Parameters<typeof controller.setComponent>[0],
-      ) => controller.setComponent(patch, harness.ctx as never),
+    update: (id, value) => {
+      const snapshot = harness.settings.update(id, value);
+      controller.applyConfig(
+        snapshot.shell.components.editor,
+        harness.ctx as never,
+      );
+      return snapshot;
     },
   });
   controller.install(harness.ctx as never);
@@ -456,7 +462,11 @@ function createLiveEditorPanelHarness(
     tui,
     host,
     replaceEditor,
-    dispose: () => controller.cleanup(harness.ctx as never),
+    dispose: () => {
+      lifecycle.shutdown();
+      controller.cleanup(harness.ctx as never);
+      render.dispose();
+    },
   };
 }
 

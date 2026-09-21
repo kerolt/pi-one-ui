@@ -102,8 +102,10 @@ pi update npm:pi-one-ui
 
 提供两种配置途径：
 
-1. **交互式设置面板（推荐）**：在 Pi 会话中运行 `/oneui`，即可在可视化面板中即时调整常用组件开关、样式和边框模式。修改即刻生效并自动持久化。
+1. **交互式设置面板（推荐）**：在 Pi 会话中运行 `/oneui`，即可调整常用组件开关、样式和边框模式。组件设置保存后即时应用；Features 开关在 `/reload` 后应用。Preset 一次保存全部相关设置并更新对应组件。
 2. **手动编辑配置文件**：高级用户可直接编辑 JSON 配置文件以启用更多细粒度选项。修改保存后，在 Pi 中执行 `/reload` 即可生效。文件不存在时将直接使用内置默认值。
+
+配置文件损坏或无法读取时会报告错误。保存失败时保持当前设置；保存成功但组件应用失败时，面板会明确提示应用失败。
 
 ### 基础配置示例
 
@@ -229,6 +231,17 @@ npm run pi:install-local
 npm run verify
 npm run pack:check
 ```
+
+### 源码职责
+
+- `extensions/app/runtime/`：装配、共享事件、session 生命周期、渲染调度和 patch 管理。
+- `extensions/app/config/`：配置类型、规范化和统一存储。
+- `extensions/app/settings/`：设置操作、Preset 与 `/oneui` 打开流程。
+- `extensions/app/overlay/`：Overlay 生命周期、焦点协作和输入路由。
+- `extensions/layouts/`：组件行为与渲染；设置面板、Context Inspector 和 Selector 视图位于 `layouts/overlay/`。
+- `extensions/features/`、`extensions/services/`：功能实现与共享数据，由 app 统一组织。
+
+模块约束和真实 Pi TUI 验证命令见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
 ### 测试组织
 

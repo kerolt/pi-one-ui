@@ -24,11 +24,7 @@ import {
   type PolishedTuiConfig,
   type SeparatorStyle,
 } from "../../extensions/app/config/shell";
-import {
-  installSelectorBorderStyle as installSelectorBorderStyleProduction,
-  patchSelectorBorderStyle as patchSelectorBorderStyleProduction,
-} from "../../extensions/app/overlay/selector-border";
-import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../../extensions/app/ownership/prototype-patch-registry";
+import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../../extensions/app/runtime/prototype-patch-registry";
 import { installUserMessageStyle as installUserMessageStyleProduction } from "../../extensions/layouts/context/message/user-message";
 import { sanitizeUserMessageSourceText } from "../../extensions/layouts/context/message/user-message-osc";
 import {
@@ -36,6 +32,10 @@ import {
   WrappedPolishedEditor as WrappedPolishedEditorProduction,
 } from "../../extensions/layouts/editor/ui";
 import { installFooter as installFooterProduction } from "../../extensions/layouts/footer/footer";
+import {
+  installSelectorBorderStyle as installSelectorBorderStyleProduction,
+  patchSelectorBorderStyle as patchSelectorBorderStyleProduction,
+} from "../../extensions/layouts/overlay/selector-border";
 import { emptyGitStatus } from "../../extensions/services/git-data";
 import { createInitialState } from "../../extensions/services/session-state";
 import zentui, { activeFooterReferences } from "../support/layout-lifecycle";
@@ -407,15 +407,16 @@ function configWithColors(
 }
 
 function configWithExtensionStatuses(
-  extensionStatuses: Partial<PolishedTuiConfig["extensionStatuses"]>,
+  extensionStatuses: Partial<
+    PolishedTuiConfig["components"]["footer"]["styles"]["starship"]["extensionStatuses"]
+  >,
 ): PolishedTuiConfig {
+  const defaults =
+    defaultConfig.components.footer.styles.starship.extensionStatuses;
   const merged = {
-    ...defaultConfig.extensionStatuses,
+    ...defaults,
     ...extensionStatuses,
-    placements: {
-      ...defaultConfig.extensionStatuses.placements,
-      ...(extensionStatuses.placements ?? {}),
-    },
+    placements: { ...defaults.placements, ...extensionStatuses.placements },
   };
   const footer = defaultConfig.components.footer;
   return {
@@ -3818,7 +3819,10 @@ describe("Pi docs compliance", () => {
 
     const enabled = {
       ...defaultConfig,
-      footerSegments: { ...defaultConfig.footerSegments, modelInfo: true },
+      footerSegments: {
+        ...defaultConfig.components.footer.styles.starship.segments,
+        modelInfo: true,
+      },
     };
     installFooter(ctx as never, state, () => enabled, {
       setRequestRender() {},
@@ -3926,7 +3930,7 @@ describe("Pi docs compliance", () => {
       ...defaultConfig,
       responsiveFooter: false,
       footerSegments: {
-        ...defaultConfig.footerSegments,
+        ...defaultConfig.components.footer.styles.starship.segments,
         context: false,
         tokens: false,
         cost: false,
@@ -4578,7 +4582,7 @@ describe("Pi docs compliance", () => {
       const config: PolishedTuiConfig = {
         ...defaultConfig,
         footerSegments: {
-          ...defaultConfig.footerSegments,
+          ...defaultConfig.components.footer.styles.starship.segments,
           packageVersion: enabled,
           runtime: false,
         },
@@ -4622,7 +4626,10 @@ describe("Pi docs compliance", () => {
     state.costLabel = "$0.001";
     const config: PolishedTuiConfig = {
       ...defaultConfig,
-      footerSegments: { ...defaultConfig.footerSegments, packageVersion: true },
+      footerSegments: {
+        ...defaultConfig.components.footer.styles.starship.segments,
+        packageVersion: true,
+      },
       footerFormat: "$cwd $fill $context",
     };
     installFooter(ctx as never, state, () => config, {
@@ -4659,7 +4666,10 @@ describe("Pi docs compliance", () => {
       state.costLabel = "$0";
       const config: PolishedTuiConfig = {
         ...defaultConfig,
-        footerSegments: { ...defaultConfig.footerSegments, gitCommit: true },
+        footerSegments: {
+          ...defaultConfig.components.footer.styles.starship.segments,
+          gitCommit: true,
+        },
         gitBranch: { maxLength: 1 },
         gitCommit: { hashLength: 7, onlyDetached, showTag: true },
       };
@@ -4703,7 +4713,10 @@ describe("Pi docs compliance", () => {
       state.costLabel = "$0";
       const config: PolishedTuiConfig = {
         ...defaultConfig,
-        footerSegments: { ...defaultConfig.footerSegments, gitMetrics: true },
+        footerSegments: {
+          ...defaultConfig.components.footer.styles.starship.segments,
+          gitMetrics: true,
+        },
       };
       installFooter(ctx as never, state, () => config, {
         setRequestRender() {},
@@ -4888,7 +4901,7 @@ describe("Pi docs compliance", () => {
       responsiveFooter,
       colors: { ...defaultConfig.colors, sessionName: sessionNameColor },
       footerSegments: {
-        ...defaultConfig.footerSegments,
+        ...defaultConfig.components.footer.styles.starship.segments,
         cwd: true,
         sessionName: segmentEnabled,
         gitBranch: branchEnabled,
@@ -5086,6 +5099,7 @@ describe("Pi docs compliance", () => {
     expect(
       handler?.({ type: "session_info_changed", name: "release prep" }, ctx),
     ).toBeUndefined();
+    await Promise.resolve();
     expect(renderRequests).toBe(before + 1);
     await emit(handlers, "session_shutdown", ctx);
   });
@@ -5205,14 +5219,17 @@ describe("three-state Footer lifecycle", () => {
       expect(predecessorComponent?.render(80).join("\n")).toBeTruthy();
 
       rejectReplacement = true;
-      handlers.layout.footerController.setComponent(
-        { style: "hidden" },
-        ctx as never,
-      );
+      expect(() =>
+        handlers.layout.footerController.setComponent(
+          { style: "hidden" },
+          ctx as never,
+        ),
+      ).toThrow(/saved but could not be applied/);
       expect(factory).toBe(predecessorFactory);
       expect(component).toBe(predecessorComponent);
       const requestsBeforeTick = tui.requestRender.mock.calls.length;
       vi.advanceTimersByTime(1000);
+      await Promise.resolve();
       expect(tui.requestRender.mock.calls.length).toBeGreaterThan(
         requestsBeforeTick,
       );
@@ -5268,14 +5285,17 @@ describe("three-state Footer lifecycle", () => {
       const predecessorComponent = component;
 
       rejectNative = true;
-      handlers.layout.footerController.setComponent(
-        { style: "native" },
-        ctx as never,
-      );
+      expect(() =>
+        handlers.layout.footerController.setComponent(
+          { style: "native" },
+          ctx as never,
+        ),
+      ).toThrow(/saved but could not be applied/);
       expect(factory).toBe(predecessorFactory);
       expect(component).toBe(predecessorComponent);
       const requestsBeforeTick = tui.requestRender.mock.calls.length;
       vi.advanceTimersByTime(1000);
+      await Promise.resolve();
       expect(tui.requestRender.mock.calls.length).toBeGreaterThan(
         requestsBeforeTick,
       );
@@ -5327,10 +5347,12 @@ describe("three-state Footer lifecycle", () => {
     expect(predecessorComponent?.render(80)).toEqual([]);
 
     rejectNative = true;
-    handlers.layout.footerController.setComponent(
-      { style: "native" },
-      ctx as never,
-    );
+    expect(() =>
+      handlers.layout.footerController.setComponent(
+        { style: "native" },
+        ctx as never,
+      ),
+    ).toThrow(/saved but could not be applied/);
     expect(factory).toBe(predecessorFactory);
     expect(component).toBe(predecessorComponent);
 

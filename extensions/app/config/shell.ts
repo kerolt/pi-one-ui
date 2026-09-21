@@ -1,5 +1,3 @@
-import { normalizeWorkingLineMessages } from "../../layouts/working-line/working-line.ts";
-import { PI_WORKING_LINE_MESSAGES } from "../../layouts/working-line/working-line-messages.ts";
 import {
   ICON_GLYPH_KEYS,
   type IconGlyphs,
@@ -11,207 +9,80 @@ import {
 } from "../../shared/icons.ts";
 import { isSupportedColorSpec } from "../../shared/style.ts";
 import {
+  normalizeUserMessages,
+  type UserMessagesComponentConfig,
+} from "./context.ts";
+import {
+  defaultEditor,
+  type EditorBorderColorMode,
+  type EditorComponentConfig,
+  type EditorStyle,
+  type MinimalistConfig,
+  type MinimalistEditorStyleConfig,
+  type ModelLabelSource,
+  normalizeEditor,
+  parseEditorBorderColorMode,
+  parseEditorModelLabel,
+  parseEditorStyle,
+} from "./editor.ts";
+import {
+  type CompactFooterMaxLines,
+  type ContextStyle,
+  type ContextThresholds,
+  defaultFooter,
+  defaultFooterSegments,
+  type ExtensionStatusColorMode,
+  type ExtensionStatusPlacement,
+  type FooterComponentConfig,
+  type FooterSegmentsConfig,
+  type GitBranchConfig,
+  type GitCommitConfig,
+  type GitMetricsConfig,
+  isExtensionStatusColorMode,
+  isExtensionStatusPlacement,
+  normalizeFooter,
+  type PathDisplayConfig,
+  parseCompactFooterMaxLines,
+  parseContextStyle,
+  parseSeparatorStyle,
+  type SeparatorStyle,
+  type StarshipFooterStyleConfig,
+} from "./footer.ts";
+import {
   type ConfigRecord,
   configStore,
   configPath as defaultConfigPath,
   mutateConfigFile,
 } from "./store.ts";
+import { booleanValue, overlayKnown, recordValue } from "./values.ts";
+import {
+  defaultWorkingLine,
+  normalizeWorkingLine,
+  type WorkingLineComponentConfig,
+  type WorkingLineComponentPatch,
+} from "./working-line.ts";
 
-export type ColorSpec = string;
 export type { IconMode } from "../../shared/icons.ts";
-
-export type ContextStyle = "text" | "gauge" | "text+gauge";
-export type SeparatorStyle = "pipe" | "dot" | "chevron" | "none";
-export type ModelLabelSource = "id" | "name";
-export type EditorStyle = "on" | "off";
-export type UserMessageStyle =
-  | "framed"
-  | "framed-copy-friendly"
-  | "compact"
-  | "labeled";
+export * from "./context.ts";
+export * from "./editor.ts";
+export * from "./footer.ts";
+export * from "./working-line.ts";
+export type ColorSpec = string;
 export type SelectorBorderStyle = "zentui";
-export type FooterStyle = "native" | "starship" | "hidden";
-export type WorkingLineSpinner =
-  | "braille"
-  | "star-bloom"
-  | "pinwheel"
-  | "claude-inspired"
-  | "pulse";
-export type WorkingLineTextAnimation = "classic" | "kitt" | "disabled";
+export type SelectorBordersComponentConfig = {
+  enabled: boolean;
+  style: SelectorBorderStyle;
+};
 export type ComponentStyleOwner =
   | "editor"
   | "userMessages"
   | "selectorBorders"
   | "footer";
-export type MinimalistPathDisplayMode = "compact" | "project" | "full";
-export type EditorBorderColorMode = "static" | "adaptive";
-export type CompactFooterMaxLines = 1 | 2 | 3 | "unlimited";
-
-export const DEFAULT_COMPACT_FOOTER_FORMAT =
-  "$cwd$wrap(in $session_name)$wrap(on $git_branch) $git_status$wrap$context$wrap_sep$tokens";
-
-export type ContextThresholds = {
-  warning: number;
-  error: number;
-};
-
-export type PathDisplayMode = "basename" | "full";
-
-export type PathDisplayConfig = {
-  mode: PathDisplayMode;
-  /** Trailing directories to show in full mode. 0 = unlimited; clamped to 0..5. */
-  depth: number;
-};
-
-export type GitBranchMaxLength = "full" | number;
-
-export type GitBranchConfig = {
-  maxLength: GitBranchMaxLength;
-};
-
 export type UiFeaturesConfig = {
   editor: boolean;
   statusLine: boolean;
   viewportIndicators: boolean;
 };
-
-export type FooterSegmentsConfig = {
-  cwd: boolean;
-  sessionName: boolean;
-  gitBranch: boolean;
-  gitStatus: boolean;
-  gitCounts: boolean;
-  gitCommit: boolean;
-  gitMetrics: boolean;
-  runtime: boolean;
-  modelInfo: boolean;
-  context: boolean;
-  tokens: boolean;
-  cost: boolean;
-  sessionDuration: boolean;
-  username: boolean;
-  time: boolean;
-  os: boolean;
-  packageVersion: boolean;
-};
-
-export type MinimalistEditorStyleConfig = {
-  pathDisplay: MinimalistPathDisplayMode;
-  /** Controls the Editor directory label independently of its format and the Footer. */
-  showCwd: boolean;
-  showSessionName: boolean;
-  showTimer: boolean;
-  showCost: boolean;
-  showGit: boolean;
-};
-
-/** Temporary name retained for existing settings consumers. */
-export type MinimalistConfig = MinimalistEditorStyleConfig;
-
-export type EditorStylesConfig = {
-  minimalist: MinimalistEditorStyleConfig;
-};
-
-export type EditorComponentConfig = {
-  style: EditorStyle;
-  borderColorMode: EditorBorderColorMode;
-  modelLabel: ModelLabelSource;
-  viewportIndicators: boolean;
-  styles: {
-    minimalist: MinimalistEditorStyleConfig;
-  };
-};
-
-export type FramedUserMessageStyleConfig = Record<string, never>;
-export type FramedCopyFriendlyUserMessageStyleConfig = Record<string, never>;
-export type CompactUserMessageStyleConfig = Record<string, never>;
-export type LabeledUserMessageStyleConfig = Record<string, never>;
-
-export type UserMessagesComponentConfig = {
-  enabled: boolean;
-  style: UserMessageStyle;
-  styles: {
-    framed: FramedUserMessageStyleConfig;
-    "framed-copy-friendly": FramedCopyFriendlyUserMessageStyleConfig;
-    compact: CompactUserMessageStyleConfig;
-    labeled: LabeledUserMessageStyleConfig;
-  };
-};
-
-export type SelectorBordersComponentConfig = {
-  enabled: boolean;
-  style: SelectorBorderStyle;
-};
-
-export type StarshipFooterStyleConfig = {
-  format: string;
-  responsive: boolean;
-  compactFormat: string;
-  compactMaxLines: CompactFooterMaxLines;
-  separator: SeparatorStyle;
-  contextStyle: ContextStyle;
-  contextThresholds: ContextThresholds;
-  pathDisplay: PathDisplayConfig;
-  segments: FooterSegmentsConfig;
-  gitBranch: GitBranchConfig;
-  gitCommit: GitCommitConfig;
-  gitMetrics: GitMetricsConfig;
-  extensionStatuses: ExtensionStatusesConfig;
-};
-
-export type FooterComponentConfig = {
-  style: FooterStyle;
-  modelLabel: ModelLabelSource;
-  styles: {
-    starship: StarshipFooterStyleConfig;
-  };
-};
-
-export type WorkingLineMessagesConfig = {
-  custom: boolean;
-  values: string[];
-};
-
-export type WorkingLineSegmentsConfig = {
-  tool: boolean;
-  elapsed: boolean;
-  thought: boolean;
-  tokens: boolean;
-};
-
-export const DEFAULT_WORKING_LINE_SPINNER_INTERVAL_MS = 100;
-export const DEFAULT_WORKING_LINE_TEXT_INTERVAL_MS = 60;
-export const MIN_WORKING_LINE_INTERVAL_MS = 30;
-export const MAX_WORKING_LINE_INTERVAL_MS = 1000;
-
-export function isValidWorkingLineIntervalMs(value: unknown): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isSafeInteger(value) &&
-    value >= MIN_WORKING_LINE_INTERVAL_MS &&
-    value <= MAX_WORKING_LINE_INTERVAL_MS
-  );
-}
-
-export type WorkingLineComponentConfig = {
-  enabled: boolean;
-  turnSummary: boolean;
-  spinner: WorkingLineSpinner;
-  spinnerIntervalMs: number;
-  animateSpinnerColor: boolean;
-  textIntervalMs: number;
-  textAnimation: WorkingLineTextAnimation;
-  messages: WorkingLineMessagesConfig;
-  segments: WorkingLineSegmentsConfig;
-};
-
-export type WorkingLineComponentPatch = Partial<
-  Omit<WorkingLineComponentConfig, "messages" | "segments">
-> & {
-  messages?: Partial<WorkingLineMessagesConfig>;
-  segments?: Partial<WorkingLineSegmentsConfig>;
-};
-
 export type ComponentsConfig = {
   editor: EditorComponentConfig;
   userMessages: UserMessagesComponentConfig;
@@ -219,49 +90,6 @@ export type ComponentsConfig = {
   selectorBorders: SelectorBordersComponentConfig;
   footer: FooterComponentConfig;
 };
-
-export type ExtensionStatusPlacement = "off" | "left" | "middle" | "right";
-export type ExtensionStatusColorMode = "zentui" | "original";
-
-/**
- * Starship `git_commit`-style options.
- * See https://starship.rs/config/#git-commit
- */
-export type GitCommitConfig = {
-  hashLength: number;
-  onlyDetached: boolean;
-  showTag: boolean;
-};
-
-/**
- * Starship `git_metrics`-style options.
- * See https://starship.rs/config/#git-metrics
- */
-export type GitMetricsConfig = {
-  onlyNonzero: boolean;
-  ignoreSubmodules: boolean;
-};
-
-const DEFAULT_EXTENSION_STATUS_PLACEMENT: ExtensionStatusPlacement = "right";
-const DEFAULT_EXTENSION_STATUS_COLOR_MODE: ExtensionStatusColorMode = "zentui";
-
-export type ExtensionStatusesConfig = {
-  defaultPlacement: ExtensionStatusPlacement;
-  placements: Record<string, ExtensionStatusPlacement>;
-  colorModes: Record<string, ExtensionStatusColorMode>;
-};
-
-const DEFAULT_PROJECT_REFRESH_INTERVAL_MS = 30_000;
-const MIN_PROJECT_REFRESH_INTERVAL_MS = 5_000;
-export const DEFAULT_EDITOR_METADATA_FORMAT = "$model  $provider(  $thinking)";
-
-export type ZentuiConfig = {
-  projectRefreshIntervalMs: number;
-  icons: ResolvedIcons;
-  colors: PolishedTuiColors;
-  components: ComponentsConfig;
-};
-
 export type PolishedTuiColors = {
   cwd?: ColorSpec;
   sessionName: ColorSpec;
@@ -299,172 +127,17 @@ export type PolishedTuiColors = {
   workingLineMid?: ColorSpec;
   workingLineHigh?: ColorSpec;
 };
-
-/** Canonical configuration plus a derived flat runtime view for existing callers. */
-export type PolishedTuiConfig = ZentuiConfig & {
-  footerFormat: string;
-  responsiveFooter: boolean;
-  compactFooterFormat: string;
-  compactFooterMaxLines: CompactFooterMaxLines;
-  editorMetadataFormat: string;
-  separator: SeparatorStyle;
-  contextStyle: ContextStyle;
-  editorModelLabel: ModelLabelSource;
-  editorStyle: EditorStyle;
-  editorStyles: EditorStylesConfig;
-  editorBorderColorMode: EditorBorderColorMode;
-  contextThresholds: ContextThresholds;
-  pathDisplay: PathDisplayConfig;
-  gitBranch: GitBranchConfig;
-  features: UiFeaturesConfig;
-  footerSegments: FooterSegmentsConfig;
-  gitCommit: GitCommitConfig;
-  gitMetrics: GitMetricsConfig;
-  extensionStatuses: ExtensionStatusesConfig;
+export type ZentuiConfig = {
+  projectRefreshIntervalMs: number;
+  icons: ResolvedIcons;
+  colors: PolishedTuiColors;
+  components: ComponentsConfig;
 };
-
-/**
- * Canonical footer format variable names. In a `footerFormat` string these
- * are written as `$name` or `${name}`.
- */
-export const FOOTER_FORMAT_VARIABLES = [
-  "cwd",
-  "session_name",
-  "git_branch",
-  "git_status",
-  "git_state",
-  "runtime",
-  "model",
-  "provider",
-  "session_duration",
-  "username",
-  "os",
-  "time",
-  "context",
-  "tokens",
-  "cache_read",
-  "cache_write",
-  "cost",
-  "subscription",
-  "auto_compaction",
-  "package",
-  "package_version",
-  "git_commit",
-  "git_tag",
-  "git_metrics",
-  "git_added",
-  "git_deleted",
-  "sep",
-] as const;
-
-/**
- * Alias → canonical variable name mapping for `footerFormat`.
- * `$fill` is special (not a variable) and handled by the parser.
- */
-export const FOOTER_FORMAT_ALIASES: Record<string, string> = {
-  directory: "cwd",
-  branch: "git_branch",
-  status: "git_status",
-  state: "git_state",
-  commit: "git_commit",
-  tag: "git_tag",
-  duration: "session_duration",
-  separator: "sep",
-};
-
-/** Shared configuration file used by the pi-one-ui package. */
+export type PolishedTuiConfig = ZentuiConfig;
 export const configPath = defaultConfigPath;
 
-const defaultFooterSegments: FooterSegmentsConfig = {
-  cwd: true,
-  sessionName: true,
-  gitBranch: true,
-  gitStatus: true,
-  gitCounts: false,
-  gitCommit: false,
-  gitMetrics: false,
-  runtime: true,
-  modelInfo: false,
-  context: true,
-  tokens: true,
-  cost: true,
-  sessionDuration: false,
-  username: false,
-  time: false,
-  os: false,
-  packageVersion: false,
-};
-
-const defaultMinimalistStyle: MinimalistEditorStyleConfig = {
-  pathDisplay: "compact",
-  showCwd: true,
-  showSessionName: true,
-  showTimer: true,
-  showCost: true,
-  showGit: true,
-};
-
-const defaultStarshipStyle: StarshipFooterStyleConfig = {
-  format: "",
-  responsive: true,
-  compactFormat: DEFAULT_COMPACT_FOOTER_FORMAT,
-  compactMaxLines: 2,
-  separator: "pipe",
-  contextStyle: "text",
-  contextThresholds: { warning: 70, error: 90 },
-  pathDisplay: { mode: "basename", depth: 0 },
-  segments: defaultFooterSegments,
-  gitBranch: { maxLength: "full" },
-  gitCommit: { hashLength: 7, onlyDetached: true, showTag: true },
-  gitMetrics: { onlyNonzero: true, ignoreSubmodules: false },
-  extensionStatuses: {
-    defaultPlacement: "right",
-    placements: {},
-    colorModes: {},
-  },
-};
-
-const defaultComponents: ComponentsConfig = {
-  editor: {
-    style: "on",
-    borderColorMode: "static",
-    modelLabel: "id",
-    viewportIndicators: true,
-    styles: {
-      minimalist: defaultMinimalistStyle,
-    },
-  },
-  userMessages: {
-    enabled: true,
-    style: "framed",
-    styles: {
-      framed: {},
-      "framed-copy-friendly": {},
-      compact: {},
-      labeled: {},
-    },
-  },
-  workingLine: {
-    enabled: false,
-    turnSummary: true,
-    spinner: "star-bloom",
-    spinnerIntervalMs: DEFAULT_WORKING_LINE_SPINNER_INTERVAL_MS,
-    animateSpinnerColor: false,
-    textIntervalMs: DEFAULT_WORKING_LINE_TEXT_INTERVAL_MS,
-    textAnimation: "classic",
-    messages: { custom: true, values: [...PI_WORKING_LINE_MESSAGES] },
-    segments: { tool: true, elapsed: true, thought: true, tokens: true },
-  },
-  selectorBorders: { enabled: true, style: "zentui" },
-  footer: {
-    style: "starship",
-    modelLabel: "id",
-    styles: { starship: defaultStarshipStyle },
-  },
-};
-
-export const defaultConfig: PolishedTuiConfig = {
-  projectRefreshIntervalMs: DEFAULT_PROJECT_REFRESH_INTERVAL_MS,
+export const defaultConfig: ZentuiConfig = {
+  projectRefreshIntervalMs: 30_000,
   icons: { mode: "auto", ...NERD_DEFAULT_ICONS },
   colors: {
     sessionName: "bold green",
@@ -487,706 +160,52 @@ export const defaultConfig: PolishedTuiConfig = {
     time: "bold yellow",
     os: "bold white",
   },
-  components: defaultComponents,
-  footerFormat: defaultStarshipStyle.format,
-  responsiveFooter: defaultStarshipStyle.responsive,
-  compactFooterFormat: defaultStarshipStyle.compactFormat,
-  compactFooterMaxLines: defaultStarshipStyle.compactMaxLines,
-  editorMetadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
-  separator: defaultStarshipStyle.separator,
-  contextStyle: defaultStarshipStyle.contextStyle,
-  editorModelLabel: defaultComponents.editor.modelLabel,
-  editorStyle: defaultComponents.editor.style,
-  editorStyles: { minimalist: defaultMinimalistStyle },
-  editorBorderColorMode: defaultComponents.editor.borderColorMode,
-  contextThresholds: defaultStarshipStyle.contextThresholds,
-  pathDisplay: defaultStarshipStyle.pathDisplay,
-  gitBranch: defaultStarshipStyle.gitBranch,
-  features: {
-    editor: true,
-    statusLine: true,
-    viewportIndicators: true,
+  components: {
+    editor: defaultEditor,
+    userMessages: normalizeUserMessages(undefined),
+    workingLine: defaultWorkingLine,
+    selectorBorders: { enabled: true, style: "zentui" },
+    footer: defaultFooter,
   },
-  footerSegments: defaultFooterSegments,
-  gitCommit: defaultStarshipStyle.gitCommit,
-  gitMetrics: defaultStarshipStyle.gitMetrics,
-  extensionStatuses: defaultStarshipStyle.extensionStatuses,
 };
 
-function isRecord(value: unknown): value is ConfigRecord {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-function parseProjectRefreshIntervalMs(value: unknown): number {
-  if (value === 0) return 0;
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return DEFAULT_PROJECT_REFRESH_INTERVAL_MS;
-  }
-
-  const interval = Math.round(value);
-  if (interval <= 0) return 0;
-  return Math.max(MIN_PROJECT_REFRESH_INTERVAL_MS, interval);
-}
-
-function clampPercent(value: number): number {
-  return Math.max(0, Math.min(100, value));
-}
-
-function parseContextStyle(value: unknown): ContextStyle {
-  if (value === "text" || value === "gauge" || value === "text+gauge")
-    return value;
-  return defaultConfig.contextStyle;
-}
-
-function parseEditorModelLabel(
-  value: unknown,
-  fallback: ModelLabelSource = defaultComponents.editor.modelLabel,
-): ModelLabelSource {
-  if (value === "id" || value === "name") return value;
-  return fallback;
-}
-
-function parseEditorStyle(value: unknown): EditorStyle {
-  if (value === "on" || value === "off") return value;
-  // 迁移：旧 opencode / minimalist 样式统一收敛为 on（minimalist）。
-  if (value === "opencode" || value === "minimalist") return "on";
-  return defaultComponents.editor.style;
-}
-
-function parseEditorBorderColorMode(value: unknown): EditorBorderColorMode {
-  if (value === "static" || value === "adaptive") return value;
-  return defaultConfig.editorBorderColorMode;
-}
-
-export function isSeparatorStyle(value: unknown): value is SeparatorStyle {
-  return (
-    value === "pipe" ||
-    value === "dot" ||
-    value === "chevron" ||
-    value === "none"
-  );
-}
-
-function parseSeparatorStyle(value: unknown): SeparatorStyle {
-  return isSeparatorStyle(value) ? value : defaultConfig.separator;
-}
-
-function parseContextThresholds(
-  value: unknown,
-  defaults: ContextThresholds = defaultStarshipStyle.contextThresholds,
-): ContextThresholds {
-  if (!isRecord(value)) return { ...defaults };
-
-  const warningRaw = value.warning;
-  const errorRaw = value.error;
-  let warning =
-    typeof warningRaw === "number" && Number.isFinite(warningRaw)
-      ? clampPercent(Math.round(warningRaw))
-      : defaults.warning;
-  let error =
-    typeof errorRaw === "number" && Number.isFinite(errorRaw)
-      ? clampPercent(Math.round(errorRaw))
-      : defaults.error;
-  if (error < warning) {
-    const swapped = warning;
-    warning = error;
-    error = swapped;
-  }
-  return { warning, error };
-}
-
-function parsePathDisplay(value: unknown): PathDisplayConfig {
-  const defaults = defaultConfig.pathDisplay;
-  if (!isRecord(value)) return { ...defaults };
-  const mode =
-    value.mode === "full" || value.mode === "basename"
-      ? value.mode
-      : defaults.mode;
-  const rawDepth = value.depth;
-  const depth =
-    typeof rawDepth === "number" && Number.isFinite(rawDepth) && rawDepth >= 0
-      ? Math.min(5, Math.floor(rawDepth))
-      : defaults.depth;
-  return { mode, depth };
-}
-
-function normalizeGitBranchMaxLength(value: unknown): GitBranchMaxLength {
-  if (value === "full") return value;
-  if (typeof value === "number" && Number.isInteger(value) && value > 0)
-    return value;
-  return defaultConfig.gitBranch.maxLength;
-}
-
-function parseGitBranchConfig(value: unknown): GitBranchConfig {
-  const defaults = defaultConfig.gitBranch;
-  if (!isRecord(value)) return { ...defaults };
-  return {
-    maxLength: normalizeGitBranchMaxLength(value.maxLength),
-  };
-}
-
-function stringValue(
-  record: Record<string, unknown>,
-  key: string,
-): string | undefined {
-  const value = record[key];
-  return typeof value === "string" ? value : undefined;
-}
-
-function parseCompactFooterMaxLines(value: unknown): CompactFooterMaxLines {
-  return value === 1 || value === 2 || value === 3 || value === "unlimited"
-    ? value
-    : 2;
-}
-
-function colorValue(
-  record: Record<string, unknown>,
-  key: string,
-): string | undefined {
-  const value = stringValue(record, key);
-  return value !== undefined && isSupportedColorSpec(value) ? value : undefined;
-}
-
-function definedColors(
-  colors: Partial<
-    Record<keyof PolishedTuiConfig["colors"], string | undefined>
-  >,
-): Partial<PolishedTuiConfig["colors"]> {
-  return Object.fromEntries(
-    Object.entries(colors).filter(
-      (entry): entry is [keyof PolishedTuiConfig["colors"], string] =>
-        typeof entry[1] === "string",
-    ),
-  ) as Partial<PolishedTuiConfig["colors"]>;
-}
-
-function normalizeIconOverrides(
-  record: Record<string, unknown>,
-): Partial<IconGlyphs> {
-  return Object.fromEntries(
-    ICON_GLYPH_KEYS.flatMap((key) => {
-      const value = stringValue(record, key);
-      return value === undefined ? [] : [[key, value]];
-    }),
-  ) as Partial<IconGlyphs>;
-}
-
-function normalizeColors(
-  record: Record<string, unknown>,
-): Partial<PolishedTuiConfig["colors"]> {
-  return definedColors({
-    cwd: colorValue(record, "cwd"),
-    sessionName: colorValue(record, "sessionName"),
-    gitBranch: colorValue(record, "gitBranch"),
-    gitStatus: colorValue(record, "gitStatus"),
-    contextNormal: colorValue(record, "contextNormal"),
-    contextWarning: colorValue(record, "contextWarning"),
-    contextError: colorValue(record, "contextError"),
-    tokens: colorValue(record, "tokens"),
-    cost: colorValue(record, "cost"),
-    separator: colorValue(record, "separator"),
-    runtimePrefix: colorValue(record, "runtimePrefix"),
-    extensionStatus: colorValue(record, "extensionStatus"),
-    sessionDuration: colorValue(record, "sessionDuration"),
-    packageVersion: colorValue(record, "packageVersion"),
-    gitCommit: colorValue(record, "gitCommit"),
-    gitMetricsAdded: colorValue(record, "gitMetricsAdded"),
-    gitMetricsDeleted: colorValue(record, "gitMetricsDeleted"),
-    username: colorValue(record, "username"),
-    time: colorValue(record, "time"),
-    os: colorValue(record, "os"),
-    editorAccent: colorValue(record, "editorAccent"),
-    editorBorder: colorValue(record, "editorBorder"),
-    editorGitBranch: colorValue(record, "editorGitBranch"),
-    editorModel: colorValue(record, "editorModel"),
-    editorProvider: colorValue(record, "editorProvider"),
-    editorThinking: colorValue(record, "editorThinking"),
-    editorThinkingMinimal: colorValue(record, "editorThinkingMinimal"),
-    editorThinkingLow: colorValue(record, "editorThinkingLow"),
-    editorThinkingMedium: colorValue(record, "editorThinkingMedium"),
-    editorThinkingHigh: colorValue(record, "editorThinkingHigh"),
-    editorThinkingXhigh: colorValue(record, "editorThinkingXhigh"),
-    editorThinkingMax: colorValue(record, "editorThinkingMax"),
-    workingLineLow: colorValue(record, "workingLineLow"),
-    workingLineMid: colorValue(record, "workingLineMid"),
-    workingLineHigh: colorValue(record, "workingLineHigh"),
-  });
-}
-
-/** Clamp hashLength to Git's valid abbreviation range [4, 40]. */
-function normalizeGitHashLength(value: unknown): number {
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(parsed)) return defaultConfig.gitCommit.hashLength;
-  const rounded = Math.round(parsed);
-  return Math.min(40, Math.max(4, rounded));
-}
-
-function normalizeGitCommitConfig(
-  record: Record<string, unknown>,
-): GitCommitConfig {
-  return {
-    hashLength: normalizeGitHashLength(record.hashLength),
-    onlyDetached:
-      typeof record.onlyDetached === "boolean"
-        ? record.onlyDetached
-        : defaultConfig.gitCommit.onlyDetached,
-    showTag:
-      typeof record.showTag === "boolean"
-        ? record.showTag
-        : defaultConfig.gitCommit.showTag,
-  };
-}
-
-function normalizeGitMetricsConfig(
-  record: Record<string, unknown>,
-): GitMetricsConfig {
-  return {
-    onlyNonzero:
-      typeof record.onlyNonzero === "boolean"
-        ? record.onlyNonzero
-        : defaultConfig.gitMetrics.onlyNonzero,
-    ignoreSubmodules:
-      typeof record.ignoreSubmodules === "boolean"
-        ? record.ignoreSubmodules
-        : defaultConfig.gitMetrics.ignoreSubmodules,
-  };
-}
-
-export function isExtensionStatusPlacement(
-  value: unknown,
-): value is ExtensionStatusPlacement {
-  return (
-    value === "off" ||
-    value === "left" ||
-    value === "middle" ||
-    value === "right"
-  );
-}
-
-export function isExtensionStatusColorMode(
-  value: unknown,
-): value is ExtensionStatusColorMode {
-  return value === "zentui" || value === "original";
-}
-
-function normalizeExtensionStatuses(
-  record: Record<string, unknown>,
-): ExtensionStatusesConfig {
-  const defaultPlacement = isExtensionStatusPlacement(record.defaultPlacement)
-    ? record.defaultPlacement
-    : defaultConfig.extensionStatuses.defaultPlacement;
-  const placements = isRecord(record.placements)
-    ? Object.fromEntries(
-        Object.entries(record.placements).filter(
-          (entry): entry is [string, ExtensionStatusPlacement] =>
-            isExtensionStatusPlacement(entry[1]),
-        ),
-      )
-    : {};
-  const colorModes = isRecord(record.colorModes)
-    ? Object.fromEntries(
-        Object.entries(record.colorModes).filter(
-          (entry): entry is [string, ExtensionStatusColorMode] =>
-            isExtensionStatusColorMode(entry[1]),
-        ),
-      )
-    : {};
-
-  return {
-    defaultPlacement,
-    placements,
-    colorModes,
-  };
-}
-
-function isUiFeatureKey(value: string): value is keyof UiFeaturesConfig {
-  return (
-    value === "editor" ||
-    value === "statusLine" ||
-    value === "viewportIndicators"
-  );
-}
-
-function isFooterSegmentKey(
-  value: string,
-): value is keyof FooterSegmentsConfig {
-  return (
-    value === "cwd" ||
-    value === "sessionName" ||
-    value === "gitBranch" ||
-    value === "gitStatus" ||
-    value === "gitCounts" ||
-    value === "runtime" ||
-    value === "modelInfo" ||
-    value === "context" ||
-    value === "tokens" ||
-    value === "cost" ||
-    value === "sessionDuration" ||
-    value === "username" ||
-    value === "time" ||
-    value === "os" ||
-    value === "packageVersion" ||
-    value === "gitCommit" ||
-    value === "gitMetrics"
-  );
-}
-
-function validUiFeatureEntries(
-  record: Record<string, unknown>,
-): Partial<UiFeaturesConfig> {
-  return Object.fromEntries(
-    Object.entries(record).filter(
-      (entry): entry is [keyof UiFeaturesConfig, boolean] => {
-        const [key, value] = entry;
-        return isUiFeatureKey(key) && typeof value === "boolean";
-      },
-    ),
-  ) as Partial<UiFeaturesConfig>;
-}
-
-function validFooterSegmentEntries(
-  record: Record<string, unknown>,
-): Partial<FooterSegmentsConfig> {
-  return Object.fromEntries(
-    Object.entries(record).filter(
-      (entry): entry is [keyof FooterSegmentsConfig, boolean] => {
-        const [key, value] = entry;
-        return isFooterSegmentKey(key) && typeof value === "boolean";
-      },
-    ),
-  ) as Partial<FooterSegmentsConfig>;
-}
-
-/** Applies one canonical mutation through the shared config writer. */
-function mutateConfig(
-  path: string,
-  mutate: (record: ConfigRecord) => void,
-): PolishedTuiConfig {
-  const update = (record: ConfigRecord): void => {
-    record.version = 1;
-    mutate(record);
-  };
-  const record =
-    path === configPath
-      ? configStore.update(update)
-      : mutateConfigFile(path, update);
-  return mergeConfig(record);
-}
-
-export function ensureConfigExists(_path = configPath): void {
-  // Intentionally left as a no-op. Runtime defaults come from `mergeConfig({})`;
-  // persist the canonical file only after the user changes a setting.
-}
-
-function hasOwn(record: ConfigRecord, key: string): boolean {
-  return Object.hasOwn(record, key);
-}
-
-function recordValue(value: unknown): ConfigRecord {
-  return isRecord(value) ? value : {};
-}
-
-function parseBoolean(value: unknown, fallback: boolean): boolean {
-  return typeof value === "boolean" ? value : fallback;
-}
-
-function parseSelectorBorderStyle(value: unknown): SelectorBorderStyle {
-  return value === "zentui" ? value : "zentui";
-}
-
-function parseFooterStyle(value: unknown): FooterStyle {
-  return value === "native" || value === "starship" || value === "hidden"
-    ? value
-    : defaultComponents.footer.style;
-}
-
-function parseUserMessageStyle(value: unknown): UserMessageStyle {
-  return value === "framed" ||
-    value === "framed-copy-friendly" ||
-    value === "compact" ||
-    value === "labeled"
-    ? value
-    : defaultComponents.userMessages.style;
-}
-
-function parseNonEmptyString(value: unknown, fallback: string): string {
-  return typeof value === "string" && value.length > 0 ? value : fallback;
-}
-
-function resolveContextThresholds(
-  value: unknown,
-  defaults: ContextThresholds,
-): ContextThresholds {
-  return parseContextThresholds(value, defaults);
-}
-
-function resolvePathDisplay(value: unknown): PathDisplayConfig {
-  return parsePathDisplay(value);
-}
-
-function resolveGitBranch(value: unknown): GitBranchConfig {
-  return parseGitBranchConfig(value);
-}
-
-function resolveGitCommit(value: unknown): GitCommitConfig {
-  return normalizeGitCommitConfig(recordValue(value));
-}
-
-function resolveGitMetrics(value: unknown): GitMetricsConfig {
-  return normalizeGitMetricsConfig(recordValue(value));
-}
-
-function resolveExtensionStatuses(value: unknown): ExtensionStatusesConfig {
-  return normalizeExtensionStatuses(recordValue(value));
-}
-
-const FOOTER_SEGMENT_KEYS = Object.keys(defaultFooterSegments) as Array<
-  keyof FooterSegmentsConfig
->;
-
-function resolveFooterSegments(value: unknown): FooterSegmentsConfig {
-  const record = recordValue(value);
-  return Object.fromEntries(
-    FOOTER_SEGMENT_KEYS.map((key) => [
-      key,
-      parseBoolean(record[key], defaultFooterSegments[key]),
-    ]),
-  ) as FooterSegmentsConfig;
-}
-
-function resolveWorkingLineMessages(
-  messages: ConfigRecord,
-): WorkingLineMessagesConfig {
-  return {
-    custom: parseBoolean(messages.custom, true),
-    values: hasOwn(messages, "values")
-      ? normalizeWorkingLineMessages(messages.values)
-      : [...PI_WORKING_LINE_MESSAGES],
-  };
-}
-
-function resolveComponents(config: ConfigRecord): ComponentsConfig {
-  const components = recordValue(config.components);
-  const editor = recordValue(components.editor);
-  const editorStyles = recordValue(editor.styles);
-  const minimalist = recordValue(editorStyles.minimalist);
-  const userMessages = recordValue(components.userMessages);
-  const workingLine = recordValue(components.workingLine);
-  const workingLineMessages = recordValue(workingLine.messages);
-  const workingLineSegments = recordValue(workingLine.segments);
-  const selectorBorders = recordValue(components.selectorBorders);
-  const footer = recordValue(components.footer);
-  const footerStyles = recordValue(footer.styles);
-  const starship = recordValue(footerStyles.starship);
-
-  return {
-    editor: {
-      // 迁移：旧 enabled:false 收敛为 style:"off"（enabled 字段已移除）。
-      style:
-        hasOwn(editor, "enabled") &&
-        parseBoolean(editor.enabled, true) === false
-          ? "off"
-          : parseEditorStyle(editor.style),
-      borderColorMode: parseEditorBorderColorMode(editor.borderColorMode),
-      modelLabel: parseEditorModelLabel(
-        editor.modelLabel,
-        defaultComponents.editor.modelLabel,
-      ),
-      viewportIndicators: parseBoolean(
-        editor.viewportIndicators,
-        defaultComponents.editor.viewportIndicators,
-      ),
-      styles: {
-        minimalist: {
-          pathDisplay:
-            minimalist.pathDisplay === "compact" ||
-            minimalist.pathDisplay === "project" ||
-            minimalist.pathDisplay === "full"
-              ? minimalist.pathDisplay
-              : defaultMinimalistStyle.pathDisplay,
-          showCwd: parseBoolean(
-            minimalist.showCwd,
-            defaultMinimalistStyle.showCwd,
-          ),
-          showSessionName: parseBoolean(
-            minimalist.showSessionName,
-            defaultMinimalistStyle.showSessionName,
-          ),
-          showTimer: parseBoolean(
-            minimalist.showTimer,
-            defaultMinimalistStyle.showTimer,
-          ),
-          showCost: parseBoolean(
-            minimalist.showCost,
-            defaultMinimalistStyle.showCost,
-          ),
-          showGit: parseBoolean(
-            minimalist.showGit,
-            defaultMinimalistStyle.showGit,
-          ),
-        },
-      },
-    },
-    userMessages: {
-      enabled: parseBoolean(
-        userMessages.enabled,
-        defaultComponents.userMessages.enabled,
-      ),
-      style: parseUserMessageStyle(userMessages.style),
-      styles: {
-        framed: {},
-        "framed-copy-friendly": {},
-        compact: {},
-        labeled: {},
-      },
-    },
-    workingLine: {
-      enabled: parseBoolean(
-        workingLine.enabled,
-        defaultComponents.workingLine.enabled,
-      ),
-      turnSummary: parseBoolean(
-        workingLine.turnSummary,
-        defaultComponents.workingLine.turnSummary,
-      ),
-      spinner:
-        workingLine.spinner === "braille" ||
-        workingLine.spinner === "star-bloom" ||
-        workingLine.spinner === "pinwheel" ||
-        workingLine.spinner === "claude-inspired" ||
-        workingLine.spinner === "pulse"
-          ? workingLine.spinner
-          : defaultComponents.workingLine.spinner,
-      spinnerIntervalMs: isValidWorkingLineIntervalMs(
-        workingLine.spinnerIntervalMs,
-      )
-        ? workingLine.spinnerIntervalMs
-        : defaultComponents.workingLine.spinnerIntervalMs,
-      animateSpinnerColor: parseBoolean(
-        workingLine.animateSpinnerColor,
-        defaultComponents.workingLine.animateSpinnerColor,
-      ),
-      textIntervalMs: isValidWorkingLineIntervalMs(workingLine.textIntervalMs)
-        ? workingLine.textIntervalMs
-        : defaultComponents.workingLine.textIntervalMs,
-      textAnimation:
-        workingLine.textAnimation === "classic" ||
-        workingLine.textAnimation === "kitt" ||
-        workingLine.textAnimation === "disabled"
-          ? workingLine.textAnimation
-          : defaultComponents.workingLine.textAnimation,
-      messages: resolveWorkingLineMessages(workingLineMessages),
-      segments: {
-        tool: parseBoolean(
-          workingLineSegments.tool,
-          defaultComponents.workingLine.segments.tool,
-        ),
-        elapsed: parseBoolean(
-          workingLineSegments.elapsed,
-          defaultComponents.workingLine.segments.elapsed,
-        ),
-        thought: parseBoolean(
-          workingLineSegments.thought,
-          defaultComponents.workingLine.segments.thought,
-        ),
-        tokens: parseBoolean(
-          workingLineSegments.tokens,
-          defaultComponents.workingLine.segments.tokens,
-        ),
-      },
-    },
-    selectorBorders: {
-      enabled: parseBoolean(
-        selectorBorders.enabled,
-        defaultComponents.selectorBorders.enabled,
-      ),
-      style: parseSelectorBorderStyle(selectorBorders.style),
-    },
-    footer: {
-      style: parseFooterStyle(footer.style),
-      modelLabel: parseEditorModelLabel(
-        footer.modelLabel,
-        defaultComponents.footer.modelLabel,
-      ),
-      styles: {
-        starship: {
-          format:
-            typeof starship.format === "string"
-              ? starship.format
-              : defaultStarshipStyle.format,
-          responsive: parseBoolean(
-            starship.responsive,
-            defaultStarshipStyle.responsive,
-          ),
-          compactFormat: parseNonEmptyString(
-            starship.compactFormat,
-            defaultStarshipStyle.compactFormat,
-          ),
-          compactMaxLines: parseCompactFooterMaxLines(starship.compactMaxLines),
-          separator: parseSeparatorStyle(starship.separator),
-          contextStyle: parseContextStyle(starship.contextStyle),
-          contextThresholds: resolveContextThresholds(
-            starship.contextThresholds,
-            defaultStarshipStyle.contextThresholds,
-          ),
-          pathDisplay: resolvePathDisplay(starship.pathDisplay),
-          segments: resolveFooterSegments(starship.segments),
-          gitBranch: resolveGitBranch(starship.gitBranch),
-          gitCommit: resolveGitCommit(starship.gitCommit),
-          gitMetrics: resolveGitMetrics(starship.gitMetrics),
-          extensionStatuses: resolveExtensionStatuses(
-            starship.extensionStatuses,
-          ),
-        },
-      },
-    },
-  };
-}
-
-function derivedRuntimeView(config: ZentuiConfig): PolishedTuiConfig {
-  const starship = config.components.footer.styles.starship;
-  const minimalist = config.components.editor.styles.minimalist;
-  return {
-    ...config,
-    footerFormat: starship.format,
-    responsiveFooter: starship.responsive,
-    compactFooterFormat: starship.compactFormat,
-    compactFooterMaxLines: starship.compactMaxLines,
-    separator: starship.separator,
-    contextStyle: starship.contextStyle,
-    contextThresholds: starship.contextThresholds,
-    pathDisplay: starship.pathDisplay,
-    gitBranch: starship.gitBranch,
-    footerSegments: starship.segments,
-    gitCommit: starship.gitCommit,
-    gitMetrics: starship.gitMetrics,
-    extensionStatuses: starship.extensionStatuses,
-    editorStyle: config.components.editor.style,
-    editorStyles: { minimalist },
-    editorMetadataFormat: DEFAULT_EDITOR_METADATA_FORMAT,
-    editorBorderColorMode: config.components.editor.borderColorMode,
-    editorModelLabel: config.components.editor.modelLabel,
-    features: {
-      editor: config.components.editor.style === "on",
-      statusLine: config.components.footer.style === "starship",
-      viewportIndicators: config.components.editor.viewportIndicators,
-    },
-  };
-}
-
-const unsupportedComponentStyles = new WeakMap<
-  ZentuiConfig,
-  ReadonlySet<ComponentStyleOwner>
->();
-
-// Retired selections migrate to the sole "on" (minimalist) style instead of
-// disabling the custom Editor. opencode itself is retired along with its variants.
-const retiredEditorStyleIds: ReadonlySet<string> = new Set([
-  "opencode",
-  "opencode-copy-friendly",
-  "accent-rail",
-]);
-
+const colorKeys: readonly (keyof PolishedTuiColors)[] = [
+  "cwd",
+  "sessionName",
+  "gitBranch",
+  "gitStatus",
+  "contextNormal",
+  "contextWarning",
+  "contextError",
+  "tokens",
+  "cost",
+  "separator",
+  "runtimePrefix",
+  "extensionStatus",
+  "sessionDuration",
+  "packageVersion",
+  "gitCommit",
+  "gitMetricsAdded",
+  "gitMetricsDeleted",
+  "username",
+  "time",
+  "os",
+  "editorAccent",
+  "editorBorder",
+  "editorGitBranch",
+  "editorModel",
+  "editorProvider",
+  "editorThinking",
+  "editorThinkingMinimal",
+  "editorThinkingLow",
+  "editorThinkingMedium",
+  "editorThinkingHigh",
+  "editorThinkingXhigh",
+  "editorThinkingMax",
+  "workingLineLow",
+  "workingLineMid",
+  "workingLineHigh",
+];
 const knownComponentStyleIds: Record<
   ComponentStyleOwner,
   ReadonlySet<string>
@@ -1201,14 +220,24 @@ const knownComponentStyleIds: Record<
   selectorBorders: new Set(["zentui"]),
   footer: new Set(["native", "starship", "hidden"]),
 };
+const retiredEditorStyleIds = new Set([
+  "opencode",
+  "opencode-copy-friendly",
+  "accent-rail",
+]);
+const unsupportedComponentStyles = new WeakMap<
+  ZentuiConfig,
+  ReadonlySet<ComponentStyleOwner>
+>();
+const styleOwners = Object.keys(
+  knownComponentStyleIds,
+) as ComponentStyleOwner[];
 
 function unsupportedSelectedStyleId(
   record: ConfigRecord,
   owner: ComponentStyleOwner,
 ): string | undefined {
-  const component = recordValue(recordValue(record.components)[owner]);
-  if (!hasOwn(component, "style")) return undefined;
-  const style = component.style;
+  const style = recordValue(recordValue(record.components)[owner]).style;
   return typeof style === "string" &&
     style.trim() &&
     !knownComponentStyleIds[owner].has(style) &&
@@ -1224,38 +253,69 @@ export function hasUnsupportedComponentStyle(
   return unsupportedComponentStyles.get(config)?.has(owner) ?? false;
 }
 
-export function mergeConfig(parsed: unknown): PolishedTuiConfig {
-  const config = isRecord(parsed) ? parsed : {};
-  const iconsRecord = recordValue(config.icons);
-  const colorsRecord = recordValue(config.colors);
-  const colors = normalizeColors(colorsRecord);
-  const canonical: ZentuiConfig = {
-    projectRefreshIntervalMs: parseProjectRefreshIntervalMs(
-      config.projectRefreshIntervalMs,
-    ),
+function resolveComponents(value: unknown): ComponentsConfig {
+  const source = recordValue(value);
+  const selector = recordValue(source.selectorBorders);
+  return {
+    editor: normalizeEditor(source.editor),
+    userMessages: normalizeUserMessages(source.userMessages),
+    workingLine: normalizeWorkingLine(source.workingLine),
+    selectorBorders: {
+      enabled: booleanValue(selector.enabled, true),
+      style: "zentui",
+    },
+    footer: normalizeFooter(source.footer),
+  };
+}
+
+/** 各配置领域在此组合，运行时仅使用 canonical 结构。 */
+export function mergeConfig(parsed: unknown): ZentuiConfig {
+  const record = recordValue(parsed);
+  const icons = recordValue(record.icons);
+  const colors = recordValue(record.colors);
+  const interval = record.projectRefreshIntervalMs;
+  const config: ZentuiConfig = {
+    projectRefreshIntervalMs:
+      typeof interval === "number" && Number.isFinite(interval)
+        ? Math.round(interval) <= 0
+          ? 0
+          : Math.max(5_000, Math.round(interval))
+        : 30_000,
     icons: resolveConfiguredIcons(
-      normalizeIconMode(iconsRecord.mode),
-      normalizeIconOverrides(iconsRecord),
+      normalizeIconMode(icons.mode),
+      Object.fromEntries(
+        ICON_GLYPH_KEYS.filter((key) => typeof icons[key] === "string").map(
+          (key) => [key, icons[key]],
+        ),
+      ) as Partial<IconGlyphs>,
     ),
     colors: {
       ...defaultConfig.colors,
-      ...colors,
+      ...Object.fromEntries(
+        colorKeys
+          .filter(
+            (key) =>
+              typeof colors[key] === "string" &&
+              isSupportedColorSpec(colors[key]),
+          )
+          .map((key) => [key, colors[key]]),
+      ),
     },
-    components: resolveComponents(config),
+    components: resolveComponents(record.components),
   };
-  const view = derivedRuntimeView(canonical);
-  const unsupported = new Set<ComponentStyleOwner>();
-  for (const owner of [
-    "editor",
-    "userMessages",
-    "selectorBorders",
-    "footer",
-  ] as const) {
-    if (unsupportedSelectedStyleId(config, owner) !== undefined)
-      unsupported.add(owner);
+  const unsupported = new Set(
+    styleOwners.filter(
+      (owner) => unsupportedSelectedStyleId(record, owner) !== undefined,
+    ),
+  );
+  if (unsupported.size > 0) {
+    unsupportedComponentStyles.set(config, unsupported);
   }
-  if (unsupported.size > 0) unsupportedComponentStyles.set(view, unsupported);
-  return view;
+  return config;
+}
+
+export function loadConfig(): ZentuiConfig {
+  return mergeConfig(configStore.read());
 }
 
 export function getExtensionStatusPlacement(
@@ -1263,113 +323,78 @@ export function getExtensionStatusPlacement(
   key: string,
 ): ExtensionStatusPlacement {
   const statuses = config.components.footer.styles.starship.extensionStatuses;
-  if (Object.hasOwn(statuses.placements, key)) {
-    const placement = statuses.placements[key];
-    if (isExtensionStatusPlacement(placement)) return placement;
+  if (
+    Object.hasOwn(statuses.placements, key) &&
+    isExtensionStatusPlacement(statuses.placements[key])
+  ) {
+    return statuses.placements[key];
   }
   return isExtensionStatusPlacement(statuses.defaultPlacement)
     ? statuses.defaultPlacement
-    : DEFAULT_EXTENSION_STATUS_PLACEMENT;
+    : "right";
 }
 
 export function getExtensionStatusColorMode(
   config: ZentuiConfig,
   key: string,
 ): ExtensionStatusColorMode {
-  const colorModes =
+  const modes =
     config.components.footer.styles.starship.extensionStatuses.colorModes;
-  if (Object.hasOwn(colorModes, key)) {
-    const colorMode = colorModes[key];
-    if (isExtensionStatusColorMode(colorMode)) return colorMode;
-  }
-  return DEFAULT_EXTENSION_STATUS_COLOR_MODE;
+  return Object.hasOwn(modes, key) && isExtensionStatusColorMode(modes[key])
+    ? modes[key]
+    : "zentui";
 }
 
-/**
- * Loads and normalizes the shared raw configuration for shell consumers.
- */
-export function loadConfig(): PolishedTuiConfig {
-  try {
-    return mergeConfig(configStore.read());
-  } catch {
-    return mergeConfig({});
-  }
-}
-
-function overlayKnown(raw: unknown, known: unknown): unknown {
-  if (!isRecord(known)) return known;
-  const output: ConfigRecord = isRecord(raw) ? { ...raw } : {};
-  for (const [key, value] of Object.entries(known)) {
-    Object.defineProperty(output, key, {
-      value: overlayKnown(output[key], value),
-      enumerable: true,
-      configurable: true,
-      writable: true,
-    });
-  }
-  return output;
-}
-
-type PreservedStyleIds = Partial<Record<ComponentStyleOwner, string>>;
-
-function unknownSelectedStyleIds(record: ConfigRecord): PreservedStyleIds {
-  return {
-    editor: unsupportedSelectedStyleId(record, "editor"),
-    userMessages: unsupportedSelectedStyleId(record, "userMessages"),
-    selectorBorders: unsupportedSelectedStyleId(record, "selectorBorders"),
-    footer: unsupportedSelectedStyleId(record, "footer"),
-  };
-}
-
-function restoreUnknownSelectedStyleIds(
+/** 纯配置修改可在一次 ConfigStore.update 中组合成 Preset。 */
+export function mutateComponentsRecord(
   record: ConfigRecord,
-  preserved: PreservedStyleIds,
-  replacedStyle?: ComponentStyleOwner,
+  update: (components: ComponentsConfig) => void,
+  replacedStyles: readonly ComponentStyleOwner[] = [],
 ): void {
-  const components = recordValue(record.components);
-  for (const [owner, style] of Object.entries(preserved) as [
-    ComponentStyleOwner,
-    string,
-  ][]) {
-    if (style === undefined || owner === replacedStyle) continue;
-    const component = recordValue(components[owner]);
-    component.style = style;
-    components[owner] = component;
+  const preserved = styleOwners.map(
+    (owner) => [owner, unsupportedSelectedStyleId(record, owner)] as const,
+  );
+  const components = resolveComponents(record.components);
+  update(components);
+  record.version = 1;
+  const merged = recordValue(
+    overlayKnown(record.components, resolveComponents(components)),
+  );
+  for (const [owner, style] of preserved) {
+    if (style !== undefined && !replacedStyles.includes(owner)) {
+      recordValue(merged[owner]).style = style;
+    }
   }
-  record.components = components;
+  record.components = merged;
+}
+
+function mutateConfig(
+  path: string,
+  update: (record: ConfigRecord) => void,
+): ZentuiConfig {
+  const mutate = (record: ConfigRecord) => {
+    record.version = 1;
+    update(record);
+  };
+  return mergeConfig(
+    path === configPath
+      ? configStore.update(mutate)
+      : mutateConfigFile(path, mutate),
+  );
 }
 
 function saveComponentsMutation(
   update: (components: ComponentsConfig) => void,
   path: string,
   replacedStyle?: ComponentStyleOwner,
-): PolishedTuiConfig {
-  return mutateConfig(path, (record) => {
-    const preservedStyles = unknownSelectedStyleIds(record);
-    const components = mergeConfig(record).components;
-    update(components);
-    const normalized = resolveComponents({ components });
-    record.components = overlayKnown(record.components, normalized);
-    restoreUnknownSelectedStyleIds(record, preservedStyles, replacedStyle);
-  });
-}
-
-function applyEditorComponentPatch(
-  component: EditorComponentConfig,
-  patch: Partial<
-    Pick<
-      EditorComponentConfig,
-      "style" | "borderColorMode" | "modelLabel" | "viewportIndicators"
-    >
-  >,
-): void {
-  if (patch.style !== undefined) component.style = patch.style;
-  if (patch.borderColorMode !== undefined)
-    component.borderColorMode = patch.borderColorMode;
-  if (patch.modelLabel !== undefined) component.modelLabel = patch.modelLabel;
-  if (patch.viewportIndicators !== undefined) {
-    component.viewportIndicators = patch.viewportIndicators;
-  }
+): ZentuiConfig {
+  return mutateConfig(path, (record) =>
+    mutateComponentsRecord(
+      record,
+      update,
+      replacedStyle ? [replacedStyle] : [],
+    ),
+  );
 }
 
 export function saveEditorComponentPatch(
@@ -1380,236 +405,173 @@ export function saveEditorComponentPatch(
     >
   >,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveComponentsMutation(
-    (components) => applyEditorComponentPatch(components.editor, patch),
+    (components) => {
+      components.editor = overlayKnown(
+        components.editor,
+        patch,
+      ) as EditorComponentConfig;
+    },
     path,
     patch.style !== undefined ? "editor" : undefined,
   );
 }
-
-function applyMinimalistStylePatch(
-  style: MinimalistEditorStyleConfig,
-  patch: Partial<MinimalistEditorStyleConfig>,
-): void {
-  if (patch.pathDisplay !== undefined) style.pathDisplay = patch.pathDisplay;
-  if (patch.showCwd !== undefined) {
-    style.showCwd = patch.showCwd;
-  }
-  if (patch.showSessionName !== undefined)
-    style.showSessionName = patch.showSessionName;
-  if (patch.showTimer !== undefined) style.showTimer = patch.showTimer;
-  if (patch.showCost !== undefined) style.showCost = patch.showCost;
-  if (patch.showGit !== undefined) style.showGit = patch.showGit;
-}
-
 export function saveMinimalistEditorStylePatch(
   patch: Partial<MinimalistEditorStyleConfig>,
   path = configPath,
-): PolishedTuiConfig {
-  return saveComponentsMutation(
-    (components) =>
-      applyMinimalistStylePatch(components.editor.styles.minimalist, patch),
-    path,
-  );
+): ZentuiConfig {
+  return saveComponentsMutation((components) => {
+    components.editor.styles.minimalist = overlayKnown(
+      components.editor.styles.minimalist,
+      patch,
+    ) as MinimalistEditorStyleConfig;
+  }, path);
 }
-
 export function saveUserMessagesComponentPatch(
   patch: Partial<Pick<UserMessagesComponentConfig, "enabled" | "style">>,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveComponentsMutation(
     (components) => {
-      const component = components.userMessages;
-      if (patch.enabled !== undefined) component.enabled = patch.enabled;
-      if (patch.style !== undefined) component.style = patch.style;
+      components.userMessages = overlayKnown(
+        components.userMessages,
+        patch,
+      ) as UserMessagesComponentConfig;
     },
     path,
     patch.style !== undefined ? "userMessages" : undefined,
   );
 }
-
 export function saveWorkingLineComponentPatch(
   patch: WorkingLineComponentPatch,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveComponentsMutation((components) => {
-    const component = components.workingLine;
-    if (patch.enabled !== undefined) component.enabled = patch.enabled;
-    if (patch.turnSummary !== undefined)
-      component.turnSummary = patch.turnSummary;
-    if (patch.spinner !== undefined) component.spinner = patch.spinner;
-    if (patch.spinnerIntervalMs !== undefined)
-      component.spinnerIntervalMs = patch.spinnerIntervalMs;
-    if (patch.animateSpinnerColor !== undefined)
-      component.animateSpinnerColor = patch.animateSpinnerColor;
-    if (patch.textIntervalMs !== undefined)
-      component.textIntervalMs = patch.textIntervalMs;
-    if (patch.textAnimation !== undefined)
-      component.textAnimation = patch.textAnimation;
-    if (patch.messages?.custom !== undefined)
-      component.messages.custom = patch.messages.custom;
-    if (patch.messages?.values !== undefined) {
-      component.messages.values = normalizeWorkingLineMessages([
-        ...patch.messages.values,
-      ]);
-    }
-    if (patch.segments?.tool !== undefined)
-      component.segments.tool = patch.segments.tool;
-    if (patch.segments?.elapsed !== undefined)
-      component.segments.elapsed = patch.segments.elapsed;
-    if (patch.segments?.thought !== undefined)
-      component.segments.thought = patch.segments.thought;
-    if (patch.segments?.tokens !== undefined)
-      component.segments.tokens = patch.segments.tokens;
+    components.workingLine = overlayKnown(
+      components.workingLine,
+      patch,
+    ) as WorkingLineComponentConfig;
   }, path);
 }
-
 export function saveSelectorBordersComponentPatch(
   patch: Partial<SelectorBordersComponentConfig>,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveComponentsMutation(
     (components) => {
-      const component = components.selectorBorders;
-      if (patch.enabled !== undefined) component.enabled = patch.enabled;
-      if (patch.style !== undefined) component.style = patch.style;
+      components.selectorBorders = overlayKnown(
+        components.selectorBorders,
+        patch,
+      ) as SelectorBordersComponentConfig;
     },
     path,
     patch.style !== undefined ? "selectorBorders" : undefined,
   );
 }
-
 export function saveFooterComponentPatch(
   patch: Partial<Pick<FooterComponentConfig, "style" | "modelLabel">>,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveComponentsMutation(
     (components) => {
-      const component = components.footer;
-      if (patch.style !== undefined) component.style = patch.style;
-      if (patch.modelLabel !== undefined)
-        component.modelLabel = patch.modelLabel;
+      components.footer = overlayKnown(
+        components.footer,
+        patch,
+      ) as FooterComponentConfig;
     },
     path,
     patch.style !== undefined ? "footer" : undefined,
   );
 }
-
-function applyStarshipStylePatch(
-  style: StarshipFooterStyleConfig,
-  patch: Partial<StarshipFooterStyleConfig>,
-): void {
-  if (patch.format !== undefined) style.format = patch.format;
-  if (patch.responsive !== undefined) style.responsive = patch.responsive;
-  if (patch.compactFormat !== undefined)
-    style.compactFormat = patch.compactFormat;
-  if (patch.compactMaxLines !== undefined)
-    style.compactMaxLines = patch.compactMaxLines;
-  if (patch.separator !== undefined) style.separator = patch.separator;
-  if (patch.contextStyle !== undefined) style.contextStyle = patch.contextStyle;
-  if (patch.contextThresholds !== undefined) {
-    style.contextThresholds = {
-      ...style.contextThresholds,
-      ...patch.contextThresholds,
-    };
-  }
-  if (patch.pathDisplay !== undefined) {
-    style.pathDisplay = { ...style.pathDisplay, ...patch.pathDisplay };
-  }
-  if (patch.segments !== undefined)
-    style.segments = { ...style.segments, ...patch.segments };
-  if (patch.gitBranch !== undefined)
-    style.gitBranch = { ...style.gitBranch, ...patch.gitBranch };
-  if (patch.gitCommit !== undefined)
-    style.gitCommit = { ...style.gitCommit, ...patch.gitCommit };
-  if (patch.gitMetrics !== undefined)
-    style.gitMetrics = { ...style.gitMetrics, ...patch.gitMetrics };
-  if (patch.extensionStatuses !== undefined) {
-    style.extensionStatuses = {
-      ...style.extensionStatuses,
-      ...patch.extensionStatuses,
-      placements: {
-        ...style.extensionStatuses.placements,
-        ...patch.extensionStatuses.placements,
-      },
-      colorModes: {
-        ...style.extensionStatuses.colorModes,
-        ...patch.extensionStatuses.colorModes,
-      },
-    };
-  }
-}
+export type StarshipFooterStylePatch = Partial<
+  Omit<
+    StarshipFooterStyleConfig,
+    | "contextThresholds"
+    | "pathDisplay"
+    | "segments"
+    | "gitBranch"
+    | "gitCommit"
+    | "gitMetrics"
+  >
+> & {
+  contextThresholds?: Partial<ContextThresholds>;
+  pathDisplay?: Partial<PathDisplayConfig>;
+  segments?: Partial<FooterSegmentsConfig>;
+  gitBranch?: Partial<GitBranchConfig>;
+  gitCommit?: Partial<GitCommitConfig>;
+  gitMetrics?: Partial<GitMetricsConfig>;
+};
 
 export function saveStarshipFooterStylePatch(
-  patch: Partial<StarshipFooterStyleConfig>,
+  patch: StarshipFooterStylePatch,
   path = configPath,
-): PolishedTuiConfig {
-  return saveComponentsMutation(
-    (components) =>
-      applyStarshipStylePatch(components.footer.styles.starship, patch),
-    path,
-  );
+): ZentuiConfig {
+  return saveComponentsMutation((components) => {
+    components.footer.styles.starship = overlayKnown(
+      components.footer.styles.starship,
+      patch,
+    ) as StarshipFooterStyleConfig;
+  }, path);
 }
-
 export function saveUiFeaturesPatch(
   patch: Partial<UiFeaturesConfig>,
   path = configPath,
-): PolishedTuiConfig {
-  const valid = validUiFeatureEntries(patch);
+): ZentuiConfig {
   return saveComponentsMutation(
     (components) => {
-      if (valid.editor !== undefined) {
-        components.editor.style = valid.editor ? "on" : "off";
-        components.userMessages.enabled = valid.editor;
-        components.selectorBorders.enabled = valid.editor;
+      if (typeof patch.editor === "boolean") {
+        components.editor.style = patch.editor ? "on" : "off";
+        components.userMessages.enabled = patch.editor;
+        components.selectorBorders.enabled = patch.editor;
       }
-      if (valid.statusLine !== undefined) {
-        components.footer.style = valid.statusLine ? "starship" : "native";
+      if (typeof patch.statusLine === "boolean") {
+        components.footer.style = patch.statusLine ? "starship" : "native";
       }
-      if (valid.viewportIndicators !== undefined) {
-        components.editor.viewportIndicators = valid.viewportIndicators;
+      if (typeof patch.viewportIndicators === "boolean") {
+        components.editor.viewportIndicators = patch.viewportIndicators;
       }
     },
     path,
-    valid.statusLine !== undefined ? "footer" : undefined,
+    typeof patch.statusLine === "boolean" ? "footer" : undefined,
   );
 }
-
 export function saveFooterSegmentsPatch(
   patch: Partial<FooterSegmentsConfig>,
   path = configPath,
-): PolishedTuiConfig {
-  return saveStarshipFooterStylePatch(
-    { segments: validFooterSegmentEntries(patch) as FooterSegmentsConfig },
-    path,
-  );
+): ZentuiConfig {
+  const segments = Object.fromEntries(
+    Object.entries(patch).filter(
+      ([key, value]) =>
+        Object.hasOwn(defaultFooterSegments, key) && typeof value === "boolean",
+    ),
+  ) as FooterSegmentsConfig;
+  return saveStarshipFooterStylePatch({ segments }, path);
 }
-
 export function saveFooterFormatPatch(
   value: string,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveStarshipFooterStylePatch(
     { format: typeof value === "string" ? value : "" },
     path,
   );
 }
-
 export function saveResponsiveFooterPatch(
-  patch: Partial<
-    Pick<
-      PolishedTuiConfig,
-      "responsiveFooter" | "compactFooterFormat" | "compactFooterMaxLines"
-    >
-  >,
+  patch: {
+    responsiveFooter?: boolean;
+    compactFooterFormat?: string;
+    compactFooterMaxLines?: CompactFooterMaxLines;
+  },
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   const canonical: Partial<StarshipFooterStyleConfig> = {};
-  if (typeof patch.responsiveFooter === "boolean")
+  if (typeof patch.responsiveFooter === "boolean") {
     canonical.responsive = patch.responsiveFooter;
-  if (typeof patch.compactFooterFormat === "string")
+  }
+  if (typeof patch.compactFooterFormat === "string") {
     canonical.compactFormat = patch.compactFooterFormat;
+  }
   if (patch.compactFooterMaxLines !== undefined) {
     canonical.compactMaxLines = parseCompactFooterMaxLines(
       patch.compactFooterMaxLines,
@@ -1617,164 +579,126 @@ export function saveResponsiveFooterPatch(
   }
   return saveStarshipFooterStylePatch(canonical, path);
 }
-
 export function saveIconsModePatch(
   mode: IconMode,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return mutateConfig(path, (record) => {
-    const existing = isRecord(record.icons) ? { ...record.icons } : {};
-    record.icons = { ...existing, mode: normalizeIconMode(mode) };
+    record.icons = {
+      ...recordValue(record.icons),
+      mode: normalizeIconMode(mode),
+    };
   });
 }
-
 export function saveContextStylePatch(
   style: ContextStyle,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveStarshipFooterStylePatch(
     { contextStyle: parseContextStyle(style) },
     path,
   );
 }
-
 export function saveSeparatorPatch(
   separator: SeparatorStyle,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveStarshipFooterStylePatch(
     { separator: parseSeparatorStyle(separator) },
     path,
   );
 }
-
 export function saveContextThresholdsPatch(
-  thresholds: Partial<ContextThresholds>,
+  patch: Partial<ContextThresholds>,
   path = configPath,
-): PolishedTuiConfig {
-  if (
-    typeof thresholds.warning === "bigint" ||
-    typeof thresholds.error === "bigint"
-  ) {
+): ZentuiConfig {
+  if (typeof patch.warning === "bigint" || typeof patch.error === "bigint") {
     throw new TypeError("Context thresholds must be JSON-serializable numbers");
   }
-  return saveComponentsMutation((components) => {
-    components.footer.styles.starship.contextThresholds = {
-      ...components.footer.styles.starship.contextThresholds,
-      ...thresholds,
-    };
-  }, path);
+  return saveStarshipFooterStylePatch({ contextThresholds: patch }, path);
 }
-
 export function savePathDisplayPatch(
   patch: Partial<PathDisplayConfig>,
   path = configPath,
-): PolishedTuiConfig {
-  return saveComponentsMutation((components) => {
-    components.footer.styles.starship.pathDisplay = {
-      ...components.footer.styles.starship.pathDisplay,
-      ...patch,
-    };
-  }, path);
+): ZentuiConfig {
+  return saveStarshipFooterStylePatch({ pathDisplay: patch }, path);
 }
-
 export function saveGitBranchPatch(
   patch: Partial<GitBranchConfig>,
   path = configPath,
-): PolishedTuiConfig {
-  return saveComponentsMutation((components) => {
-    components.footer.styles.starship.gitBranch = {
-      ...components.footer.styles.starship.gitBranch,
-      ...patch,
-    };
-  }, path);
+): ZentuiConfig {
+  return saveStarshipFooterStylePatch({ gitBranch: patch }, path);
 }
-
 export function saveEditorModelLabel(
   value: ModelLabelSource,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveComponentsMutation((components) => {
-    const normalized = parseEditorModelLabel(value);
-    components.editor.modelLabel = normalized;
-    components.footer.modelLabel = normalized;
+    components.editor.modelLabel = parseEditorModelLabel(value);
+    components.footer.modelLabel = parseEditorModelLabel(value);
   }, path);
 }
-
 export function saveEditorStyle(
   value: EditorStyle,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveEditorComponentPatch({ style: parseEditorStyle(value) }, path);
 }
-
 export function saveMinimalistPatch(
   patch: Partial<MinimalistConfig>,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveMinimalistEditorStylePatch(patch, path);
 }
-
 export function saveEditorBorderColorMode(
   value: EditorBorderColorMode,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveEditorComponentPatch(
     { borderColorMode: parseEditorBorderColorMode(value) },
     path,
   );
 }
-
 export function saveGitCommitPatch(
   patch: Partial<Pick<GitCommitConfig, "onlyDetached" | "showTag">>,
   path = configPath,
-): PolishedTuiConfig {
-  const valid: Partial<GitCommitConfig> = {};
-  if (typeof patch.onlyDetached === "boolean")
-    valid.onlyDetached = patch.onlyDetached;
-  if (typeof patch.showTag === "boolean") valid.showTag = patch.showTag;
-  return saveComponentsMutation((components) => {
-    components.footer.styles.starship.gitCommit = {
-      ...components.footer.styles.starship.gitCommit,
-      ...valid,
-    };
-  }, path);
+): ZentuiConfig {
+  const valid = Object.fromEntries(
+    Object.entries(patch).filter(
+      ([key, value]) =>
+        (key === "onlyDetached" || key === "showTag") &&
+        typeof value === "boolean",
+    ),
+  );
+  return saveStarshipFooterStylePatch({ gitCommit: valid }, path);
 }
-
 export function saveGitMetricsPatch(
   patch: Partial<GitMetricsConfig>,
   path = configPath,
-): PolishedTuiConfig {
-  const valid: Partial<GitMetricsConfig> = {};
-  if (typeof patch.onlyNonzero === "boolean")
-    valid.onlyNonzero = patch.onlyNonzero;
-  if (typeof patch.ignoreSubmodules === "boolean")
-    valid.ignoreSubmodules = patch.ignoreSubmodules;
-  return saveComponentsMutation((components) => {
-    components.footer.styles.starship.gitMetrics = {
-      ...components.footer.styles.starship.gitMetrics,
-      ...valid,
-    };
-  }, path);
+): ZentuiConfig {
+  const valid = Object.fromEntries(
+    Object.entries(patch).filter(
+      ([key, value]) =>
+        (key === "onlyNonzero" || key === "ignoreSubmodules") &&
+        typeof value === "boolean",
+    ),
+  );
+  return saveStarshipFooterStylePatch({ gitMetrics: valid }, path);
 }
-
 export function saveExtensionStatusDefaultPlacement(
   placement: ExtensionStatusPlacement,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveComponentsMutation((components) => {
     components.footer.styles.starship.extensionStatuses.defaultPlacement =
-      isExtensionStatusPlacement(placement)
-        ? placement
-        : defaultConfig.extensionStatuses.defaultPlacement;
+      isExtensionStatusPlacement(placement) ? placement : "right";
   }, path);
 }
-
 export function saveExtensionStatusPlacement(
   key: string,
   placement: ExtensionStatusPlacement,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveComponentsMutation((components) => {
     Object.defineProperty(
       components.footer.styles.starship.extensionStatuses.placements,
@@ -1788,12 +712,11 @@ export function saveExtensionStatusPlacement(
     );
   }, path);
 }
-
 export function saveExtensionStatusColorMode(
   key: string,
   colorMode: ExtensionStatusColorMode,
   path = configPath,
-): PolishedTuiConfig {
+): ZentuiConfig {
   return saveComponentsMutation((components) => {
     Object.defineProperty(
       components.footer.styles.starship.extensionStatuses.colorModes,

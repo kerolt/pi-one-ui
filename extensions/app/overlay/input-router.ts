@@ -1,32 +1,22 @@
+import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
+
 export type InputRouteResult = { consume?: boolean; data?: string } | undefined;
 export type InputRoute = (data: string) => InputRouteResult;
+type InputHost = Pick<ExtensionUIContext, "onTerminalInput">;
+type RegisteredRoute = { priority: number; order: number; route: InputRoute };
+type HostRegistration = { remove: () => void; leases: Set<object> };
 
-type RegisteredRoute = {
-  priority: number;
-  order: number;
-  route: InputRoute;
-};
-
-/**
- * Routes raw terminal input by descending priority and stops at a consumer.
- */
+/** 输入路由与 Pi listener 共同注册、共同释放。 */
 export class InputRouter {
   private nextOrder = 0;
   private readonly routes: RegisteredRoute[] = [];
+  private readonly hosts = new Map<
+    InputHost["onTerminalInput"],
+    HostRegistration
+  >();
 
-  /**
-   * Registers an input route.
-   *
-   * @param route Handler that may consume one input packet.
-   * @param priority Higher-priority routes receive input first.
-   * @returns A function that removes the route.
-   */
   register(route: InputRoute, priority = 0): () => void {
-    const entry: RegisteredRoute = {
-      priority,
-      order: this.nextOrder++,
-      route,
-    };
+    const entry = { priority, order: this.nextOrder++, route };
     this.routes.push(entry);
     this.routes.sort(
       (left, right) =>
@@ -34,29 +24,63 @@ export class InputRouter {
     );
     return () => {
       const index = this.routes.indexOf(entry);
-      if (index >= 0) this.routes.splice(index, 1);
+      if (index >= 0) {
+        this.routes.splice(index, 1);
+      }
     };
   }
 
-  /**
-   * Routes one input packet until a registered handler consumes it.
-   *
-   * @param data Raw terminal input packet.
-   * @returns The consuming route result, if any.
-   */
+  bind(host: InputHost, route: InputRoute, priority = 0): () => void {
+    const removeRoute = this.register(route, priority);
+    const key = host.onTerminalInput;
+    let registration = this.hosts.get(key);
+    try {
+      if (!registration) {
+        registration = {
+          remove: host.onTerminalInput((data) => this.dispatch(data)),
+          leases: new Set(),
+        };
+        this.hosts.set(key, registration);
+      }
+    } catch (error) {
+      removeRoute();
+      throw error;
+    }
+    const current = registration;
+    const token = {};
+    current.leases.add(token);
+    return () => {
+      removeRoute();
+      if (
+        !current.leases.delete(token) ||
+        current.leases.size > 0 ||
+        this.hosts.get(key) !== current
+      ) {
+        return;
+      }
+      this.hosts.delete(key);
+      current.remove();
+    };
+  }
+
   dispatch(data: string): InputRouteResult {
     for (const entry of [...this.routes]) {
       const result = entry.route(data);
-      if (result?.consume) return result;
+      if (result?.consume) {
+        return result;
+      }
     }
     return undefined;
   }
 
-  /**
-   * Removes all registered routes, normally during runtime teardown.
-   */
   clear(): void {
     this.routes.length = 0;
+    const registrations = [...this.hosts.values()];
+    this.hosts.clear();
+    for (const registration of registrations) {
+      registration.leases.clear();
+      registration.remove();
+    }
   }
 }
 

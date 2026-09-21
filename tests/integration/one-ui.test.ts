@@ -3,28 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "vitest";
 
-import { ownerFor, UI_OWNERSHIP } from "../../extensions/app/ownership.ts";
-
-test("ownership map assigns each Pi UI seam to one module", () => {
-  expect(ownerFor("editor")).toBe("editor");
-  expect(ownerFor("footer")).toBe("shell");
-  expect(ownerFor("workingLine")).toBe("shell");
-  expect(ownerFor("toolRenderer")).toBe("context");
-  expect(ownerFor("diffRenderer")).toBe("context");
-  expect(ownerFor("thinking")).toBe("context");
-  expect(UI_OWNERSHIP).toStrictEqual({
-    editor: "editor",
-    userMessage: "context",
-    footer: "shell",
-    workingLine: "shell",
-    selector: "overlay",
-    toolRenderer: "context",
-    diffRenderer: "context",
-    thinking: "context",
-    agentSummary: "context",
-  });
-});
-
 test("the composed extension exposes /oneui without upstream management commands", async () => {
   const agentDir = await mkdtemp(join(tmpdir(), "pi-one-ui-test-"));
   const previousAgentDir = process.env.PI_CODING_AGENT_DIR;
@@ -65,7 +43,9 @@ test("the composed extension exposes /oneui without upstream management commands
     expect(commands.has("oneui")).toBeTruthy();
     expect(commands.has("zentui")).toBe(false);
     expect(commands.has("ccstyle")).toBe(false);
-    expect(handlers.has("session_start")).toBeTruthy();
+    expect(handlers.get("session_start")).toHaveLength(1);
+    expect(handlers.get("session_shutdown")).toHaveLength(1);
+    expect(handlers.get("message_update")).toHaveLength(1);
   } finally {
     if (previousAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
     else process.env.PI_CODING_AGENT_DIR = previousAgentDir;

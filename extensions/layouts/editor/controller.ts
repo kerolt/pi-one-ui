@@ -29,12 +29,9 @@ export type EditorChangeResult = { ok: true } | { ok: false; reason: string };
 
 export type EditorLayoutControllerContext = {
   readonly getConfig: () => PolishedTuiConfig;
-  readonly saveComponent: (
-    patch: Partial<PolishedTuiConfig["components"]["editor"]>,
-  ) => PolishedTuiConfig;
   readonly getState: () => FooterState;
   readonly sessionLifecycle: SessionLifecycle;
-  readonly render: Pick<RenderScheduler, "request">;
+  readonly render: Pick<RenderScheduler, "request" | "register">;
   readonly getThinkingLevel: () => ReturnType<ExtensionAPI["getThinkingLevel"]>;
   readonly getAgentDurationMs: () => number;
   readonly isAgentActive: () => boolean;
@@ -54,7 +51,6 @@ export class EditorLayoutController {
   private readonly context: EditorLayoutControllerContext;
   private readonly ownerToken = Symbol("pi-one-ui-editor-owner");
   private activeTuiContext: ExtensionContext | undefined;
-  private requestEditorRender: (() => void) | undefined;
   private editorInstalled = false;
   private editorInstallMode: EditorInstallMode = "none";
   private installedEditorFactory: EditorFactory | undefined;
@@ -131,17 +127,16 @@ export class EditorLayoutController {
   }
 
   /**
-   * Applies an Editor component configuration patch and reconciles the host.
+   * 应用 app 已提交的 Editor 配置并更新组件。
    *
-   * @param patch Editor configuration changes to persist.
-   * @param ctx Active Pi extension context.
-   * @returns Whether the runtime applied the requested replacement.
+   * @param patch 本次修改的 Editor 字段。
+   * @param ctx 当前 Pi session 的上下文。
+   * @returns 组件应用结果。
    */
-  setComponent(
+  applyConfig(
     patch: Partial<PolishedTuiConfig["components"]["editor"]>,
     ctx: ExtensionContext,
   ): { applied: boolean; reason?: string } {
-    this.context.saveComponent(patch);
     let result: EditorChangeResult | undefined;
     if (patch.style === "off") {
       // off 透传原生渲染：不替换工厂，既有编辑器实例与 overlay preFocus
@@ -298,7 +293,6 @@ export class EditorLayoutController {
    */
   cleanup(ctx?: ExtensionContext): void {
     this.resetAgentTimer();
-    this.context.sessionLifecycle.shutdown();
     if (ctx && this.isTuiContext(ctx)) {
       try {
         const currentFactory = ctx.ui.getEditorComponent();
@@ -413,7 +407,7 @@ export class EditorLayoutController {
    */
   private clearEditorOwnership(): void {
     this.setMinimalistDecorationActive(false);
-    this.requestEditorRender = undefined;
+    this.context.render.register(this, undefined);
     this.wrappedEditorFactory = undefined;
     this.installedEditorFactory = undefined;
     this.editorInstallMode = "none";
@@ -481,7 +475,7 @@ export class EditorLayoutController {
       isAgentActive: this.context.isAgentActive,
       getProjectRoot: this.context.getProjectRoot,
       onRender: (requestRender) => {
-        this.requestEditorRender = requestRender;
+        this.context.render.register(this, requestRender);
       },
       onDecorationActive: (active) =>
         this.setMinimalistDecorationActive(active),
@@ -532,11 +526,8 @@ export class EditorLayoutController {
     });
   }
 
-  /**
-   * Requests both the mounted editor redraw and the shared runtime redraw.
-   */
+  /** 向 app 提交共享 TUI 刷新请求。 */
   requestRender(): void {
-    this.requestEditorRender?.();
     this.context.render.request();
   }
 }

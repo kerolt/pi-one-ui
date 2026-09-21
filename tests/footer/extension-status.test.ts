@@ -10,24 +10,21 @@ import {
 } from "../../extensions/layouts/footer/extension-status";
 
 function configWithExtensionStatuses(
-  extensionStatuses: Partial<PolishedTuiConfig["extensionStatuses"]>,
+  extensionStatuses: Partial<
+    PolishedTuiConfig["components"]["footer"]["styles"]["starship"]["extensionStatuses"]
+  >,
 ): PolishedTuiConfig {
+  const defaults =
+    defaultConfig.components.footer.styles.starship.extensionStatuses;
   const merged = {
-    ...defaultConfig.extensionStatuses,
+    ...defaults,
     ...extensionStatuses,
-    placements: {
-      ...defaultConfig.extensionStatuses.placements,
-      ...(extensionStatuses.placements ?? {}),
-    },
-    colorModes: {
-      ...defaultConfig.extensionStatuses.colorModes,
-      ...(extensionStatuses.colorModes ?? {}),
-    },
+    placements: { ...defaults.placements, ...extensionStatuses.placements },
+    colorModes: { ...defaults.colorModes, ...extensionStatuses.colorModes },
   };
   const footer = defaultConfig.components.footer;
   return {
     ...defaultConfig,
-    extensionStatuses: merged,
     components: {
       ...defaultConfig.components,
       footer: {

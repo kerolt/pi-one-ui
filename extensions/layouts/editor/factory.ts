@@ -24,7 +24,7 @@ export type EditorFactoryRuntime = {
   readonly getAgentDurationMs: () => number;
   readonly isAgentActive: () => boolean;
   readonly getProjectRoot: () => string | undefined;
-  readonly onRender: (requestRender: () => void) => void;
+  readonly onRender: (requestRender: (force: boolean) => void) => void;
   readonly onDecorationActive: (active: boolean) => void;
 };
 
@@ -44,7 +44,7 @@ export function createEditorFactory(
     theme: EditorTheme,
     keybindings: KeybindingsManager,
   ) => {
-    runtime.onRender(() => tui.requestRender());
+    runtime.onRender((force) => tui.requestRender(force));
     return new PolishedEditor(
       tui,
       theme,
@@ -78,7 +78,7 @@ export function createWrappedEditorFactory(
     theme: EditorTheme,
     keybindings: KeybindingsManager,
   ) => {
-    runtime.onRender(() => tui.requestRender());
+    runtime.onRender((force) => tui.requestRender(force));
     return new WrappedPolishedEditor(
       baseFactory(tui, theme, keybindings),
       runtime.sessionTheme,

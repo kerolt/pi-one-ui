@@ -364,12 +364,7 @@ export const config: Config = loadConfig();
  * Loads and normalizes the renderer projection from the shared store.
  */
 function loadConfig(): Config {
-  try {
-    return normalizeConfig(rendererConfigFrom(configStore.read()));
-  } catch {
-    // Ignore bad config and fall back to defaults.
-  }
-  return { ...DEFAULT_CONFIG };
+  return normalizeConfig(rendererConfigFrom(configStore.read()));
 }
 
 /**

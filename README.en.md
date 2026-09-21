@@ -102,8 +102,10 @@ To hide the Editor directory, set `components.editor.styles.minimalist.showCwd: 
 
 You can configure the extension in two ways:
 
-1. **Interactive settings panel (recommended)**: Run `/oneui` in Pi to adjust common component toggles, styles, and border modes via a visual menu. Changes take effect immediately and are persisted automatically.
+1. **Interactive settings panel (recommended)**: Run `/oneui` in Pi to adjust component toggles, styles, and border modes. Component settings apply after saving; Features switches apply after `/reload`. Each preset saves all related settings in one update and applies them to the corresponding components.
 2. **Direct JSON editing**: Advanced users can edit the JSON configuration file directly for finer-grained control. After saving edits, run `/reload` in Pi to apply changes. When the file does not exist, safe runtime defaults are used in memory.
+
+Corrupt or unreadable configuration files produce an error. Failed saves retain the current settings; if saving succeeds but a component cannot apply the change, the panel reports the application failure explicitly.
 
 ### Basic configuration example
 
@@ -229,6 +231,17 @@ Before submitting changes, run at least:
 npm run verify
 npm run pack:check
 ```
+
+### Source responsibilities
+
+- `extensions/app/runtime/`: composition, shared events, session lifecycle, render scheduling, and patch management.
+- `extensions/app/config/`: configuration types, normalization, and shared storage.
+- `extensions/app/settings/`: settings operations, presets, and the `/oneui` opening flow.
+- `extensions/app/overlay/`: overlay lifecycle, focus coordination, and input routing.
+- `extensions/layouts/`: component behavior and rendering; settings, Context Inspector, and Selector views live in `layouts/overlay/`.
+- `extensions/features/` and `extensions/services/`: features and shared data, composed by app.
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for module rules and real Pi TUI verification commands.
 
 ### Test organization
 

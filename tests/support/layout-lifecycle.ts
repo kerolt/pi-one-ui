@@ -13,12 +13,12 @@ import {
   type ConfigRecord,
   configStore,
 } from "../../extensions/app/config/store.ts";
-import { removeSelectorBorderStyle } from "../../extensions/app/overlay/selector-border.ts";
 import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
 import {
   installUserMessageStyle,
   removeUserMessageStyle,
 } from "../../extensions/layouts/context/message/user-message.ts";
+import { removeSelectorBorderStyle } from "../../extensions/layouts/overlay/selector-border.ts";
 import registerLayoutLifecycle from "./standalone-layout-runtime.ts";
 
 /**
@@ -98,7 +98,7 @@ export default function (
   const coordinator = new EventCoordinator({
     on: (event, handler) => pi.on(event as never, handler as never),
   });
-  const bindings = registerLayoutLifecycle(pi, coordinator);
+  const bindings = registerLayoutLifecycle(pi);
   bindings.workingLineController.setSummaryWriterEnabled(
     options.ownTurnSummary !== false,
   );

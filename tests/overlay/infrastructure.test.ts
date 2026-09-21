@@ -52,3 +52,23 @@ test("InputRouter dispatches by priority and registration order", () => {
   expect(router.dispatch("input")).toStrictEqual({ consume: true });
   expect(calls).toStrictEqual(["high", "same-priority-after"]);
 });
+
+test("OverlayManager isolates pending work across session replacement", async () => {
+  const manager = new OverlayManager();
+  const first = Promise.withResolvers<string>();
+  const second = Promise.withResolvers<string>();
+  const previousSession = manager.sessionGuard();
+  const oldTask = manager.run(() => first.promise);
+  manager.reset();
+  expect(previousSession()).toBe(false);
+  manager.startSession();
+  const currentSession = manager.sessionGuard();
+  const newTask = manager.run(() => second.promise);
+  first.resolve("old");
+  expect(await oldTask).toBe("old");
+  expect(manager.depth()).toBe(1);
+  expect(currentSession()).toBe(true);
+  second.resolve("new");
+  expect(await newTask).toBe("new");
+  expect(manager.depth()).toBe(0);
+});

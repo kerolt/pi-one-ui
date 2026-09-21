@@ -4,7 +4,10 @@
  * 在 handleBashCommand 收尾补一次 flush。
  */
 import { InteractiveMode } from "@earendil-works/pi-coding-agent";
-import { FLUSH_DOCKED_BASH_PATCH, patchRegistry } from "../tools/patch-keys.ts";
+import {
+  FLUSH_DOCKED_BASH_PATCH,
+  patchRegistry,
+} from "../../tools/patch-keys.ts";
 
 type Patch = {
   active: boolean;
@@ -13,7 +16,7 @@ type Patch = {
   installed: (...args: any[]) => unknown;
 };
 
-export function installFlushDockedBash(): void {
+export function installFlushDockedBash(): () => void {
   const prototype = InteractiveMode.prototype as any;
   const previous = patchRegistry.get<Patch>(FLUSH_DOCKED_BASH_PATCH);
   if (previous) previous.active = false;
@@ -33,4 +36,11 @@ export function installFlushDockedBash(): void {
   };
   prototype.handleBashCommand = patch.installed;
   patchRegistry.install(FLUSH_DOCKED_BASH_PATCH, patch);
+  return () => {
+    patch.active = false;
+    if (prototype.handleBashCommand === patch.installed) {
+      prototype.handleBashCommand = patch.original;
+    }
+    patchRegistry.dispose(FLUSH_DOCKED_BASH_PATCH, patch);
+  };
 }

@@ -1,6 +1,6 @@
 import { InteractiveMode } from "@earendil-works/pi-coding-agent";
 import { expect, test } from "vitest";
-import { installFlushDockedBash } from "../../extensions/features/flush-docked-bash.ts";
+import { installFlushDockedBash } from "../../extensions/app/runtime/flush-docked-bash.ts";
 
 test("handleBashCommand 结束后立刻 flush pending bash", async () => {
   const proto = InteractiveMode.prototype as any;

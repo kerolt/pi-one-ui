@@ -2,7 +2,6 @@ import { homedir } from "node:os";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import { describe, expect, it } from "vitest";
-import { renderEditorSettingsPreview } from "../../extensions/app/commands/settings-previews.ts";
 import {
   defaultConfig,
   mergeConfig,
@@ -13,6 +12,7 @@ import {
   type MinimalistEditorMetadata,
   renderMinimalistFrame,
 } from "../../extensions/layouts/editor/minimalist-editor";
+import { renderEditorSettingsPreview } from "../../extensions/layouts/overlay/settings-previews.ts";
 
 function theme(): Theme {
   return {
@@ -37,7 +37,11 @@ function recordingTheme(calls: Array<{ color: string; text: string }>): Theme {
   } as Theme;
 }
 
-function config(overrides: Partial<PolishedTuiConfig> = {}): PolishedTuiConfig {
+type EditorPreviewOptions = Partial<PolishedTuiConfig> & {
+  editorBorderColorMode?: PolishedTuiConfig["components"]["editor"]["borderColorMode"];
+  editorStyles?: PolishedTuiConfig["components"]["editor"]["styles"];
+};
+function config(overrides: EditorPreviewOptions = {}): PolishedTuiConfig {
   const editor = defaultConfig.components.editor;
   return {
     ...defaultConfig,
@@ -46,7 +50,7 @@ function config(overrides: Partial<PolishedTuiConfig> = {}): PolishedTuiConfig {
       ...defaultConfig.components,
       editor: {
         ...editor,
-        style: "minimalist",
+        style: "on",
         borderColorMode:
           overrides.editorBorderColorMode ?? editor.borderColorMode,
         styles: {
@@ -380,7 +384,7 @@ describe("minimalist editor frame", () => {
       config: config({
         editorStyles: {
           minimalist: {
-            ...defaultConfig.editorStyles.minimalist,
+            ...defaultConfig.components.editor.styles.minimalist,
             showSessionName: false,
           },
         },
@@ -473,7 +477,7 @@ describe("minimalist editor frame", () => {
         config: config({
           editorStyles: {
             minimalist: {
-              ...defaultConfig.editorStyles.minimalist,
+              ...defaultConfig.components.editor.styles.minimalist,
               pathDisplay,
             },
           },
@@ -584,7 +588,7 @@ describe("minimalist editor frame", () => {
       config: config({
         editorStyles: {
           minimalist: {
-            ...defaultConfig.editorStyles.minimalist,
+            ...defaultConfig.components.editor.styles.minimalist,
             showTimer: false,
             showCost: false,
             showGit: false,

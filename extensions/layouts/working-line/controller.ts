@@ -3,10 +3,7 @@ import type {
   ExtensionContext,
   Theme,
 } from "@earendil-works/pi-coding-agent";
-import type {
-  PolishedTuiConfig,
-  WorkingLineComponentPatch,
-} from "../../app/config/shell.ts";
+import type { PolishedTuiConfig } from "../../app/config/shell.ts";
 import type { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
 import {
   InteractionMetricsTracker,
@@ -29,9 +26,6 @@ export type WorkingLineMessageEnd = Parameters<
 export type WorkingLineLayoutContext = {
   readonly pi: ExtensionAPI;
   readonly getConfig: () => PolishedTuiConfig;
-  readonly saveComponent: (
-    patch: WorkingLineComponentPatch,
-  ) => PolishedTuiConfig;
   readonly getTheme: () => Theme;
   readonly sessionLifecycle: SessionLifecycle;
   readonly refresh: () => void;
@@ -223,28 +217,8 @@ export class WorkingLineLayoutController {
     }
   }
 
-  /**
-   * Applies a WorkingLine configuration patch and reconciles the host row.
-   *
-   * @param patch WorkingLine configuration changes to persist.
-   * @param ctx Active Pi extension context.
-   * @returns Whether the host working row accepted the change.
-   */
-  setComponent(
-    patch: WorkingLineComponentPatch,
-    ctx: ExtensionContext,
-  ): { applied: boolean; reason?: string } {
-    this.context.saveComponent(patch);
-    return this.workingLine.reconcile(ctx);
-  }
-
-  /**
-   * Reconciles WorkingLine configuration without changing persisted settings.
-   *
-   * @param ctx Active Pi extension context.
-   * @returns Whether the host working row accepted the change.
-   */
-  reconcile(ctx: ExtensionContext) {
+  /** 应用 app 已提交的 WorkingLine 配置，并返回组件应用结果。 */
+  applyConfig(ctx: ExtensionContext): { applied: boolean; reason?: string } {
     return this.workingLine.reconcile(ctx);
   }
 

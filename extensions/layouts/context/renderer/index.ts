@@ -5,7 +5,6 @@ import {
   config,
   normalizeConfig,
   setConfig,
-  updateConfig,
 } from "../../../app/config/renderer.ts";
 import { isLazyProxyTui } from "../../../tools/fullscreen-detect.ts";
 import {
@@ -30,6 +29,7 @@ import {
   resetToolHoverState,
   scheduleSessionRender,
   TOOL_MOUSE_DISABLE,
+  type ToolMouseServices,
   teardownToolMouseInteraction,
 } from "./mouse/interaction.ts";
 import { getToolMouseTui } from "./mouse/scroll.ts";
@@ -65,14 +65,19 @@ let compactModeHooks: CompactModeHooks | undefined;
 function refreshCurrentContext(
   ctx?: any,
   toolGrouping?: ToolGroupingHooks,
+  render?: ToolMouseServices["render"],
 ): void {
   const tui = getToolMouseTui();
   toolGrouping?.refresh(tui);
   refreshMessageDisplays(tui);
   refreshCompactModeComponents(tui);
   compactModeHooks?.refresh();
-  tui?.requestRender?.(true);
-  ctx?.ui?.requestRender?.(true);
+  if (render) {
+    render.request(true);
+  } else {
+    tui?.requestRender?.(true);
+    ctx?.ui?.requestRender?.(true);
+  }
 }
 
 function syncCompactMode(ctx: any): void {
@@ -84,8 +89,9 @@ function applyStyleMode(
   mode: CompactStyleMode,
   ctx: any,
   toolGrouping?: ToolGroupingHooks,
+  render?: ToolMouseServices["render"],
 ): void {
-  updateConfig({ mode });
+  setConfig(normalizeConfig({ ...config, mode }));
   if (mode === "off") {
     // Native rendering：清 hover/click，关闭鼠标上报以恢复终端默认滚轮。
     resetToolHoverState();
@@ -103,10 +109,10 @@ function applyStyleMode(
   }
   // Reshape immediately and once more after the panel/custom UI unmounts and
   // the main context is mounted again.
-  refreshCurrentContext(ctx, toolGrouping);
+  refreshCurrentContext(ctx, toolGrouping, render);
   scheduleSessionRender(() => {
     if (mode === "compact") syncCompactMode(ctx);
-    refreshCurrentContext(ctx, toolGrouping);
+    refreshCurrentContext(ctx, toolGrouping, render);
   });
   ctx.ui.notify(`Claude Code style: ${mode}`, "info");
 }
@@ -129,6 +135,7 @@ export type RendererRuntimeController = {
 };
 
 export type RendererExtensionOptions = {
+  services?: ToolMouseServices;
   onRuntimeController?: (controller: RendererRuntimeController) => void;
 };
 
@@ -183,17 +190,27 @@ export default function (
     return installation;
   };
 
-  options.onRuntimeController?.({
+  const controller: RendererRuntimeController = {
     setMode: (mode, ctx) =>
-      applyStyleMode(mode, ctx, installation?.toolGrouping),
+      applyStyleMode(
+        mode,
+        ctx,
+        installation?.toolGrouping,
+        options.services?.render,
+      ),
     updateConfig: (partial, ctx) => {
-      updateConfig(partial);
+      setConfig(normalizeConfig({ ...config, ...partial }));
       // 配置（如 expandedPreviewMaxLines / excludeRenderers）变化可能改变
       // 渲染结果：丢弃工具卡跨 toggle 缓存，下次 updateDisplay 重建。
       installation?.toggleRenderCache.clear();
-      refreshCurrentContext(ctx, installation?.toolGrouping);
+      refreshCurrentContext(
+        ctx,
+        installation?.toolGrouping,
+        options.services?.render,
+      );
     },
-  });
+  };
+  options.onRuntimeController?.(controller);
 
   pi.on("message_update", async (event) => {
     // compact-thinking 在 session_start 时于 compact 补丁之上再装一层；
@@ -221,7 +238,7 @@ export default function (
     // 鼠标交互独立于渲染层：fullscreen 渲染层让位（hooks undefined）但
     // 工具点击/回到底部适配仍需安装；保持在渲染层安装之后以维持原顺序。
     if (ctx?.mode === "tui" && ctx?.hasUI)
-      installToolMouseInteraction(ctx, mouseOwner);
+      installToolMouseInteraction(ctx, mouseOwner, options.services);
     if (!hooks) return;
     hooks.toolGrouping.setTheme(ctx.ui.theme);
     hooks.toggleRenderCache.setTheme(ctx.ui.theme);
@@ -240,7 +257,7 @@ export default function (
     // Compaction rebuilds the context without session_start. Rebind after
     // other TUI extensions may have replaced the root input dispatcher.
     if (ctx?.mode === "tui" && ctx?.hasUI)
-      installToolMouseInteraction(ctx, mouseOwner);
+      installToolMouseInteraction(ctx, mouseOwner, options.services);
     if (!hooks) return;
     hooks.toolGrouping.setTheme(ctx.ui.theme);
     hooks.toggleRenderCache.setTheme(ctx.ui.theme);
@@ -282,6 +299,7 @@ export default function (
     clearAllAnimations();
     installation = undefined;
   });
+  return controller;
 }
 
 // ---- 对外导出：入口/测试实际消费的符号 ----

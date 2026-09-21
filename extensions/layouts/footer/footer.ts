@@ -230,7 +230,7 @@ export function installFooter(
   state: FooterState,
   getConfig: () => ZentuiConfig,
   hooks: {
-    setRequestRender: (fn: (() => void) | undefined) => void;
+    setRequestRender: (fn: ((force: boolean) => void) | undefined) => void;
     scheduleProjectRefresh: (ctx: ExtensionContext) => void;
     setExtensionStatusesGetter?: (
       fn: (() => ReadonlyMap<string, string>) | undefined,
@@ -240,7 +240,7 @@ export function installFooter(
   },
 ): void {
   ctx.ui.setFooter((tui, theme, footerData) => {
-    hooks.setRequestRender(() => tui.requestRender());
+    hooks.setRequestRender((force) => tui.requestRender(force));
     hooks.setExtensionStatusesGetter?.(() => footerData.getExtensionStatuses());
     const unsubscribeBranch = footerData.onBranchChange(() => {
       hooks.scheduleProjectRefresh(ctx);

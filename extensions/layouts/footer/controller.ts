@@ -4,6 +4,10 @@ import {
   hasUnsupportedComponentStyle,
   type PolishedTuiConfig,
 } from "../../app/config/shell.ts";
+import type {
+  RenderRequest,
+  RenderScheduler,
+} from "../../app/runtime/render-scheduler.ts";
 import type { SessionLifecycle } from "../../app/runtime/session-lifecycle.ts";
 import type { LiveContextOverride } from "../../services/live-context.ts";
 import type { FooterState } from "../../services/session-state.ts";
@@ -17,9 +21,7 @@ type FooterKind = "starship" | "hidden";
 
 export type FooterControllerContext = {
   readonly getConfig: () => PolishedTuiConfig;
-  readonly saveComponent: (
-    patch: Partial<FooterComponentConfig>,
-  ) => PolishedTuiConfig;
+  readonly render: Pick<RenderScheduler, "register">;
   readonly state: FooterState;
   readonly sessionLifecycle: SessionLifecycle;
   readonly refresh: () => void;
@@ -39,7 +41,7 @@ export class FooterLayoutController {
   private readonly context: FooterControllerContext;
   private installedKind: FooterKind | undefined;
   private installedToken: symbol | undefined;
-  private requestFooterRender: (() => void) | undefined;
+  private requestFooterRender: RenderRequest | undefined;
   private getActiveExtensionStatuses: () => ReadonlyMap<string, string> = () =>
     new Map();
   private stopSessionTimer: () => void = () => {};
@@ -68,23 +70,34 @@ export class FooterLayoutController {
   }
 
   /**
-   * Applies a Footer configuration patch and reconciles its host seam.
+   * 应用 app 已提交的 Footer 配置并更新组件。
    *
-   * @param patch Footer configuration changes to persist.
-   * @param ctx Active Pi extension context.
+   * @param patch 本次修改的 Footer 字段。
+   * @param ctx 当前 Pi session 的上下文。
+   * @returns 组件应用结果。
    */
-  setComponent(
+  applyConfig(
     patch: Partial<FooterComponentConfig>,
     ctx: ExtensionContext,
-  ): void {
-    const previousStyle = this.context.getConfig().components.footer.style;
-    const nextConfig = this.context.saveComponent(patch);
-    const styleChanged = nextConfig.components.footer.style !== previousStyle;
+    previousStyle = this.context.getConfig().components.footer.style,
+  ): { applied: boolean; reason?: string } {
+    const styleChanged =
+      this.context.getConfig().components.footer.style !== previousStyle;
     if (patch.style !== undefined) this.reconcile(ctx);
     if (patch.modelLabel !== undefined) this.context.onModelLabelChanged(ctx);
     this.context.onProjectRequirementChanged(ctx, styleChanged);
     this.reconcileSessionTimer();
     this.context.refresh();
+    const style = this.effectiveFooterStyle();
+    const applied =
+      patch.style === undefined ||
+      (style === "native"
+        ? !this.ownsStatusLine(ctx)
+        : this.installedKind === style && this.ownsStatusLine(ctx));
+    return {
+      applied,
+      reason: applied ? undefined : `Footer could not apply the ${style} style`,
+    };
   }
 
   /**
@@ -135,6 +148,7 @@ export class FooterLayoutController {
     this.installedKind = undefined;
     this.installedToken = undefined;
     this.requestFooterRender = undefined;
+    this.context.render.register(this, undefined);
     this.getActiveExtensionStatuses = () => new Map();
   }
 
@@ -213,13 +227,6 @@ export class FooterLayoutController {
   }
 
   /**
-   * Requests a redraw from the mounted Footer component.
-   */
-  requestRender(): void {
-    this.requestFooterRender?.();
-  }
-
-  /**
    * Reports whether a context is an interactive TUI context.
    *
    * @param ctx Candidate Pi extension context.
@@ -282,6 +289,7 @@ export class FooterLayoutController {
     this.installedToken = undefined;
     if (this.footerOwner(ctx) === token) this.setOwnership(ctx, undefined);
     this.requestFooterRender = undefined;
+    this.context.render.register(this, undefined);
     this.getActiveExtensionStatuses = () => new Map();
     this.stopSessionTimer();
     if (this.context.sessionLifecycle.isCurrent())
@@ -301,6 +309,7 @@ export class FooterLayoutController {
       installFooter(ctx, this.context.state, this.context.getConfig, {
         setRequestRender: (requestRender) => {
           this.requestFooterRender = requestRender;
+          this.context.render.register(this, requestRender);
         },
         scheduleProjectRefresh: (refreshContext) =>
           this.context.scheduleProjectRefresh(refreshContext),
@@ -334,6 +343,7 @@ export class FooterLayoutController {
       this.installedToken = token;
       this.setOwnership(ctx, token);
       this.requestFooterRender = undefined;
+      this.context.render.register(this, undefined);
       this.getActiveExtensionStatuses = () => new Map();
       this.stopSessionTimer();
     } catch {
@@ -373,6 +383,7 @@ export class FooterLayoutController {
       this.footerOwner(ctx) === previous.token
     ) {
       this.requestFooterRender = previous.requestRender;
+      this.context.render.register(this, previous.requestRender);
       this.getActiveExtensionStatuses = previous.getExtensionStatuses;
       return;
     }

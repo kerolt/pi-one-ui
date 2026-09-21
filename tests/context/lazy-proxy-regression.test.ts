@@ -7,7 +7,6 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { expect, test } from "vitest";
 import { config } from "../../extensions/app/config/renderer.ts";
-import { showTextPreview } from "../../extensions/features/context-inspector/index.ts";
 import { installCompactMode } from "../../extensions/layouts/context/renderer/compact-mode.ts";
 import claudeCodeStyleExtension, {
   ExpandedToolIoView,
@@ -29,6 +28,7 @@ import {
   installCompactThinking,
   ThinkingPreviewBlock,
 } from "../../extensions/layouts/context/thinking/compact-thinking.ts";
+import { showTextPreview } from "../../extensions/layouts/overlay/context-inspector.ts";
 
 // 0.84+ 的稳定 TUI 引用会在 renderer 切换时重绑方法。插件不得捕获后回写
 // doRender/render/handleInput；regular 的工具点击改为按左键输入即时捕获内存 frame。

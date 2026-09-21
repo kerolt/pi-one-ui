@@ -1,4 +1,9 @@
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+  ExtensionEvent,
+  MessageEndEvent,
+} from "@earendil-works/pi-coding-agent";
 
 export const RUNTIME_EVENTS = [
   "session_start",
@@ -17,68 +22,111 @@ export const RUNTIME_EVENTS = [
   "session_compact",
   "session_tree",
 ] as const;
-
 export type RuntimeEventName = (typeof RUNTIME_EVENTS)[number];
-export type RuntimeEventHandler = (
-  event: unknown,
-  ctx: ExtensionContext,
-) => void | Promise<void>;
-
+type RuntimeEvent<K extends RuntimeEventName> = Extract<
+  ExtensionEvent,
+  { type: K }
+>;
+type MessageReplacement = { message: MessageEndEvent["message"] };
+export type RuntimeEventHandler<K extends RuntimeEventName = RuntimeEventName> =
+  (
+    event: RuntimeEvent<K>,
+    ctx: ExtensionContext,
+  ) => void | MessageReplacement | Promise<void | MessageReplacement>;
 export type EventRegistrar = {
   on(event: RuntimeEventName, handler: RuntimeEventHandler): void;
 };
 
-/**
- * Provides the central host event seam used while legacy listeners migrate.
- */
+/** 共享事件保留注册顺序、同步执行和 message_end 的替换语义。 */
 export class EventCoordinator {
-  private readonly registrar: EventRegistrar;
   private readonly handlers = new Map<
     RuntimeEventName,
     Set<RuntimeEventHandler>
   >();
   private installed = false;
 
-  /**
-   * Creates a coordinator backed by the host event registrar.
-   *
-   * @param registrar Host adapter used to install event listeners.
-   */
-  constructor(registrar: EventRegistrar) {
-    this.registrar = registrar;
-  }
+  constructor(private readonly registrar: EventRegistrar) {}
 
-  /**
-   * Registers a handler for one coordinated runtime event.
-   *
-   * @returns A function that removes the handler.
-   */
-  on(event: RuntimeEventName, handler: RuntimeEventHandler): () => void {
+  on<K extends RuntimeEventName>(
+    event: K,
+    handler: RuntimeEventHandler<K>,
+  ): () => void {
     const handlers = this.handlers.get(event) ?? new Set<RuntimeEventHandler>();
-    handlers.add(handler);
+    const registered: RuntimeEventHandler = (payload, ctx) =>
+      handler(payload as RuntimeEvent<K>, ctx);
+    handlers.add(registered);
     this.handlers.set(event, handlers);
-    return () => handlers.delete(handler);
+    return () => {
+      handlers.delete(registered);
+    };
   }
 
-  /**
-   * Installs one host listener per coordinated event.
-   */
+  /** 专用 hook 直接使用 Pi；共享生命周期统一经过本协调器。 */
+  coordinate(pi: ExtensionAPI): ExtensionAPI {
+    const on = ((event: string, handler: RuntimeEventHandler) => {
+      if ((RUNTIME_EVENTS as readonly string[]).includes(event)) {
+        return this.on(event as RuntimeEventName, handler);
+      }
+      return pi.on(event as never, handler as never);
+    }) as ExtensionAPI["on"];
+    return new Proxy(pi, {
+      get(target, property, receiver) {
+        return property === "on" ? on : Reflect.get(target, property, receiver);
+      },
+    });
+  }
+
   install(): void {
-    if (this.installed) return;
+    if (this.installed) {
+      return;
+    }
     this.installed = true;
     for (const event of RUNTIME_EVENTS) {
-      this.registrar.on(event, (payload, ctx) => {
-        let pending: Promise<void> | undefined;
-        for (const handler of this.handlers.get(event) ?? []) {
-          if (pending) {
-            pending = pending.then(() => handler(payload, ctx)).then(() => {});
-            continue;
-          }
-          const result = handler(payload, ctx);
-          if (result instanceof Promise) pending = result.then(() => {});
-        }
-        return pending;
-      });
+      this.registrar.on(event, (payload, ctx) =>
+        this.dispatch(event, payload, ctx),
+      );
     }
+  }
+
+  dispatch<K extends RuntimeEventName>(
+    event: K,
+    payload: RuntimeEvent<K>,
+    ctx: ExtensionContext,
+  ): void | MessageReplacement | Promise<void | MessageReplacement>;
+  dispatch(
+    event: RuntimeEventName,
+    payload: RuntimeEvent<RuntimeEventName>,
+    ctx: ExtensionContext,
+  ): void | MessageReplacement | Promise<void | MessageReplacement> {
+    let replacement: MessageReplacement | undefined;
+    let pending: Promise<void> | undefined;
+    const accept = (result: void | MessageReplacement): void => {
+      if (!result) {
+        return;
+      }
+      if (
+        payload.type !== "message_end" ||
+        result.message.role !== payload.message.role
+      ) {
+        throw new TypeError(
+          "Only message_end may replace a message, with the same role",
+        );
+      }
+      replacement = result;
+      payload.message = result.message;
+    };
+    for (const handler of [...(this.handlers.get(event) ?? [])]) {
+      if (pending) {
+        pending = pending.then(() => handler(payload, ctx)).then(accept);
+      } else {
+        const result = handler(payload, ctx);
+        if (result instanceof Promise) {
+          pending = result.then(accept);
+        } else {
+          accept(result);
+        }
+      }
+    }
+    return pending ? pending.then(() => replacement) : replacement;
   }
 }

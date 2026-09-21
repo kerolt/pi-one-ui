@@ -20,7 +20,6 @@ import {
   DEFAULT_COMPACT_FOOTER_FORMAT,
   DEFAULT_EDITOR_METADATA_FORMAT,
   defaultConfig,
-  ensureConfigExists,
   FOOTER_FORMAT_VARIABLES,
   getExtensionStatusColorMode,
   getExtensionStatusPlacement,
@@ -44,7 +43,6 @@ import {
   saveMinimalistEditorStylePatch,
   saveMinimalistPatch,
   savePathDisplayPatch,
-  savePolishedEditorStylePatch,
   saveResponsiveFooterPatch,
   saveSelectorBordersComponentPatch,
   saveSeparatorPatch,
@@ -53,6 +51,7 @@ import {
   saveUserMessagesComponentPatch,
   saveWorkingLineComponentPatch,
 } from "../../extensions/app/config/shell";
+import { ConfigStore } from "../../extensions/app/config/store.ts";
 import {
   colorize,
   renderTerminalStyle,
@@ -143,7 +142,7 @@ describe("canonical config resolution", () => {
             contextStyle: "text",
             contextThresholds: { warning: 70, error: 90 },
             pathDisplay: { mode: "basename", depth: 0 },
-            segments: defaultConfig.footerSegments,
+            segments: defaultConfig.components.footer.styles.starship.segments,
             gitBranch: { maxLength: "full" },
             gitCommit: { hashLength: 7, onlyDetached: true, showTag: true },
             gitMetrics: { onlyNonzero: true, ignoreSubmodules: false },
@@ -297,7 +296,7 @@ describe("canonical config resolution", () => {
     ).toBe("framed");
   });
 
-  it("projects the derived flat runtime view from canonical sources", () => {
+  it("exposes one canonical configuration model", () => {
     const config = mergeConfig({
       components: {
         editor: {
@@ -324,27 +323,21 @@ describe("canonical config resolution", () => {
         },
       },
     });
-    const starship = config.components.footer.styles.starship;
-    expect(config.footerFormat).toBe(starship.format);
-    expect(config.responsiveFooter).toBe(starship.responsive);
-    expect(config.compactFooterFormat).toBe(starship.compactFormat);
-    expect(config.compactFooterMaxLines).toBe(starship.compactMaxLines);
-    expect(config.separator).toBe(starship.separator);
-    expect(config.contextStyle).toBe(starship.contextStyle);
-    expect(config.contextThresholds).toBe(starship.contextThresholds);
-    expect(config.pathDisplay).toBe(starship.pathDisplay);
-    expect(config.footerSegments).toBe(starship.segments);
-    expect(config.gitBranch).toBe(starship.gitBranch);
-    expect(config.gitCommit).toBe(starship.gitCommit);
-    expect(config.gitMetrics).toBe(starship.gitMetrics);
-    expect(config.extensionStatuses).toBe(starship.extensionStatuses);
-    expect(config.features).toEqual({
-      editor: false,
-      statusLine: true,
+    expect(Object.keys(config).sort()).toEqual([
+      "colors",
+      "components",
+      "icons",
+      "projectRefreshIntervalMs",
+    ]);
+    expect(config.components.editor).toMatchObject({
+      style: "off",
+      modelLabel: "name",
       viewportIndicators: true,
     });
-    expect(config.editorModelLabel).toBe("name");
-    expect(config.contextThresholds).toEqual({ warning: 40, error: 60 });
+    expect(config.components.footer.styles.starship.contextThresholds).toEqual({
+      warning: 40,
+      error: 60,
+    });
   });
 
   it("does not mutate the parsed record", () => {
@@ -700,12 +693,12 @@ describe("mergeConfig", () => {
     expect(config.colors.extensionStatus).toBe("bright-black");
     expect(config.colors.editorAccent).toBeUndefined();
     expect(config.colors.editorBorder).toBeUndefined();
-    expect(config.features).toEqual({
-      editor: true,
-      statusLine: true,
+    expect(config.components.editor).toMatchObject({
+      style: "on",
       viewportIndicators: true,
     });
-    expect(config.footerSegments).toEqual({
+    expect(config.components.footer.style).toBe("starship");
+    expect(config.components.footer.styles.starship.segments).toEqual({
       cwd: true,
       sessionName: true,
       gitBranch: true,
@@ -724,7 +717,7 @@ describe("mergeConfig", () => {
       tokens: true,
       cost: true,
     });
-    expect(config.extensionStatuses).toEqual({
+    expect(config.components.footer.styles.starship.extensionStatuses).toEqual({
       defaultPlacement: "right",
       placements: {},
       colorModes: {},
@@ -744,8 +737,8 @@ describe("mergeConfig", () => {
   });
 
   it("defaults footerFormat to empty string", () => {
-    expect(mergeConfig({}).footerFormat).toBe("");
-    expect(defaultConfig.footerFormat).toBe("");
+    expect(mergeConfig({}).components.footer.styles.starship.format).toBe("");
+    expect(defaultConfig.components.footer.styles.starship.format).toBe("");
   });
 
   it("persists responsive footer patches without replacing unrelated keys", () => {
@@ -772,8 +765,8 @@ describe("mergeConfig", () => {
         responsive: false,
         compactMaxLines: 3,
       });
-      expect(config.responsiveFooter).toBe(false);
-      expect(config.compactFooterMaxLines).toBe(3);
+      expect(config.components.footer.styles.starship.responsive).toBe(false);
+      expect(config.components.footer.styles.starship.compactMaxLines).toBe(3);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -814,7 +807,11 @@ describe("mergeConfig", () => {
 
   it("falls back to pipe for invalid separator styles", () => {
     for (const separator of ["arrow", "", 123, null, true]) {
-      expect(mergeConfig({ separator }).separator).toBe("pipe");
+      expect(
+        mergeConfig({
+          components: { footer: { styles: { starship: { separator } } } },
+        }).components.footer.styles.starship.separator,
+      ).toBe("pipe");
     }
   });
 
@@ -839,7 +836,9 @@ describe("mergeConfig", () => {
       const config = saveSeparatorPatch("chevron", path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.separator).toBe("chevron");
+      expect(config.components.footer.styles.starship.separator).toBe(
+        "chevron",
+      );
       expect(raw.unknown).toBe(true);
       expect(raw.components.footer.styles.starship).toMatchObject({
         contextStyle: "gauge",
@@ -872,9 +871,13 @@ describe("mergeConfig", () => {
         },
         path,
       );
-      expect(config.editorStyles.minimalist.pathDisplay).toBe("full");
-      expect(config.editorStyles.minimalist.showSessionName).toBe(false);
-      expect(config.editorStyles.minimalist.showGit).toBe(false);
+      expect(config.components.editor.styles.minimalist.pathDisplay).toBe(
+        "full",
+      );
+      expect(config.components.editor.styles.minimalist.showSessionName).toBe(
+        false,
+      );
+      expect(config.components.editor.styles.minimalist.showGit).toBe(false);
       const raw = JSON.parse(readFileSync(path, "utf8"));
       expect(raw).toMatchObject({
         unknownTop: true,
@@ -907,11 +910,11 @@ describe("mergeConfig", () => {
       expect(raw.editorModelLabel).toBe("name");
       expect(raw.editorStyle).toBeUndefined();
       expect(raw.components.editor.style).toBe("on");
-      expect(on.editorStyle).toBe("on");
+      expect(on.components.editor.style).toBe("on");
 
       const off = saveEditorStyle("off", path);
       raw = JSON.parse(readFileSync(path, "utf8"));
-      expect(off.editorStyle).toBe("off");
+      expect(off.components.editor.style).toBe("off");
       expect(raw.unknown).toEqual({ keep: true });
       expect(raw.editorModelLabel).toBe("name");
       expect(raw.components.editor.style).toBe("off");
@@ -941,8 +944,8 @@ describe("mergeConfig", () => {
       expect(raw.unknown).toEqual({ keep: true });
       expect(raw.components.editor.modelLabel).toBe("name");
       expect(raw.components.editor.borderColorMode).toBe("adaptive");
-      expect(config.editorBorderColorMode).toBe("adaptive");
-      expect(config.editorModelLabel).toBe("name");
+      expect(config.components.editor.borderColorMode).toBe("adaptive");
+      expect(config.components.editor.modelLabel).toBe("name");
       expect(configTempFiles(dir)).toEqual([]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -981,7 +984,10 @@ describe("mergeConfig", () => {
       const config = savePathDisplayPatch({ mode: "full" }, path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.pathDisplay).toEqual({ mode: "full", depth: 3 });
+      expect(config.components.footer.styles.starship.pathDisplay).toEqual({
+        mode: "full",
+        depth: 3,
+      });
       expect(raw.unknown).toBe(true);
       expect(raw.components.footer.styles.starship.pathDisplay).toEqual({
         mode: "full",
@@ -990,7 +996,9 @@ describe("mergeConfig", () => {
       });
 
       const depthConfig = savePathDisplayPatch({ depth: 1 }, path);
-      expect(depthConfig.pathDisplay).toEqual({ mode: "full", depth: 1 });
+      expect(depthConfig.components.footer.styles.starship.pathDisplay).toEqual(
+        { mode: "full", depth: 1 },
+      );
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -998,11 +1006,21 @@ describe("mergeConfig", () => {
 
   it("falls back to full for invalid git branch lengths", () => {
     for (const maxLength of [0, -1, 1.5, "10", "short", null, true]) {
-      expect(mergeConfig({ gitBranch: { maxLength } }).gitBranch).toEqual({
+      expect(
+        mergeConfig({
+          components: {
+            footer: { styles: { starship: { gitBranch: { maxLength } } } },
+          },
+        }).components.footer.styles.starship.gitBranch,
+      ).toEqual({
         maxLength: "full",
       });
     }
-    expect(mergeConfig({ gitBranch: 20 }).gitBranch).toEqual({
+    expect(
+      mergeConfig({
+        components: { footer: { styles: { starship: { gitBranch: 20 } } } },
+      }).components.footer.styles.starship.gitBranch,
+    ).toEqual({
       maxLength: "full",
     });
   });
@@ -1018,7 +1036,9 @@ describe("mergeConfig", () => {
 
       const config = saveGitBranchPatch({ maxLength: 30 }, path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
-      expect(config.gitBranch).toEqual({ maxLength: 30 });
+      expect(config.components.footer.styles.starship.gitBranch).toEqual({
+        maxLength: 30,
+      });
       expect(raw.unknown).toBe(true);
       expect(raw.gitBranch).toEqual({ maxLength: 17, future: true });
       expect(raw.components.footer.styles.starship.gitBranch).toEqual({
@@ -1263,11 +1283,11 @@ describe("mergeConfig", () => {
       );
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.features).toEqual({
-        editor: true,
-        statusLine: false,
+      expect(config.components.editor).toMatchObject({
+        style: "on",
         viewportIndicators: false,
       });
+      expect(config.components.footer.style).toBe("native");
       expect(raw.unknown).toBe(true);
       expect(raw.features).toEqual({ editor: true, futureKey: "future" });
       expect(raw.components.editor.style).toBe("on");
@@ -1285,11 +1305,11 @@ describe("mergeConfig", () => {
       const config = saveUiFeaturesPatch({ editor: false }, path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.features).toEqual({
-        editor: false,
-        statusLine: true,
+      expect(config.components.editor).toMatchObject({
+        style: "off",
         viewportIndicators: true,
       });
+      expect(config.components.footer.style).toBe("starship");
       expect(Object.keys(raw)).toEqual(["version", "components"]);
       expect(raw.components.editor.style).toBe("off");
       expect(raw.components.userMessages.enabled).toBe(false);
@@ -1324,7 +1344,7 @@ describe("mergeConfig", () => {
       );
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.footerSegments).toEqual({
+      expect(config.components.footer.styles.starship.segments).toEqual({
         cwd: true,
         sessionName: true,
         gitBranch: true,
@@ -1351,12 +1371,19 @@ describe("mergeConfig", () => {
         tokens: false,
         cost: false,
       });
-      expect(mergeConfig(raw).footerSegments.modelInfo).toBe(true);
+      expect(
+        mergeConfig(raw).components.footer.styles.starship.segments.modelInfo,
+      ).toBe(true);
 
       const disabled = saveFooterSegmentsPatch({ modelInfo: false }, path);
       const disabledRaw = JSON.parse(readFileSync(path, "utf8"));
-      expect(disabled.footerSegments.modelInfo).toBe(false);
-      expect(mergeConfig(disabledRaw).footerSegments.modelInfo).toBe(false);
+      expect(
+        disabled.components.footer.styles.starship.segments.modelInfo,
+      ).toBe(false);
+      expect(
+        mergeConfig(disabledRaw).components.footer.styles.starship.segments
+          .modelInfo,
+      ).toBe(false);
       expect(disabledRaw.unknown).toBe(true);
       expect(disabledRaw.footerSegments).toEqual({
         cwd: true,
@@ -1381,7 +1408,7 @@ describe("mergeConfig", () => {
       const config = saveFooterSegmentsPatch({ runtime: false }, path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.footerSegments).toEqual({
+      expect(config.components.footer.styles.starship.segments).toEqual({
         cwd: true,
         sessionName: true,
         gitBranch: true,
@@ -1414,7 +1441,9 @@ describe("mergeConfig", () => {
     const path = join(dir, "pi-one-ui.json");
     try {
       const config = saveFooterSegmentsPatch({ packageVersion: true }, path);
-      expect(config.footerSegments.packageVersion).toBe(true);
+      expect(
+        config.components.footer.styles.starship.segments.packageVersion,
+      ).toBe(true);
 
       const raw = JSON.parse(readFileSync(path, "utf8"));
       expect(
@@ -1422,7 +1451,9 @@ describe("mergeConfig", () => {
       ).toBe(true);
 
       const reloaded = mergeConfig(raw);
-      expect(reloaded.footerSegments.packageVersion).toBe(true);
+      expect(
+        reloaded.components.footer.styles.starship.segments.packageVersion,
+      ).toBe(true);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -1436,8 +1467,12 @@ describe("mergeConfig", () => {
         { gitCommit: true, gitMetrics: true },
         path,
       );
-      expect(config.footerSegments.gitCommit).toBe(true);
-      expect(config.footerSegments.gitMetrics).toBe(true);
+      expect(config.components.footer.styles.starship.segments.gitCommit).toBe(
+        true,
+      );
+      expect(config.components.footer.styles.starship.segments.gitMetrics).toBe(
+        true,
+      );
 
       const raw = JSON.parse(readFileSync(path, "utf8"));
       expect(raw.components.footer.styles.starship.segments).toMatchObject({
@@ -1446,8 +1481,12 @@ describe("mergeConfig", () => {
       });
 
       const reloaded = mergeConfig(raw);
-      expect(reloaded.footerSegments.gitCommit).toBe(true);
-      expect(reloaded.footerSegments.gitMetrics).toBe(true);
+      expect(
+        reloaded.components.footer.styles.starship.segments.gitCommit,
+      ).toBe(true);
+      expect(
+        reloaded.components.footer.styles.starship.segments.gitMetrics,
+      ).toBe(true);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -1463,7 +1502,9 @@ describe("mergeConfig", () => {
       );
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.footerFormat).toBe("$cwd on $git_branch $fill $cost");
+      expect(config.components.footer.styles.starship.format).toBe(
+        "$cwd on $git_branch $fill $cost",
+      );
       expect(Object.keys(raw)).toEqual(["version", "components"]);
       expect(raw.components.footer.styles.starship.format).toBe(
         "$cwd on $git_branch $fill $cost",
@@ -1478,7 +1519,7 @@ describe("mergeConfig", () => {
     const path = join(dir, "pi-one-ui.json");
     try {
       const config = saveFooterFormatPatch("", path);
-      expect(config.footerFormat).toBe("");
+      expect(config.components.footer.styles.starship.format).toBe("");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -1491,7 +1532,9 @@ describe("mergeConfig", () => {
       const config = saveExtensionStatusPlacement("plugin.key", "middle", path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.extensionStatuses.placements).toEqual({
+      expect(
+        config.components.footer.styles.starship.extensionStatuses.placements,
+      ).toEqual({
         "plugin.key": "middle",
       });
       expect(Object.keys(raw)).toEqual(["version", "components"]);
@@ -1516,7 +1559,9 @@ describe("mergeConfig", () => {
       );
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.extensionStatuses.colorModes).toEqual({
+      expect(
+        config.components.footer.styles.starship.extensionStatuses.colorModes,
+      ).toEqual({
         "plugin.key": "original",
       });
       expect(Object.keys(raw)).toEqual(["version", "components"]);
@@ -1569,7 +1614,9 @@ describe("mergeConfig", () => {
       const config = saveExtensionStatusColorMode("beta", "original", path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.extensionStatuses).toEqual({
+      expect(
+        config.components.footer.styles.starship.extensionStatuses,
+      ).toEqual({
         defaultPlacement: "left",
         placements: { alpha: "right" },
         colorModes: { alpha: "zentui", beta: "original" },
@@ -1635,7 +1682,9 @@ describe("mergeConfig", () => {
       const config = saveExtensionStatusPlacement("beta", "off", path);
       const raw = JSON.parse(readFileSync(path, "utf8"));
 
-      expect(config.extensionStatuses).toEqual({
+      expect(
+        config.components.footer.styles.starship.extensionStatuses,
+      ).toEqual({
         defaultPlacement: "left",
         placements: { alpha: "right", beta: "off" },
         colorModes: {},
@@ -1825,7 +1874,7 @@ describe("bounded settings persistence", () => {
       (path) => {
         const config = saveEditorModelLabel("name", path);
         const raw = JSON.parse(readFileSync(path, "utf8"));
-        expect(config.editorModelLabel).toBe("name");
+        expect(config.components.editor.modelLabel).toBe("name");
         expect(raw.unknown).toEqual({ keep: true });
         expect(raw.components.editor.modelLabel).toBe("name");
         expect(raw.components.footer.modelLabel).toBe("name");
@@ -1858,7 +1907,7 @@ describe("bounded settings persistence", () => {
           path,
         );
         const raw = JSON.parse(readFileSync(path, "utf8"));
-        expect(config.gitCommit).toEqual({
+        expect(config.components.footer.styles.starship.gitCommit).toEqual({
           hashLength: 12,
           onlyDetached: false,
           showTag: false,
@@ -1898,7 +1947,7 @@ describe("bounded settings persistence", () => {
           path,
         );
         const raw = JSON.parse(readFileSync(path, "utf8"));
-        expect(config.gitMetrics).toEqual({
+        expect(config.components.footer.styles.starship.gitMetrics).toEqual({
           onlyNonzero: false,
           ignoreSubmodules: true,
         });
@@ -1934,7 +1983,9 @@ describe("bounded settings persistence", () => {
       (path) => {
         const config = saveExtensionStatusDefaultPlacement("middle", path);
         const raw = JSON.parse(readFileSync(path, "utf8"));
-        expect(config.extensionStatuses).toEqual({
+        expect(
+          config.components.footer.styles.starship.extensionStatuses,
+        ).toEqual({
           defaultPlacement: "middle",
           placements: { alpha: "left" },
           colorModes: { alpha: "original" },
@@ -1957,12 +2008,12 @@ describe("bounded settings persistence", () => {
 describe("startup and file safety", () => {
   it("does not create, rewrite, or materialize config at startup", () => {
     withConfig(undefined, (path) => {
-      ensureConfigExists(path);
+      mergeConfig(new ConfigStore({ canonical: path }).read());
       expect(existsSync(path)).toBe(false);
     });
     withConfig({ features: { editor: false }, unknown: true }, (path) => {
       const before = readFileSync(path, "utf8");
-      ensureConfigExists(path);
+      mergeConfig(new ConfigStore({ canonical: path }).read());
       expect(readFileSync(path, "utf8")).toBe(before);
       expect(readRaw(path)).not.toHaveProperty("components");
     });

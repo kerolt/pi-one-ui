@@ -251,6 +251,7 @@ describe("live streaming context event integration", () => {
     vi.advanceTimersByTime(249);
     expect(harness.requestRender).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
+    await Promise.resolve();
     expect(harness.requestRender).toHaveBeenCalledTimes(1);
     expect(rendered(footer)).toContain("11.0%/10k");
     expect(rendered(footer)).toContain("↑5 ↓6");
