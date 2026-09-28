@@ -21,6 +21,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - No configuration migration is required. Existing canonical v1 files and command names remain supported.
 - For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.7.2`. Fully exit and restart Pi after updating the package.
 
+### Release verification
+
+- Release source: [`67ebac4`](https://github.com/kerolt/pi-one-ui/commit/67ebac41e1aeaaab51e11257de17134fb40ab63e). [CI](https://github.com/kerolt/pi-one-ui/actions/runs/36365224155) and [Publish](https://github.com/kerolt/pi-one-ui/actions/runs/36365227223) completed successfully; local and CI `npm run verify` passed 1,185 tests across 70 files, and `npm run pack:check` confirmed 124 package files.
+- Real Pi regular/fullscreen TUI probes passed, covering settings, Context Inspector, Editor input and focus, presets, reload, session tree, compaction, session replacement, input listeners, and third-party Editor ownership. User-specific terminal, theme, and extension combinations still require manual verification.
+- At publication, npm `latest` resolved to `0.7.2` with the matching release `gitHead` and package SHA-1 `730dc4a0e4713e26cef4ea3b0c83c122f8b83bc6`; the downloaded package file list and contents matched the release commit. The [provenance statement](https://registry.npmjs.org/-/npm/v1/attestations/pi-one-ui@0.7.2) was published at [Sigstore log index 2981051472](https://search.sigstore.dev/?logIndex=2981051472).
+
 ## [0.7.1] - 2026-09-21
 
 ### Changed
