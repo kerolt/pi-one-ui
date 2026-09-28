@@ -825,3 +825,112 @@ describe("minimalist editor frame", () => {
     },
   );
 });
+
+describe("autocomplete selection color", () => {
+  const selectedText = "→ settings     Open settings";
+  const selectedRow = `\x1b[35m${selectedText}\x1b[39m`;
+  const unselectedRow = "  files        \x1b[37mSearch files\x1b[39m";
+
+  function paletteTheme(): Theme {
+    const ansiCodes: Record<string, number> = {
+      accent: 35,
+      borderMuted: 36,
+      muted: 37,
+      warning: 33,
+      syntaxKeyword: 34,
+      syntaxFunction: 94,
+    };
+    return {
+      ...theme(),
+      fg(color: string, text: string) {
+        return `\x1b[${ansiCodes[color] ?? 90}m${text}\x1b[39m`;
+      },
+    } as Theme;
+  }
+
+  function frame(
+    overrides: EditorPreviewOptions = {},
+    metadata: MinimalistEditorMetadata = { cwd: "" },
+    borderColor?: (text: string) => string,
+    autocompleteLines: string[] = [selectedRow, unselectedRow],
+    uiTheme: Theme = paletteTheme(),
+  ) {
+    return renderMinimalistFrame({
+      width: 72,
+      editorLines: ["draft"],
+      autocompleteLines,
+      inputText: "draft",
+      metadata,
+      uiTheme,
+      config: config(overrides),
+      borderColor,
+    });
+  }
+
+  function selectedLine(lines: string[]): string {
+    return lines.find((line) => line.includes("→ settings")) ?? "";
+  }
+
+  it("repaints the selected row with the static frame border color", () => {
+    const lines = frame({
+      colors: { ...defaultConfig.colors, editorBorder: "borderMuted" },
+    });
+    expect(selectedLine(lines)).toContain(`\x1b[36m${selectedText}`);
+    expect(selectedLine(lines)).not.toContain("\x1b[35m");
+    expect(lines.join("\n")).toContain(unselectedRow);
+    expect(lines.every((line) => visibleWidth(line) <= 72)).toBe(true);
+  });
+
+  it("follows configured adaptive thinking colors for the selected row", () => {
+    const lines = frame(
+      {
+        colors: {
+          ...defaultConfig.colors,
+          editorThinkingHigh: "#00ffff",
+        },
+        editorBorderColorMode: "adaptive",
+      },
+      { cwd: "", thinkingLevel: "high" },
+      (text) => `\x1b[31m${text}\x1b[0m`,
+    );
+    expect(selectedLine(lines)).toContain(
+      `\x1b[38;2;0;255;255m${selectedText}`,
+    );
+    expect(selectedLine(lines)).not.toContain("\x1b[31m");
+  });
+
+  it("follows the native effort border for the selected row", () => {
+    const lines = frame(
+      { editorBorderColorMode: "adaptive" },
+      { cwd: "", thinkingLevel: "high" },
+      (text) => `\x1b[36m${text}\x1b[0m`,
+    );
+    expect(selectedLine(lines)).toContain(`\x1b[36m${selectedText}`);
+  });
+
+  it("repaints an unwrapped selected row without a native color prefix", () => {
+    const calls: Array<{ color: string; text: string }> = [];
+    frame(
+      { colors: { ...defaultConfig.colors, editorBorder: "borderMuted" } },
+      { cwd: "" },
+      undefined,
+      [selectedText],
+      recordingTheme(calls),
+    );
+    expect(calls).toContainEqual({
+      color: "borderMuted",
+      text: selectedText,
+    });
+  });
+
+  it("repaints a selected row wrapped in C1 CSI parameters", () => {
+    const lines = frame(
+      { colors: { ...defaultConfig.colors, editorBorder: "borderMuted" } },
+      { cwd: "" },
+      undefined,
+      [`\u009b35m${selectedText}\x1b[39m`],
+    );
+    expect(selectedLine(lines)).toContain(`\x1b[36m${selectedText}`);
+    expect(selectedLine(lines)).not.toContain("\u009b");
+  });
+});

@@ -92,9 +92,11 @@
 
 ### 2.3 边框颜色
 
-- `static`：边框用 `colors.editorBorder`（未配置回退主题 `editorBorder` token → 默认 `borderMuted`）。
-- `adaptive`：边框优先级为 `colors.editorThinking*`（按当前档位逐级查找，`editorThinking` 兜底）→ Pi 原生 effort 边框 → 默认；thinking 标签跟随边框色。
-- `style: "off"` 时只有显式配置 `colors.editorBorder` 才会覆盖原生边框，否则保持 Pi 原生 effort/主题变色。
+编辑器外框与补全下拉选中项使用同一条颜色链：
+
+- `static`：边框与补全下拉选中项用 `colors.editorBorder`（未配置回退主题 `editorBorder` token → 默认 `borderMuted`）。
+- `adaptive`：边框优先级为 `colors.editorThinking*`（按当前档位逐级查找，`editorThinking` 兜底）→ Pi 原生 effort 边框 → 默认；thinking 标签与补全下拉选中项跟随边框色。
+- `style: "off"` 时只有显式配置 `colors.editorBorder` 才会覆盖原生边框，否则保持 Pi 原生 effort/主题变色；补全下拉选中项保持 Pi 原生选中色。
 
 示例：自适应边框分档
 

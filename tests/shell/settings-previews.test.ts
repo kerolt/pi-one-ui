@@ -15,18 +15,21 @@ import {
   SETTINGS_PREVIEW_MAX_WIDTH,
 } from "../../extensions/layouts/overlay/settings-previews";
 
+function colorIndex(color: string, offset = 0): number {
+  return (
+    ([...color].reduce(
+      (total, character) => total + character.charCodeAt(0),
+      0,
+    ) +
+      offset) %
+    200
+  );
+}
+
 function theme(offset = 0): Theme {
   return {
-    fg: (color: string, text: string) => {
-      const index =
-        ([...color].reduce(
-          (total, character) => total + character.charCodeAt(0),
-          0,
-        ) +
-          offset) %
-        200;
-      return `\x1b[38;5;${index}m${text}\x1b[0m`;
-    },
+    fg: (color: string, text: string) =>
+      `\x1b[38;5;${colorIndex(color, offset)}m${text}\x1b[0m`,
     bg: (_color: string, text: string) => `\x1b[48;5;234m${text}\x1b[49m`,
     getBgAnsi: () => "\x1b[48;5;234m",
     bold: (text: string) => `\x1b[1m${text}\x1b[0m`,
@@ -143,6 +146,15 @@ describe("settings previews", () => {
     const staticBorder = render();
     current.components.editor.borderColorMode = "adaptive";
     expect(render()).not.toBe(staticBorder);
+  });
+
+  it("paints the selected completion row with the Editor frame color", () => {
+    const rows = renderEditorSettingsPreview(config(), theme(), 72);
+    const selected = rows.find((row) => row.includes("→ settings")) ?? "";
+    expect(selected).toContain(
+      `\x1b[38;5;${colorIndex("borderMuted")}m→ settings`,
+    );
+    expect(selected).not.toContain(`\x1b[38;5;${colorIndex("accent")}m`);
   });
 
   it("responds to every applicable Minimalist setting", () => {

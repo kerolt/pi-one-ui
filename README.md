@@ -158,7 +158,7 @@ pi update npm:pi-one-ui
   - 修改保存后下次打开 `/oneui` 即生效，无需 `/reload`。
 - **颜色体系与主题定制**：详见 [Editor 颜色配置说明 (docs/editor-colors.md)](./docs/editor-colors.md)
   - 所有颜色统一按 Theme 语义解释，优先解析为当前主题语义 Token（随主题自动切换），ANSI 色名自动映射为语义色（如 `red` 对应 `error`）；如需固定色彩，可直接指定 Hex、256 色索引或 `fg:`/`bg:` 前缀。
-  - 支持完整的 Thinking 思考档位（Low 至 Max）自适应边框与标签分级配色。
+  - 支持完整的 Thinking 思考档位（Low 至 Max）自适应边框与标签分级配色，补全下拉选中项与编辑器外框同色，跟随同一条颜色链。
 - **历史版本迁移**：旧版升级带来的字段收敛（如 `opencode` 样式统一合并入 `minimalist`、`colorSource` 双模式移除等）参见 [docs/configuration.md 变更与迁移节](./docs/configuration.md#6-变更与迁移)。
 
 ## 上游来源与项目演进

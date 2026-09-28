@@ -158,7 +158,7 @@ To keep the configuration section clean and focused, in-depth options, template 
   - Saved changes apply the next time `/oneui` opens; no `/reload` needed.
 - **Color system & theme customization**: see [Editor Colors Reference (docs/editor-colors.md)](./docs/editor-colors.md)
   - All colors resolve through unified theme semantics. Configured `colors.*` values resolve as theme tokens (adapting automatically across themes), while ANSI names map to semantic tokens (e.g. `red` to `error`). Fixed terminal colors can be specified using hex codes, 256-color indexes, or `fg:`/`bg:` prefixes.
-  - Full support for adaptive thinking-effort border colors (from Low to Max) and labels.
+  - Full support for adaptive thinking-effort border colors (from Low to Max) and labels. The completion menu selection shares the editor frame color and follows the same chain.
 - **Migration from legacy versions**: Field cleanups from 0.5.x/0.6.0 (such as merging `opencode` into `minimalist`, or removing `colorSource`) are covered in [docs/configuration.md: Changes and Migration](./docs/configuration.md#6-变更与迁移).
 
 ## Upstream origins and project evolution

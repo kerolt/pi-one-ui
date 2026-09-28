@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The Editor completion dropdown now paints the selected row with the editor frame color, so the selection follows the same static/adaptive thinking-level chain as the frame border while unselected rows keep Pi's native styling.
+
 ### Fixed
 
 - Keep the pending tool loading animation alive during long-running commands: the updateDisplay render cache now rebuilds pending tool rows so each animation tick re-enters the renderer, preventing the spinner from freezing while a command is still executing.

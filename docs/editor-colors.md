@@ -51,13 +51,13 @@
 | 字段 | 作用 | 未配置时的回退 |
 |---|---|---|
 | `cwd` | 右下角当前目录标签 | 主题 `cwd` token → 原生默认（bold + 主题 `syntaxFunction` 语义色） |
-| `editorBorder` | 边框颜色（`static` 模式） | 主题 `editorBorder` token → 原生默认（主题 `borderMuted` 语义色） |
+| `editorBorder` | 编辑器外框与补全下拉选中项颜色（`static` 模式） | 主题 `editorBorder` token → 原生默认（主题 `borderMuted` 语义色） |
 | `editorModel` | 模型名标签（Minimalist 帧内） | 主题 `editorModel` token → 原生默认（主题 `syntaxKeyword` 语义色） |
 | `editorProvider` | metadata 模板 `$provider` | 统一回落主题 `text` |
 | `editorGitBranch` | 分支名标签 | 主题 `bold syntaxKeyword` |
 | `editorAccent` | Rail 竖条与左侧强调 | 主题 `accent` |
 | `editorThinking` | thinking 标签通用色 | 主题 `warning` |
-| `editorThinkingMinimal` / `Low` / `Medium` / `High` / `Xhigh` / `Max` | thinking 分档颜色，优先于 `editorThinking`；adaptive 模式下同时作用于边框 | 同 `editorThinking` |
+| `editorThinkingMinimal` / `Low` / `Medium` / `High` / `Xhigh` / `Max` | thinking 分档颜色，优先于 `editorThinking`；adaptive 模式下同时作用于边框与补全下拉选中项 | 同 `editorThinking` |
 
 ### 2.2 共用字段（有内置默认值）
 
@@ -89,11 +89,11 @@
 
 ## 4. 边框与 thinking 档位
 
-边框行为由 `borderColorMode` 决定：
+编辑器外框、adaptive 模式下的 thinking 标签和补全下拉的选中项共用同一条颜色链。`borderColorMode` 决定这条链的行为：
 
 ### static（固定色）
 
-边框使用 `colors.editorBorder`（未配置时的回退见第 2 节）。thinking 档位不影响边框，但 thinking 标签仍按第 2 节规则着色。
+边框与补全下拉选中项使用 `colors.editorBorder`（未配置时的回退见第 2 节）。thinking 档位不影响边框，但 thinking 标签仍按第 2 节规则着色。
 
 ### adaptive（随档位变化）
 
@@ -105,7 +105,7 @@ colors.editorThinking*（按当前档位逐级查找，editorThinking 兜底）
   → 默认（主题 border 或 borderMuted 语义色）
 ```
 
-thinking 标签在 adaptive 模式下跟随边框色。`colors.editorThinking*` 在 adaptive 模式下对所有人生效，示例：
+thinking 标签与补全下拉选中项在 adaptive 模式下跟随边框色。`colors.editorThinking*` 在 adaptive 模式下对所有人生效，示例：
 
 ```json
 {
@@ -123,7 +123,7 @@ thinking 标签在 adaptive 模式下跟随边框色。`colors.editorThinking*` 
 ## 5. style 开关：on 与 off
 
 - `style: "on"`：Minimalist 装饰生效，边框与标签颜色按第 2~4 节规则。
-- `style: "off"`：恢复 Pi 原生编辑器。仅当**显式配置**了 `colors.editorBorder` 时，边框按 theme 语义解释并覆盖原生边框；未配置则完全不动 Pi 原生 effort/主题变色。
+- `style: "off"`：恢复 Pi 原生编辑器。仅当**显式配置**了 `colors.editorBorder` 时，边框按 theme 语义解释并覆盖原生边框；未配置则完全不动 Pi 原生 effort/主题变色。补全下拉选中项保持 Pi 原生选中色。
 
 ## 6. 完整配置示例
 

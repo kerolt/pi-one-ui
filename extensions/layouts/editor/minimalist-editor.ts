@@ -59,6 +59,22 @@ function clampLines(lines: string[], width: number): string[] {
   return lines.map((line) => truncateToWidth(line, Math.max(0, width), ""));
 }
 
+/** 原生 SelectList 选中行的 `→ ` 标记；前置 SGR 是 Pi 的 selectedText 颜色。 */
+const NATIVE_SELECTED_AUTOCOMPLETE_ROW = /^((?:(?:\x1b\[|\u009b)[0-9:;]*m)*)→ /;
+
+/**
+ * 用帧边框色重绘原生下拉选中行：去掉 Pi 的 selectedText 颜色序列，
+ * 使选中项与编辑器外框共用同一条 static/adaptive 颜色链。
+ */
+function renderSelectedAutocompleteRow(
+  line: string,
+  renderBorder: (text: string) => string,
+): string {
+  const match = NATIVE_SELECTED_AUTOCOMPLETE_ROW.exec(line);
+  if (!match) return line;
+  return renderBorder(line.slice((match[1] ?? "").length));
+}
+
 export function renderFramedAutocompleteRows({
   width,
   lines,
@@ -75,7 +91,7 @@ export function renderFramedAutocompleteRows({
       `${renderBorder("├")}${renderBorder("─".repeat(width - 2))}${renderBorder("┤")}`,
       ...lines.map(
         (line) =>
-          `${renderBorder("│")} ${fillLine(line, contentWidth)} ${renderBorder("│")}`,
+          `${renderBorder("│")} ${fillLine(renderSelectedAutocompleteRow(line, renderBorder), contentWidth)} ${renderBorder("│")}`,
       ),
     ],
     width,
