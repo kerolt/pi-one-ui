@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-09-28
+
 ### Changed
 
 - The Editor completion dropdown now paints the selected row with the editor frame color, so the selection follows the same static/adaptive thinking-level chain as the frame border while unselected rows keep Pi's native styling.
@@ -13,6 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Keep the pending tool loading animation alive during long-running commands: the updateDisplay render cache now rebuilds pending tool rows so each animation tick re-enters the renderer, preventing the spinner from freezing while a command is still executing.
+
+### Migration
+
+- No configuration migration is required. Existing canonical v1 files and command names remain supported.
+- For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.7.2`. Fully exit and restart Pi after updating the package.
 
 ## [0.7.1] - 2026-09-21
 
@@ -167,7 +174,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/kerolt/pi-one-ui/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/kerolt/pi-one-ui/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/kerolt/pi-one-ui/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/kerolt/pi-one-ui/compare/v0.6.0...v0.6.1

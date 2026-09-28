@@ -76,11 +76,11 @@ Then open the unified settings panel:
 /oneui
 ```
 
-### Upgrading to 0.7.1
+### Upgrading to 0.7.2
 
-This release centralizes component composition, settings application, and session lifecycle management. Each preset saves and applies all related component settings in one update, Header settings apply immediately, and session replacement cleans up overlays and input listeners.
+This release paints the Editor completion dropdown selection with the editor frame color so it follows the adaptive thinking-level chain, and keeps the tool loading animation alive during long-running commands.
 
-Existing canonical v1 configurations and commands remain compatible; no migration is required. Corrupt or unreadable configuration files now produce an explicit error.
+Existing canonical v1 configurations and commands remain compatible; no migration is required.
 
 For an unpinned npm installation, run:
 
@@ -88,7 +88,7 @@ For an unpinned npm installation, run:
 pi update npm:pi-one-ui
 ```
 
-If your installation pins a version, run `pi install npm:pi-one-ui@0.7.1` to update the pin. Fully exit and restart Pi after updating the package.
+If your installation pins a version, run `pi install npm:pi-one-ui@0.7.2` to update the pin. Fully exit and restart Pi after updating the package.
 
 ## Configuration
 

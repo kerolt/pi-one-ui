@@ -76,11 +76,11 @@ pi install git:github.com/kerolt/pi-one-ui
 /oneui
 ```
 
-### 升级到 0.7.1
+### 升级到 0.7.2
 
-本次集中管理组件装配、设置应用与会话生命周期。Preset 会一次保存并应用所有相关组件配置，Header 设置即时生效；会话切换时会清理 Overlay 与输入监听。
+本次统一编辑器补全下拉选中项与编辑器外框的颜色，选中项随 thinking 档位自适应变化；同时修复长时间命令执行期间工具加载动画停止刷新的问题。
 
-现有 canonical v1 配置和命令保持兼容，无需迁移。配置文件损坏或无法读取时会明确报告错误。
+现有 canonical v1 配置和命令保持兼容，无需迁移。
 
 未固定版本的 npm 安装可执行：
 
@@ -88,7 +88,7 @@ pi install git:github.com/kerolt/pi-one-ui
 pi update npm:pi-one-ui
 ```
 
-若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.7.1` 更新版本指定。更新安装包后，完整退出并重启 Pi。
+若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.7.2` 更新版本指定。更新安装包后，完整退出并重启 Pi。
 
 ## 配置
 
