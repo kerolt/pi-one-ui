@@ -80,6 +80,25 @@ function fingerprintOf(
   ];
 }
 
+/**
+ * 工具行是否处于「loading 图标动画应当持续」的状态。
+ *
+ * 与 default-mode renderCall 中 `scheduleAnimation` 的条件保持一致
+ * （本函数必须是其超集）：动画 tick 经 ctx.invalidate → updateDisplay
+ * 回到渲染路径，缓存命中若跳过重建，renderCall 不会再执行，共享 timer
+ * 不再排期，长命令期间 loading 图标就会冻结在当前帧。
+ */
+function schedulesPendingAnimation(component: any): boolean {
+  const visualState = component?.rendererState?.ccstyleToolVisualState as
+    | string
+    | undefined;
+  const pending =
+    visualState === "pending" ||
+    (!visualState &&
+      (component.isPartial === true || component.executionStarted === true));
+  return Boolean(pending && component.executionStarted === true);
+}
+
 function componentsOf(component: any): [unknown, unknown] {
   return [component.callRendererComponent, component.resultRendererComponent];
 }
@@ -291,6 +310,12 @@ export function installToggleRenderCache(): ToggleRenderCacheHooks {
     if (inputsMatch && entry) {
       if (entry.current === slotKey) {
         if (sameComponents(slot.components, componentsNow)) {
+          // pending 行必须重建：renderCall 既刷新 loading 图标帧，也给共享
+          // 动画 timer 续期；指纹未变时跳过重建会中断动画循环。
+          if (schedulesPendingAnimation(self)) {
+            rebuild();
+            return;
+          }
           // 容器内容仍是该槽，无重建必要；仅恢复可能被外部改写的派生字段。
           self.hideComponent = slot.hideComponent;
           return;

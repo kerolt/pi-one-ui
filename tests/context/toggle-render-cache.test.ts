@@ -6,11 +6,16 @@ import {
   ToolExecutionComponent,
 } from "@earendil-works/pi-coding-agent";
 import { Container, Text } from "@earendil-works/pi-tui";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import { config } from "../../extensions/app/config/renderer.ts";
 import { installToolGrouping } from "../../extensions/layouts/context/renderer/tool/grouping.ts";
+import {
+  clearAllAnimations,
+  scheduleAnimation,
+} from "../../extensions/layouts/context/renderer/tool/result.ts";
 import { installToggleRenderCache } from "../../extensions/layouts/context/renderer/tool/toggle-render-cache.ts";
+import { toolLoadingIcon } from "../../extensions/tools/tool-loading-icon.ts";
 
 initTheme("dark");
 
@@ -459,6 +464,58 @@ test("pending streaming expand toggles without failing animation scheduling", ()
     expect(resultCalls).toBe(3);
     expect(renderText(t)).toContain("p-collapsed");
   } finally {
+    restore();
+  }
+});
+
+test("pending tool keeps the loading animation loop alive across animation ticks", () => {
+  const { hooks, restore } = installHooks();
+  // 清理同文件其它用例遗留的共享动画 timer，避免其占用调度槽位。
+  clearAllAnimations();
+  vi.useFakeTimers();
+  try {
+    const t = new ToolExecutionComponent(
+      "bash",
+      "b-sleep",
+      { command: "sleep 30" },
+      {},
+      undefined,
+      ui,
+      process.cwd(),
+    ) as any;
+    let callCalls = 0;
+    t.getCallRenderer = () => {
+      callCalls++;
+      return (_args: unknown, _theme: unknown, ctx: any) => {
+        // 复刻 default-mode renderCall 的动画调度副作用：pending 且
+        // executionStarted 时登记共享 80ms 动画 timer。
+        if (ctx?.executionStarted && (ctx.isPartial || ctx.executionStarted)) {
+          scheduleAnimation(ctx);
+        }
+        return new Text(toolLoadingIcon(), 0, 0);
+      };
+    };
+    t.getResultRenderer = () => () => new Text("Pending", 0, 0);
+
+    // executionStarted 翻转 → 指纹失效 → 重建 → 首次调度动画。
+    t.markExecutionStarted();
+    expect(callCalls).toBe(1);
+    const firstFrame = renderText(t);
+
+    // 动画 tick：共享 timer → ctx.invalidate → updateDisplay。即使渲染
+    // 指纹未变也必须重新进入 renderCall：既刷新 loading 帧，又给共享
+    // timer 续期。跳过重建会让 timer 停止排期，长命令期间图标冻结。
+    vi.advanceTimersByTime(80);
+    expect(callCalls).toBe(2);
+    expect(renderText(t)).not.toBe(firstFrame);
+
+    vi.advanceTimersByTime(80);
+    expect(callCalls).toBe(3);
+    vi.advanceTimersByTime(80);
+    expect(callCalls).toBe(4);
+  } finally {
+    clearAllAnimations();
+    vi.useRealTimers();
     restore();
   }
 });
