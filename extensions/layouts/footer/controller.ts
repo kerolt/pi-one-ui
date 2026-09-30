@@ -15,7 +15,7 @@ import { buildSessionDurationLabel } from "../../shared/format.ts";
 import { activeFooterReferences } from "./data.ts";
 import { installFooter, installHiddenFooter } from "./footer.ts";
 
-const POLISHED_FOOTER_OWNER = Symbol.for("pi-zentui.footer-owner");
+const POLISHED_FOOTER_OWNER = Symbol.for("pi-one-ui.footer-owner");
 
 type FooterKind = "starship" | "hidden";
 

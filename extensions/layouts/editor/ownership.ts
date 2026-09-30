@@ -1,19 +1,19 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 /**
- * Symbol used to identify factories created by the Editor layout. The registry
- * string keeps the historical `pi-zentui` prefix on purpose: wrappers installed
- * before a reload still carry it, and both sides must agree on the same key.
+ * Symbol used to identify factories created by the Editor layout. All wrappers
+ * and marks live in one process, so the key only has to be stable across
+ * `/reload` within that process.
  */
-export const POLISHED_EDITOR_FACTORY = Symbol.for("pi-zentui.editor-factory");
+export const POLISHED_EDITOR_FACTORY = Symbol.for("pi-one-ui.editor-factory");
 
 /** Symbol used to retain the wrapped third-party editor factory. */
 export const POLISHED_EDITOR_BASE_FACTORY = Symbol.for(
-  "pi-zentui.editor-base-factory",
+  "pi-one-ui.editor-base-factory",
 );
 
 /** Symbol used to identify the active Editor layout owner. */
-export const POLISHED_EDITOR_OWNER = Symbol.for("pi-zentui.editor-owner");
+export const POLISHED_EDITOR_OWNER = Symbol.for("pi-one-ui.editor-owner");
 
 export type EditorFactory = NonNullable<
   Parameters<ExtensionContext["ui"]["setEditorComponent"]>[0]

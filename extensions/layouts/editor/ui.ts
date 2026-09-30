@@ -25,8 +25,6 @@ import {
   renderMinimalistFrame,
 } from "./minimalist-editor.ts";
 
-const LEGACY_SPLIT_POLISHED_FRAME = Symbol.for("pi-zentui.polished-frame");
-
 export type ViewportCounts = {
   above?: string;
   below?: string;
@@ -397,7 +395,6 @@ function splitPolishedFrame(
 }
 
 function inspectPolishedFrameProvenance(
-  base: WrappedEditor,
   rendered: string[],
   config: PolishedTuiConfig,
   uiTheme: Theme,
@@ -411,7 +408,6 @@ function inspectPolishedFrameProvenance(
   const ownedFrame = provenanceMatches ? provenance?.split : undefined;
   const unsafe =
     Boolean(provenance && !provenanceMatches) ||
-    LEGACY_SPLIT_POLISHED_FRAME in base ||
     (!ownedFrame && Boolean(splitPolishedFrame(rendered, config, uiTheme)));
   return { safe: !unsafe, ownedFrame };
 }
@@ -702,7 +698,6 @@ export class WrappedPolishedEditor implements EditorComponent {
     }
     try {
       const provenance = inspectPolishedFrameProvenance(
-        this.base,
         captured.value,
         config,
         this.uiTheme,

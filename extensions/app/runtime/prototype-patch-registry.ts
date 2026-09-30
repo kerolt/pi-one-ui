@@ -1,10 +1,9 @@
 /**
- * Global registry slot for prototype patches. The registry string keeps the
- * historical `pi-zentui` prefix on purpose: wrappers installed before a reload
- * still read that key, so both sides must agree on the same symbol.
+ * Global registry slot for prototype patches. The key is only shared by module
+ * instances of the same process, so it has to stay stable across `/reload`.
  */
 export const POLISHED_PROTOTYPE_PATCH_REGISTRY = Symbol.for(
-  "pi-zentui.prototype-patch-registry",
+  "pi-one-ui.prototype-patch-registry",
 );
 
 type PrototypePatchAdapter =
