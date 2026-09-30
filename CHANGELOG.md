@@ -26,6 +26,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - After updating the package, fully exit and restart Pi instead of running `/reload`: the cross-reload patch coordination keys were renamed, so an in-place reload would leave the previous instance's marks unrecognized until the process restarts.
 - For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.8.0`.
 
+### Release verification
+
+- Release source: [`e178ac3`](https://github.com/kerolt/pi-one-ui/commit/e178ac3cdef113ea3991996ea711e5be859aef2b). [CI](https://github.com/kerolt/pi-one-ui/actions/runs/36699814167) and [Publish](https://github.com/kerolt/pi-one-ui/actions/runs/36699814519) completed successfully; local and CI `npm run verify` passed 1,190 tests across 70 files, and `npm run pack:check` confirmed 124 package files.
+- npm `latest` resolves to `0.8.0`, published `2026-09-30T10:04:37.491Z` with `gitHead` `e178ac3cdef113ea3991996ea711e5be859aef2b`, package SHA-1 `cf0b057b31feb86fd5e6b8a9de968977b660b526`, integrity `sha512-q39+leDnJf2iSF09OUDbPrRVfrLW1Q+olLIRuhB0uU/6UISnKzHXUyVgzC6mFd2D8spzzDQSPS4LtkxnSoMttw==`, and a published provenance statement (Sigstore log index [3016341299](https://search.sigstore.dev/?logIndex=3016341299)).
+- Real Pi regular/fullscreen TUI probes were not run for this release, so terminal, theme, reload, and third-party Editor combinations still require manual verification.
+
 ## [0.7.2] - 2026-09-28
 
 ### Changed
