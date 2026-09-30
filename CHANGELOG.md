@@ -6,18 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-30
+
 ### Changed
 
-- Rename the remaining persisted `zentui` values: `components.selectorBorders.style` is now `one-ui`, extension status `colorModes` are `themed` / `original`, and the working-line turn summary entry type is `one-ui-turn-summary`. Existing configuration files keep working: legacy `zentui` values are read as their replacements and rewritten on the next save, and sessions that already contain `zentui-turn-summary` entries still render.
-- Simplify color configuration: `colors.*` now accepts Pi official theme tokens defined in theme files' `colors` field and explicit terminal colors; bare terminal color names are rejected. Pi-one-ui custom keys such as `cwd`, `editorModel`, and `editorBorder` are documented as extensions with built-in themes supporting them. The reference is updated in both Chinese and English README.
-
-### Migration
-
-- No manual edit is required for the renamed values. The next configuration save rewrites `selectorBorders.style` and extension status color modes to the new names; turn summaries written by older versions continue to render from history.
+- Require Pi `>= 0.99.0`: the Editor reads a theme's `cwd`, `editorModel`, and `editorBorder` keys from the palette shape Pi exposes since 0.99, and development, tests, and type checking target that version.
+- Simplify color configuration: `colors.*` now accepts Pi official theme tokens defined in a theme file's `colors` field and explicit terminal colors; bare terminal color names are rejected, so write `fg:purple`, `fg:red`, a hex value, or a 256-color index for fixed terminal colors. Pi-one-ui custom keys such as `cwd`, `editorModel`, and `editorBorder` are documented as extensions that the shipped themes define. The reference is updated in both Chinese and English README.
+- Rename the remaining persisted `zentui` values: `components.selectorBorders.style` is now `one-ui`, extension status `colorModes` are `themed` / `original`, and the working-line turn summary entry type is `one-ui-turn-summary`.
 
 ### Fixed
 
 - Read Editor theme tokens from the palette field exposed by the running Pi version. Pi 0.99 renamed the theme palette map from `fgColors` to `fgAnsi` and added a resolved `colors` record, so the Editor model label, cwd label, and static border now pick up a theme's `editorModel` / `cwd` / `editorBorder` colors instead of falling back to `syntaxKeyword` / `syntaxFunction` / `borderMuted`.
+
+### Migration
+
+- Install Pi `>= 0.99.0` before updating this package. Earlier Pi releases keep working only through the previous package version.
+- Replace bare terminal color names in `colors.*` with an explicit form: `purple` becomes `fg:purple`, `red` becomes `fg:red`, and fixed colors can also use hex or a 256-color index. Values that no longer validate are dropped at load and fall back to the built-in default, and the file itself is not rewritten.
+- No manual edit is required for the renamed `zentui` values. The next configuration save rewrites `selectorBorders.style` and extension status color modes to the new names, and turn summaries written by older versions continue to render from history.
+- After updating the package, fully exit and restart Pi instead of running `/reload`: the cross-reload patch coordination keys were renamed, so an in-place reload would leave the previous instance's marks unrecognized until the process restarts.
+- For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.8.0`.
 
 ## [0.7.2] - 2026-09-28
 
@@ -193,7 +200,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/kerolt/pi-one-ui/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/kerolt/pi-one-ui/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/kerolt/pi-one-ui/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/kerolt/pi-one-ui/compare/v0.6.1...v0.7.0

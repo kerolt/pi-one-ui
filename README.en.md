@@ -50,7 +50,7 @@ Header → Context → WorkingLine → Editor → Footer
 ### Requirements
 
 - Node.js `>=22.19.0`
-- Pi and related runtime packages `>=0.84.0`
+- Pi and related runtime packages `>=0.99.0`
 
 ### Install from npm
 
@@ -76,11 +76,9 @@ Then open the unified settings panel:
 /oneui
 ```
 
-### Upgrading to 0.7.2
+### Upgrading to 0.8.0
 
-This release paints the Editor completion dropdown selection with the editor frame color so it follows the adaptive thinking-level chain, and keeps the tool loading animation alive during long-running commands.
-
-Existing canonical v1 configurations and commands remain compatible; no migration is required.
+Pi `>= 0.99.0` is now required. The Editor model label, cwd label, and static border read a theme's `editorModel` / `cwd` / `editorBorder` keys through the palette shape the current Pi exposes; `colors.*` accepts Pi official theme tokens and explicit terminal colors only, so bare terminal color names such as `purple` must be written as `fg:purple`; and the legacy `zentui` values in `selectorBorders.style`, extension status `colorModes`, and the turn summary entry type use new names, with legacy values still read for compatibility.
 
 For an unpinned npm installation, run:
 
@@ -88,7 +86,7 @@ For an unpinned npm installation, run:
 pi update npm:pi-one-ui
 ```
 
-If your installation pins a version, run `pi install npm:pi-one-ui@0.7.2` to update the pin. Fully exit and restart Pi after updating the package.
+If your installation pins a version, run `pi install npm:pi-one-ui@0.8.0` to update the pin. Fully exit and restart Pi after updating the package instead of running `/reload`: the cross-reload patch coordination keys were renamed, so an in-place reload would leave the previous instance's marks unrecognized.
 
 ## Configuration
 

@@ -50,7 +50,7 @@ Header → Context → WorkingLine → Editor → Footer
 ### 环境要求
 
 - Node.js `>=22.19.0`
-- Pi 及其相关运行时包 `>=0.84.0`
+- Pi 及其相关运行时包 `>=0.99.0`
 
 ### 从 npm 安装
 
@@ -76,11 +76,9 @@ pi install git:github.com/kerolt/pi-one-ui
 /oneui
 ```
 
-### 升级到 0.7.2
+### 升级到 0.8.0
 
-本次统一编辑器补全下拉选中项与编辑器外框的颜色，选中项随 thinking 档位自适应变化；同时修复长时间命令执行期间工具加载动画停止刷新的问题。
-
-现有 canonical v1 配置和命令保持兼容，无需迁移。
+本次要求 Pi `>= 0.99.0`。Editor 的模型名、目录标签与 static 外框改为从当前 Pi 的调色板结构读取主题里的 `editorModel` / `cwd` / `editorBorder` 键；`colors.*` 收敛为 Pi 官方主题 token 与显式终端色两种写法，裸终端色名（如 `purple`）不再接受，需写成 `fg:purple`；`selectorBorders.style`、扩展状态 `colorModes` 与轮次摘要条目类型中的旧 `zentui` 值改为新名称，读取端仍兼容旧值。
 
 未固定版本的 npm 安装可执行：
 
@@ -88,7 +86,7 @@ pi install git:github.com/kerolt/pi-one-ui
 pi update npm:pi-one-ui
 ```
 
-若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.7.2` 更新版本指定。更新安装包后，完整退出并重启 Pi。
+若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.8.0` 更新版本指定。更新安装包后，完整退出并重启 Pi，不要使用 `/reload`：跨 reload 的补丁协调键已改名，直接重载会让旧实例留下的标记无法被识别。
 
 ## 配置
 
