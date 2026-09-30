@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Simplify color configuration: `colors.*` now accepts Pi official theme tokens defined in theme files' `colors` field and explicit terminal colors; bare terminal color names are rejected. Pi-one-ui custom keys such as `cwd`, `editorModel`, and `editorBorder` are documented as extensions with built-in themes supporting them. The reference is updated in both Chinese and English README.
+
 ### Fixed
 
 - Read Editor theme tokens from the palette field exposed by the running Pi version. Pi 0.99 renamed the theme palette map from `fgColors` to `fgAnsi` and added a resolved `colors` record, so the Editor model label, cwd label, and static border now pick up a theme's `editorModel` / `cwd` / `editorBorder` colors instead of falling back to `syntaxKeyword` / `syntaxFunction` / `borderMuted`.

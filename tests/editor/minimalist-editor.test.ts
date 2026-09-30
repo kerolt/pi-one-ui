@@ -204,7 +204,6 @@ describe("minimalist editor frame", () => {
         { color: "syntaxKeyword", text: "model-x" },
         { color: "warning", text: "high" },
         { color: "syntaxKeyword", text: "main" },
-        { color: "syntaxFunction", text: "project" },
       ]),
     );
     const branchColor = calls.find(({ text }) => text === "main")?.color;
@@ -218,7 +217,7 @@ describe("minimalist editor frame", () => {
     );
   });
 
-  it.each(["bold purple", "success"] as const)(
+  it.each(["bold syntaxKeyword", "success"] as const)(
     "ignores the removed gitBranch fallback color %s",
     (gitBranch) => {
       const calls: Array<{ color: string; text: string }> = [];
@@ -244,7 +243,7 @@ describe("minimalist editor frame", () => {
     const colors = {
       ...defaultConfig.colors,
       cwd: "accent",
-      gitBranch: "bold purple",
+      gitBranch: "bold syntaxKeyword",
       editorGitBranch: "success",
       cost: "warning",
       editorModel: "text",
@@ -298,7 +297,6 @@ describe("minimalist editor frame", () => {
         { color: "success", text: "$0.123" },
         { color: "warning", text: "high" },
         { color: "syntaxKeyword", text: "main" },
-        { color: "syntaxFunction", text: "project" },
         { color: "syntaxKeyword", text: "model-x" },
       ]),
     );
@@ -327,7 +325,7 @@ describe("minimalist editor frame", () => {
       uiTheme: recordingTheme(calls),
       config: config({ colors: colorsWithoutEditorBranch }),
     });
-    // 未配置 editorGitBranch → 回退 bold syntaxKeyword；ANSI 色名映射到语义 token。
+    // 未配置 editorGitBranch → 回退 bold syntaxKeyword；当前配置值走主题 token。
     expect(calls).toEqual(
       expect.arrayContaining([
         { color: "syntaxKeyword", text: "main" },
@@ -345,7 +343,7 @@ describe("minimalist editor frame", () => {
       uiTheme: recordingTheme(canonicalCalls),
       config: config({
         colors: mergeConfig({
-          colors: { gitBranch: "cyan", editorGitBranch: "bright-green" },
+          colors: { gitBranch: "fg:cyan", editorGitBranch: "success" },
         }).colors,
       }),
     });

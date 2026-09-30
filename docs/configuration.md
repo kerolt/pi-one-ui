@@ -105,10 +105,10 @@
   "version": 1,
   "components": { "editor": { "borderColorMode": "adaptive" } },
   "colors": {
-    "editorThinkingLow": "green",
-    "editorThinkingMedium": "cyan",
+    "editorThinkingLow": "fg:cyan",
+    "editorThinkingMedium": "fg:purple",
     "editorThinkingHigh": "#facc15",
-    "editorThinkingXhigh": "bright-red"
+    "editorThinkingXhigh": "fg:bright-red"
   }
 }
 ```
@@ -197,7 +197,7 @@ Editor 专属颜色：`cwd`、`editorAccent`（rail 竖条）、`editorBorder`�
 
 ### 3.6 Footer 颜色字段
 
-Footer 共用颜色：`sessionName`、`gitBranch`、`gitStatus`、`contextNormal/Warning/Error`、`tokens`、`cost`、`separator`、`runtimePrefix`、`extensionStatus`、`sessionDuration`、`packageVersion`、`gitCommit`、`gitMetricsAdded/Deleted`、`username`、`time`、`os`。取值语法与 Editor 相同（主题 token / hex / 256 索引 / `fg:`/`bg:`），详见 [editor-colors.md](./editor-colors.md)。
+Footer 共用颜色：`sessionName`、`gitBranch`、`gitStatus`、`contextNormal/Warning/Error`、`tokens`、`cost`、`separator`、`runtimePrefix`、`extensionStatus`、`sessionDuration`、`packageVersion`、`gitCommit`、`gitMetricsAdded/Deleted`、`username`、`time`、`os`。取值语法与 Editor 相同，详见 [editor-colors.md](./editor-colors.md)。
 
 ## 4. 综合示例
 
@@ -271,5 +271,5 @@ Footer 共用颜色：`sessionName`、`gitBranch`、`gitStatus`、`contextNormal
 
 ## 6. 变更与迁移
 
-- 0.6.0 起 `colorSource`（`theme`/`terminal`）已移除：旧字段在读取时直接忽略，不主动改写文件；`colors.*` 统一按 theme 语义解释（ANSI 色名映射到语义 token，如 `red`→`error`）。
+- 0.6.0 起 `colorSource`（`theme`/`terminal`）已移除：旧字段在读取时直接忽略，不主动改写文件；`colors.*` 只接受官方 theme token、修饰符和显式终端色，终端色名需要使用 `fg:` / `bg:` 前缀。
 - 0.5.0 起 Editor 只用 `minimalist` 一种样式：旧 `enabled: false` 迁移为 `style: "off"`，旧 `opencode`/`minimalist` 迁移为 `style: "on"`，`styles.opencode` 与 `opencode-copy-friendly`、`accent-rail` 失效。

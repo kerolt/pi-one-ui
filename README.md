@@ -157,7 +157,8 @@ pi update npm:pi-one-ui
   - `margin`：距终端边缘的外边距，可以是四边统一数字，也可以是按 `top`/`right`/`bottom`/`left` 分别配置的对象。
   - 修改保存后下次打开 `/oneui` 即生效，无需 `/reload`。
 - **颜色体系与主题定制**：详见 [Editor 颜色配置说明 (docs/editor-colors.md)](./docs/editor-colors.md)
-  - 所有颜色统一按 Theme 语义解释，优先解析为当前主题语义 Token（随主题自动切换），ANSI 色名自动映射为语义色（如 `red` 对应 `error`）；如需固定色彩，可直接指定 Hex、256 色索引或 `fg:`/`bg:` 前缀。
+  - `colors.*` 只接受 Pi 官方主题 token（主题文件 `colors` 字段里的官方颜色键）、修饰符和显式终端色；终端色名必须写成 `fg:purple`、`fg:red` 等形式，固定色彩也可以使用 Hex、256 色索引或 `fg:`/`bg:` 前缀。
+  - Editor 的 `cwd`、`editorModel`、`editorBorder` 是 pi-one-ui 自定义的扩展颜色键（主题文件 `colors` 可以写这些键），缺少时回落到 Pi 官方 theme token；`cc-dark` 和 `cc-light` 已支持这些键。
   - 支持完整的 Thinking 思考档位（Low 至 Max）自适应边框与标签分级配色，补全下拉选中项与编辑器外框同色，跟随同一条颜色链。
 - **历史版本迁移**：旧版升级带来的字段收敛（如 `opencode` 样式统一合并入 `minimalist`、`colorSource` 双模式移除等）参见 [docs/configuration.md 变更与迁移节](./docs/configuration.md#6-变更与迁移)。
 

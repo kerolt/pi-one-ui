@@ -54,6 +54,7 @@ import {
 import { ConfigStore } from "../../extensions/app/config/store.ts";
 import {
   colorize,
+  isSupportedColorSpec,
   renderTerminalStyle,
   renderThemeStyle,
 } from "../../extensions/shared/style";
@@ -500,9 +501,9 @@ describe("working-line config", () => {
       },
       colors: {
         workingLineLow: "fg:240",
-        workingLineMid: "cyan",
-        workingLineHigh: "bold cyan",
-        editorAccent: "red",
+        workingLineMid: "fg:cyan",
+        workingLineHigh: "bold fg:cyan",
+        editorAccent: "fg:red",
       },
     });
     expect(config.components.workingLine).toEqual({
@@ -518,9 +519,9 @@ describe("working-line config", () => {
     });
     expect(config.colors).toMatchObject({
       workingLineLow: "fg:240",
-      workingLineMid: "cyan",
-      workingLineHigh: "bold cyan",
-      editorAccent: "red",
+      workingLineMid: "fg:cyan",
+      workingLineHigh: "bold fg:cyan",
+      editorAccent: "fg:red",
     });
   });
 
@@ -682,15 +683,15 @@ describe("mergeConfig", () => {
     const config = mergeConfig({});
     expect(config.projectRefreshIntervalMs).toBe(30_000);
     expect(config.icons.cacheHit).toBe("󰆼");
-    expect(config.colors.gitBranch).toBe("bold purple");
+    expect(config.colors.gitBranch).toBe("bold syntaxKeyword");
     expect(config.colors.packageVersion).toBe("208");
-    expect(config.colors.gitCommit).toBe("bold green");
-    expect(config.colors.gitMetricsAdded).toBe("bold green");
-    expect(config.colors.gitMetricsDeleted).toBe("bold red");
-    expect(config.colors.sessionName).toBe("bold green");
-    expect(config.colors.contextNormal).toBe("bright-black");
-    expect(config.colors.tokens).toBe("bright-black");
-    expect(config.colors.extensionStatus).toBe("bright-black");
+    expect(config.colors.gitCommit).toBe("bold success");
+    expect(config.colors.gitMetricsAdded).toBe("bold success");
+    expect(config.colors.gitMetricsDeleted).toBe("bold error");
+    expect(config.colors.sessionName).toBe("bold success");
+    expect(config.colors.contextNormal).toBe("muted");
+    expect(config.colors.tokens).toBe("muted");
+    expect(config.colors.extensionStatus).toBe("muted");
     expect(config.colors.editorAccent).toBeUndefined();
     expect(config.colors.editorBorder).toBeUndefined();
     expect(config.components.editor).toMatchObject({
@@ -1062,23 +1063,24 @@ describe("mergeConfig", () => {
 
   it("accepts canonical Starship color keys", () => {
     expect(
-      mergeConfig({ colors: { gitBranch: "bold purple" } }).colors.gitBranch,
-    ).toBe("bold purple");
+      mergeConfig({ colors: { gitBranch: "bold syntaxKeyword" } }).colors
+        .gitBranch,
+    ).toBe("bold syntaxKeyword");
     expect(
-      mergeConfig({ colors: { packageVersion: "bold green" } }).colors
+      mergeConfig({ colors: { packageVersion: "bold success" } }).colors
         .packageVersion,
-    ).toBe("bold green");
+    ).toBe("bold success");
     expect(
-      mergeConfig({ colors: { gitCommit: "bold yellow" } }).colors.gitCommit,
-    ).toBe("bold yellow");
+      mergeConfig({ colors: { gitCommit: "bold warning" } }).colors.gitCommit,
+    ).toBe("bold warning");
     expect(
-      mergeConfig({ colors: { gitMetricsAdded: "green" } }).colors
+      mergeConfig({ colors: { gitMetricsAdded: "success" } }).colors
         .gitMetricsAdded,
-    ).toBe("green");
+    ).toBe("success");
     expect(
-      mergeConfig({ colors: { gitMetricsDeleted: "red" } }).colors
+      mergeConfig({ colors: { gitMetricsDeleted: "error" } }).colors
         .gitMetricsDeleted,
-    ).toBe("red");
+    ).toBe("error");
     expect(
       mergeConfig({ colors: { extensionStatus: "warning" } }).colors
         .extensionStatus,
@@ -1092,7 +1094,7 @@ describe("mergeConfig", () => {
   it("accepts optional editor and user-message chrome color overrides", () => {
     const config = mergeConfig({
       colors: {
-        editorAccent: "bold purple",
+        editorAccent: "bold syntaxKeyword",
         editorBorder: "#89b4fa",
         editorModel: "accent",
         editorProvider: "text",
@@ -1106,7 +1108,7 @@ describe("mergeConfig", () => {
       },
     });
 
-    expect(config.colors.editorAccent).toBe("bold purple");
+    expect(config.colors.editorAccent).toBe("bold syntaxKeyword");
     expect(config.colors.editorBorder).toBe("#89b4fa");
     expect(config.colors.editorModel).toBe("accent");
     expect(config.colors.editorProvider).toBe("text");
@@ -1130,7 +1132,7 @@ describe("mergeConfig", () => {
       colors: {
         cwd: 123,
         gitStatus: "not-a-color",
-        separator: "dimmed",
+        separator: "not-a-color",
         editorAccent: "neon",
         editorBorder: "also-neon",
         editorThinkingHigh: "thinkingHigh",
@@ -1149,7 +1151,7 @@ describe("mergeConfig", () => {
     expect(config.icons.cacheHit).toBe("CH");
     expect(config.colors.cwd).toBe(defaultConfig.colors.cwd);
     expect(config.colors.gitStatus).toBe(defaultConfig.colors.gitStatus);
-    expect(config.colors.separator).toBe("dimmed");
+    expect(config.colors.separator).toBe(defaultConfig.colors.separator);
     expect(config.colors.editorAccent).toBeUndefined();
     expect(config.colors.editorBorder).toBeUndefined();
     expect(config.colors.editorThinkingHigh).toBe("thinkingHigh");
@@ -1749,6 +1751,17 @@ describe("style rendering", () => {
     expect(colorize(theme, "accent", "hello")).toBe("<accent>hello</accent>");
   });
 
+  it("accepts official theme tokens and explicit terminal colors only", () => {
+    expect(isSupportedColorSpec("bold syntaxKeyword")).toBe(true);
+    expect(isSupportedColorSpec("thinkingMax")).toBe(true);
+    expect(isSupportedColorSpec("searchMatchText")).toBe(true);
+    expect(isSupportedColorSpec("bold fg:purple")).toBe(true);
+    expect(isSupportedColorSpec("#c084fc")).toBe(true);
+    expect(isSupportedColorSpec("purple")).toBe(false);
+    expect(isSupportedColorSpec("bold red")).toBe(false);
+    expect(isSupportedColorSpec("accent #c084fc")).toBe(false);
+  });
+
   it("falls back to plain text for invalid theme tokens", () => {
     const throwingTheme = {
       fg(token: string, text: string) {
@@ -1766,7 +1779,7 @@ describe("style rendering", () => {
   it("maps Starship modifiers to safe theme colors when the theme rejects unknown tokens", () => {
     const strictTheme = {
       fg(token: string, text: string) {
-        if (!["muted", "syntaxKeyword", "text"].includes(token)) {
+        if (!["dim", "muted", "syntaxKeyword", "text"].includes(token)) {
           throw new Error(`Unknown theme color: ${token}`);
         }
         return `<${token}>${text}</${token}>`;
@@ -1776,10 +1789,10 @@ describe("style rendering", () => {
       },
     };
 
-    expect(renderThemeStyle(strictTheme, "dimmed", "tokens")).toBe(
-      "<muted>tokens</muted>",
+    expect(renderThemeStyle(strictTheme, "dim", "tokens")).toBe(
+      "<dim>tokens</dim>",
     );
-    expect(renderThemeStyle(strictTheme, "bold purple", "git")).toBe(
+    expect(renderThemeStyle(strictTheme, "bold syntaxKeyword", "git")).toBe(
       "<syntaxKeyword><bold>git</bold></syntaxKeyword>",
     );
     expect(renderThemeStyle(strictTheme, "unknownColor", "text")).toBe("text");
@@ -1800,9 +1813,12 @@ describe("style rendering", () => {
     );
   });
 
-  it("maps ANSI names to theme semantic tokens in single mode", () => {
-    expect(renderThemeStyle(theme, "bold purple", "git")).toBe(
+  it("uses official theme tokens and explicit terminal colors in single mode", () => {
+    expect(renderThemeStyle(theme, "bold syntaxKeyword", "git")).toBe(
       "<syntaxKeyword>git</syntaxKeyword>",
+    );
+    expect(renderThemeStyle(theme, "bold fg:purple", "git")).toBe(
+      "\u001b[1;35mgit\u001b[0m",
     );
     expect(renderThemeStyle(theme, "syntaxKeyword", "git")).toBe(
       "<syntaxKeyword>git</syntaxKeyword>",
@@ -1810,17 +1826,12 @@ describe("style rendering", () => {
   });
 
   it("renders theme-source Starship colors through Pi theme tokens", () => {
-    expect(renderThemeStyle(theme, "bold cyan", "cwd")).toBe(
+    expect(renderThemeStyle(theme, "bold syntaxFunction", "cwd")).toBe(
       "<syntaxFunction>cwd</syntaxFunction>",
     );
-    expect(renderThemeStyle(theme, "bold purple", "git")).toBe(
-      "<syntaxKeyword>git</syntaxKeyword>",
-    );
-    expect(renderThemeStyle(theme, "bold red", "!")).toBe("<error>!</error>");
-    expect(renderThemeStyle(theme, "dimmed", "tokens")).toBe(
-      "<muted>tokens</muted>",
-    );
-    expect(renderThemeStyle(theme, "bold green", "cost")).toBe(
+    expect(renderThemeStyle(theme, "bold error", "!")).toBe("<error>!</error>");
+    expect(renderThemeStyle(theme, "dim", "tokens")).toBe("<dim>tokens</dim>");
+    expect(renderThemeStyle(theme, "bold success", "cost")).toBe(
       "<success>cost</success>",
     );
     expect(renderThemeStyle(theme, "syntaxKeyword", "git")).toBe(

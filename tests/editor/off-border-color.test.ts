@@ -88,7 +88,7 @@ describe("offEditorBorderColor", () => {
   it("renders an explicit editorBorder through theme semantics", () => {
     const calls: Array<{ color: string; text: string }> = [];
     const renderBorder = offEditorBorderColor(
-      config({ style: "off", editorBorder: "red" }),
+      config({ style: "off", editorBorder: "error" }),
       {
         ...theme(),
         fg(color: string, text: string) {
@@ -99,7 +99,6 @@ describe("offEditorBorderColor", () => {
     );
     expect(renderBorder).toBeTypeOf("function");
     renderBorder?.("╭");
-    // ANSI 色名 red 按 theme 语义映射为 error token。
     expect(calls).toContainEqual({ color: "error", text: "╭" });
   });
 });

@@ -297,7 +297,7 @@ describe("working-line presets and frame generation", () => {
       current.components.workingLine.textAnimation = textAnimation;
       current.colors.workingLineLow = "240";
       current.colors.workingLineMid = "45";
-      current.colors.workingLineHigh = "bold 46";
+      current.colors.workingLineHigh = "bold fg:46";
       const generated = buildWorkingLineFrames(
         current.components.workingLine,
         current.colors,
@@ -349,7 +349,7 @@ describe("working-line presets and frame generation", () => {
       current.components.workingLine.animateSpinnerColor = true;
       current.colors.workingLineLow = "240";
       current.colors.workingLineMid = "45";
-      current.colors.workingLineHigh = "bold 46";
+      current.colors.workingLineHigh = "bold fg:46";
       const generated = buildWorkingLineFrames(
         current.components.workingLine,
         current.colors,
@@ -721,8 +721,8 @@ describe("working-line presets and frame generation", () => {
     expect(
       normalizeWorkingLineStyleSpec("DIMMED dim fg:202 FG:202 bold bold"),
     ).toBe("dim fg:202 bold");
-    expect(normalizeWorkingLineStyleSpec("bold italic underline red")).toBe(
-      "bold italic underline red",
+    expect(normalizeWorkingLineStyleSpec("bold italic underline fg:red")).toBe(
+      "bold italic underline fg:red",
     );
     expect(
       normalizeWorkingLineStyleSpec("bold italic underline red dim"),
@@ -758,7 +758,7 @@ describe("working-line presets and frame generation", () => {
   );
 
   it.each([
-    ["xterm", "bold italic underline 149", "\x1b[1;3;4;38;5;149m"],
+    ["xterm", "bold italic underline fg:149", "\x1b[1;3;4;38;5;149m"],
     ["256-color", "bold italic underline fg:202", "\x1b[1;3;4;38;5;202m"],
     ["truecolor", "bold italic underline #bf5700", "\x1b[1;3;4;38;2;191;87;0m"],
   ] as const)(
@@ -918,8 +918,8 @@ describe("working-line presets and frame generation", () => {
   it("honors independent working-line palette overrides", () => {
     const current = config();
     current.components.workingLine.textAnimation = "disabled";
-    current.colors.workingLineMid = "bold 196";
-    current.colors.workingLineHigh = "bold 46";
+    current.colors.workingLineMid = "bold fg:196";
+    current.colors.workingLineHigh = "bold fg:46";
     const [frame] = buildWorkingLineFrames(
       current.components.workingLine,
       current.colors,

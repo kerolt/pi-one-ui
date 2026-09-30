@@ -71,28 +71,9 @@ const terminalStyleModifiers = new Map([
 ]);
 
 /**
- * ANSI 色名到主题语义 token 的映射：theme 语义下写 `red` 得到主题错误色，
- * 写 `green` 得到主题成功色，保证默认值与主题观感一致。
+ * Theme token modifiers are handled by the active Pi theme. Terminal-only
+ * modifiers such as `dimmed` are accepted with explicit terminal colors.
  */
-const themeColorNameMap = new Map([
-  ["red", "error"],
-  ["bright-red", "error"],
-  ["green", "success"],
-  ["bright-green", "success"],
-  ["yellow", "warning"],
-  ["bright-yellow", "warning"],
-  ["blue", "syntaxFunction"],
-  ["bright-blue", "syntaxFunction"],
-  ["cyan", "syntaxFunction"],
-  ["bright-cyan", "syntaxFunction"],
-  ["purple", "syntaxKeyword"],
-  ["bright-purple", "syntaxKeyword"],
-  ["black", "muted"],
-  ["bright-black", "muted"],
-  ["white", "text"],
-  ["bright-white", "text"],
-]);
-
 const themeStyleModifiers = new Set(["bold", "italic", "underline"]);
 
 const themeColorTokens = new Set<ThemeColor>([
@@ -107,6 +88,9 @@ const themeColorTokens = new Set<ThemeColor>([
   "dim",
   "text",
   "thinkingText",
+  "scrollbarTrack",
+  "scrollbarThumb",
+  "searchMatchText",
   "userMessageText",
   "customMessageText",
   "customMessageLabel",
@@ -175,24 +159,51 @@ function isExplicitTerminalColorToken(token: string): boolean {
   );
 }
 
-function isSupportedStyleToken(token: string): boolean {
+function isExplicitTerminalStyleToken(token: string): boolean {
   const normalized = token.toLowerCase();
-  if (terminalStyleModifiers.has(normalized)) return true;
-  if (terminalColorToAnsi(normalized) !== undefined) return true;
+  return (
+    terminalStyleModifiers.has(normalized) ||
+    isExplicitTerminalColorToken(token)
+  );
+}
 
+function isTerminalColorToken(token: string): boolean {
+  const normalized = token.toLowerCase();
   const isForeground = normalized.startsWith("fg:");
   const isBackground = normalized.startsWith("bg:");
-  if (isForeground || isBackground) {
-    return terminalColorToAnsi(normalized.slice(3), isBackground) !== undefined;
-  }
+  const colorName =
+    isForeground || isBackground ? normalized.slice(3) : normalized;
+  return terminalColorToAnsi(colorName, isBackground) !== undefined;
+}
 
+function isThemeColorToken(token: string): boolean {
+  if (isTerminalColorToken(token)) return false;
   return themeColorTokens.has(token as ThemeColor);
 }
 
 export function isSupportedColorSpec(style: ColorSpec): boolean {
   const trimmed = style.trim();
   if (trimmed === "") return true;
-  return trimmed.split(/\s+/).every(isSupportedStyleToken);
+
+  const tokens = trimmed.split(/\s+/).filter(Boolean);
+  const hasExplicitTerminalColor = tokens.some(isExplicitTerminalColorToken);
+  if (hasExplicitTerminalColor) {
+    return (
+      tokens.every(isExplicitTerminalStyleToken) &&
+      tokens.filter(isExplicitTerminalColorToken).length === 1
+    );
+  }
+
+  const colorTokens = tokens.filter((token) => {
+    const normalized = token.toLowerCase();
+    return !themeStyleModifiers.has(normalized) && normalized !== "dimmed";
+  });
+  if (colorTokens.length === 0) {
+    return tokens.every((token) =>
+      terminalStyleModifiers.has(token.toLowerCase()),
+    );
+  }
+  return colorTokens.length === 1 && isThemeColorToken(colorTokens[0]);
 }
 
 function applyThemeModifiers(
@@ -225,20 +236,12 @@ export function safeThemeFg(
 }
 
 function mapThemeColor(styleTokens: string[]): string | undefined {
-  let fallback: string | undefined;
   for (const token of styleTokens) {
-    const normalized = token.toLowerCase();
-    if (themeStyleModifiers.has(normalized)) continue;
-    if (normalized === "dim" || normalized === "dimmed") {
-      fallback = "muted";
-      continue;
-    }
-
-    const mapped = themeColorNameMap.get(normalized);
-    if (mapped) return mapped;
+    if (themeStyleModifiers.has(token.toLowerCase())) continue;
+    if (isTerminalColorToken(token)) continue;
     return token;
   }
-  return fallback;
+  return undefined;
 }
 
 /**
@@ -351,8 +354,7 @@ export function renderTerminalStyle(style: string, text: string): string {
 /**
  * 单模式颜色渲染：配置值按 theme 语义解释。
  * - 含显式终端 token（hex/数字/fg:/bg:）→ 直接输出固定终端色；
- * - 其余按主题 token 解析（ANSI 色名映射到语义 token，如 red→error），
- *   修饰符通过主题的 bold/italic/underline 应用；
+ * - 其余按官方主题 token 解析，修饰符通过主题的 bold/italic/underline 应用；
  * - 空值原样返回。
  */
 export function renderThemeStyle(
@@ -364,8 +366,9 @@ export function renderThemeStyle(
   if (trimmed === "") return text;
 
   const tokens = trimmed.split(/\s+/).filter(Boolean);
-  if (tokens.some(isExplicitTerminalColorToken))
+  if (tokens.some(isTerminalColorToken)) {
     return renderTerminalStyle(style, text);
+  }
 
   const color = mapThemeColor(tokens) ?? "text";
   return safeThemeFg(theme, color, applyThemeModifiers(theme, tokens, text));
@@ -379,8 +382,9 @@ function renderThemeStyleStrict(
   const trimmed = style.trim();
   if (trimmed === "") return text;
   const tokens = trimmed.split(/\s+/).filter(Boolean);
-  if (tokens.some(isExplicitTerminalColorToken))
+  if (tokens.some(isTerminalColorToken)) {
     return renderTerminalStyle(style, text);
+  }
   const color = mapThemeColor(tokens) ?? "text";
   return theme.fg(color, applyThemeModifiers(theme, tokens, text));
 }
