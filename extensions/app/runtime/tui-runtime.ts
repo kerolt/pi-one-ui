@@ -20,6 +20,7 @@ import registerHeader, {
 import { SelectorController } from "../../layouts/overlay/selector-controller.ts";
 import { WorkingLineLayoutController } from "../../layouts/working-line/controller.ts";
 import {
+  LEGACY_TURN_SUMMARY_ENTRY_TYPE,
   renderTurnSummaryEntry,
   TURN_SUMMARY_ENTRY_TYPE,
 } from "../../layouts/working-line/interaction-summary.ts";
@@ -192,18 +193,24 @@ export function createLayoutRuntime(
   });
   const state = sessionState.state;
   if (typeof pi.registerEntryRenderer === "function") {
-    pi.registerEntryRenderer(
-      TURN_SUMMARY_ENTRY_TYPE,
-      (entry, entryOptions, theme) =>
-        renderTurnSummaryEntry(
-          entry,
-          {
-            ...entryOptions,
-            workingLineHigh: currentConfig.colors.workingLineHigh,
-          },
-          theme,
-        ),
-    );
+    const renderTurnSummary = (
+      entry: { data?: unknown },
+      entryOptions: unknown,
+      theme: Parameters<typeof renderTurnSummaryEntry>[2],
+    ) => {
+      const options = (entryOptions ?? {}) as Record<string, unknown>;
+      return renderTurnSummaryEntry(
+        entry,
+        {
+          ...options,
+          workingLineHigh: currentConfig.colors.workingLineHigh,
+        },
+        theme,
+      );
+    };
+    pi.registerEntryRenderer(TURN_SUMMARY_ENTRY_TYPE, renderTurnSummary);
+    // 旧 session 的摘要条目继续可渲染。
+    pi.registerEntryRenderer(LEGACY_TURN_SUMMARY_ENTRY_TYPE, renderTurnSummary);
   }
   const refresh = (): void => {
     if (sessionLifecycle.isCurrent()) {

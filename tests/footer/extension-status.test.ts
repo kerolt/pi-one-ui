@@ -184,7 +184,7 @@ describe("collectExtensionStatusSegments", () => {
       config,
     );
     expect(segments.right).toEqual([
-      { key: "alpha", text: "ok", placement: "right", colorMode: "zentui" },
+      { key: "alpha", text: "ok", placement: "right", colorMode: "themed" },
     ]);
   });
 
@@ -210,7 +210,7 @@ describe("collectExtensionStatusSegments", () => {
         placement: "right",
         colorMode: "original",
       },
-      { key: "beta", text: "green", placement: "right", colorMode: "zentui" },
+      { key: "beta", text: "green", placement: "right", colorMode: "themed" },
     ]);
   });
 });

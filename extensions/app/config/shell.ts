@@ -44,6 +44,7 @@ import {
   type PathDisplayConfig,
   parseCompactFooterMaxLines,
   parseContextStyle,
+  parseExtensionStatusColorMode,
   parseSeparatorStyle,
   type SeparatorStyle,
   type StarshipFooterStyleConfig,
@@ -68,7 +69,8 @@ export * from "./editor.ts";
 export * from "./footer.ts";
 export * from "./working-line.ts";
 export type ColorSpec = string;
-export type SelectorBorderStyle = "zentui";
+/** 选择框边框样式：`one-ui` 是唯一实现，旧配置里的 `zentui` 按同一样式读取。 */
+export type SelectorBorderStyle = "one-ui" | "zentui";
 export type SelectorBordersComponentConfig = {
   enabled: boolean;
   style: SelectorBorderStyle;
@@ -163,7 +165,7 @@ export const defaultConfig: PolishedTuiConfig = {
     editor: defaultEditor,
     userMessages: normalizeUserMessages(undefined),
     workingLine: defaultWorkingLine,
-    selectorBorders: { enabled: true, style: "zentui" },
+    selectorBorders: { enabled: true, style: "one-ui" },
     footer: defaultFooter,
   },
 };
@@ -216,7 +218,7 @@ const knownComponentStyleIds: Record<
     "compact",
     "labeled",
   ]),
-  selectorBorders: new Set(["zentui"]),
+  selectorBorders: new Set(["one-ui", "zentui"]),
   footer: new Set(["native", "starship", "hidden"]),
 };
 const retiredEditorStyleIds = new Set([
@@ -261,7 +263,8 @@ function resolveComponents(value: unknown): ComponentsConfig {
     workingLine: normalizeWorkingLine(source.workingLine),
     selectorBorders: {
       enabled: booleanValue(selector.enabled, true),
-      style: "zentui",
+      // 只有一种样式；旧配置里的 `zentui` 一律按 `one-ui` 读取。
+      style: "one-ui",
     },
     footer: normalizeFooter(source.footer),
   };
@@ -341,7 +344,7 @@ export function getExtensionStatusColorMode(
     config.components.footer.styles.starship.extensionStatuses.colorModes;
   return Object.hasOwn(modes, key) && isExtensionStatusColorMode(modes[key])
     ? modes[key]
-    : "zentui";
+    : "themed";
 }
 
 /** 纯配置修改可在一次 ConfigStore.update 中组合成 Preset。 */

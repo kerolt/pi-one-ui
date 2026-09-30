@@ -9,7 +9,9 @@ import { formatCount, formatElapsedDuration } from "../../shared/format.ts";
 import { isSafeSgrStylePrefix } from "../../shared/style.ts";
 import { renderWorkingLineHigh } from "./working-line.ts";
 
-export const TURN_SUMMARY_ENTRY_TYPE = "zentui-turn-summary";
+export const TURN_SUMMARY_ENTRY_TYPE = "one-ui-turn-summary";
+/** 历史 session 里的轮次摘要条目类型，仅用于读取。 */
+export const LEGACY_TURN_SUMMARY_ENTRY_TYPE = "zentui-turn-summary";
 export const MIN_OUTPUT_RATE_WINDOW_MS = 500;
 const TURN_SUMMARY_VERSION = 3;
 const SGR_RESET = "\x1b[0m";

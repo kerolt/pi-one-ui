@@ -129,7 +129,7 @@ describe("canonical config resolution", () => {
         },
         segments: { tool: true, elapsed: true, thought: true, tokens: true },
       },
-      selectorBorders: { enabled: true, style: "zentui" },
+      selectorBorders: { enabled: true, style: "one-ui" },
       footer: {
         style: "starship",
         modelLabel: "id",
@@ -274,7 +274,7 @@ describe("canonical config resolution", () => {
     expect(config.components.editor.style).toBe("on");
     expect(config.components.editor.styles.minimalist.showGit).toBe(true);
     expect(config.components.userMessages.style).toBe("framed");
-    expect(config.components.selectorBorders.style).toBe("zentui");
+    expect(config.components.selectorBorders.style).toBe("one-ui");
     expect(config.components.footer.style).toBe("starship");
 
     for (const retired of [
@@ -288,6 +288,31 @@ describe("canonical config resolution", () => {
       expect(migrated.components.editor.style).toBe("on");
       expect(hasUnsupportedComponentStyle(migrated, "editor")).toBe(false);
     }
+  });
+
+  it("reads the legacy zentui selector style as the canonical one-ui style", () => {
+    const config = mergeConfig({
+      components: { selectorBorders: { style: "zentui" } },
+    });
+    expect(config.components.selectorBorders.style).toBe("one-ui");
+    expect(hasUnsupportedComponentStyle(config, "selectorBorders")).toBe(false);
+  });
+
+  it("reads the legacy zentui extension status color mode as themed", () => {
+    const config = mergeConfig({
+      components: {
+        footer: {
+          styles: {
+            starship: {
+              extensionStatuses: { colorModes: { alpha: "zentui" } },
+            },
+          },
+        },
+      },
+    });
+    expect(
+      config.components.footer.styles.starship.extensionStatuses.colorModes,
+    ).toEqual({ alpha: "themed" });
   });
 
   it("does not treat native as a User-message style", () => {
@@ -1621,7 +1646,7 @@ describe("mergeConfig", () => {
       ).toEqual({
         defaultPlacement: "left",
         placements: { alpha: "right" },
-        colorModes: { alpha: "zentui", beta: "original" },
+        colorModes: { alpha: "themed", beta: "original" },
       });
       expect(raw.unknown).toBe(true);
       expect(raw.colors.futureKey).toBe("future");
@@ -1633,14 +1658,14 @@ describe("mergeConfig", () => {
         invalid: "center",
       });
       expect(rawStatuses.colorModes).toEqual({
-        alpha: "zentui",
+        alpha: "themed",
         beta: "original",
         invalid: "muted",
       });
       expect(
         raw.components.footer.styles.starship.extensionStatuses.colorModes,
       ).toEqual({
-        alpha: "zentui",
+        alpha: "themed",
         beta: "original",
         invalid: "muted",
       });
@@ -2181,7 +2206,7 @@ describe("Opencode and Footer canonical config", () => {
       (typeof statuses.colorModes)[string]
     >;
     expect(getExtensionStatusPlacement(config, "constructor")).toBe("right");
-    expect(getExtensionStatusColorMode(config, "constructor")).toBe("zentui");
+    expect(getExtensionStatusColorMode(config, "constructor")).toBe("themed");
 
     Object.defineProperty(statuses.placements, "constructor", {
       value: "left",
@@ -2204,7 +2229,7 @@ describe("Opencode and Footer canonical config", () => {
       "rainbow";
     expect(getExtensionStatusPlacement(config, "missing")).toBe("right");
     expect(getExtensionStatusPlacement(config, "alpha")).toBe("right");
-    expect(getExtensionStatusColorMode(config, "alpha")).toBe("zentui");
+    expect(getExtensionStatusColorMode(config, "alpha")).toBe("themed");
   });
 
   it("marks only explicit non-empty unknown canonical component styles", () => {

@@ -48,7 +48,7 @@ export class SelectorController {
     const config = this.context.getConfig();
     const enabled =
       config.components.selectorBorders.enabled &&
-      config.components.selectorBorders.style === "zentui" &&
+      config.components.selectorBorders.style === "one-ui" &&
       !hasUnsupportedComponentStyle(config, "selectorBorders");
     if (enabled) this.install();
     else this.uninstall();

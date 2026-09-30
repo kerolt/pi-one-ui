@@ -8,7 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Rename the remaining persisted `zentui` values: `components.selectorBorders.style` is now `one-ui`, extension status `colorModes` are `themed` / `original`, and the working-line turn summary entry type is `one-ui-turn-summary`. Existing configuration files keep working: legacy `zentui` values are read as their replacements and rewritten on the next save, and sessions that already contain `zentui-turn-summary` entries still render.
 - Simplify color configuration: `colors.*` now accepts Pi official theme tokens defined in theme files' `colors` field and explicit terminal colors; bare terminal color names are rejected. Pi-one-ui custom keys such as `cwd`, `editorModel`, and `editorBorder` are documented as extensions with built-in themes supporting them. The reference is updated in both Chinese and English README.
+
+### Migration
+
+- No manual edit is required for the renamed values. The next configuration save rewrites `selectorBorders.style` and extension status color modes to the new names; turn summaries written by older versions continue to render from history.
 
 ### Fixed
 

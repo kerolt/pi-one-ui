@@ -20,7 +20,7 @@ export type GitMetricsConfig = {
   ignoreSubmodules: boolean;
 };
 export type ExtensionStatusPlacement = "off" | "left" | "middle" | "right";
-export type ExtensionStatusColorMode = "zentui" | "original";
+export type ExtensionStatusColorMode = "themed" | "original";
 export type ExtensionStatusesConfig = {
   defaultPlacement: ExtensionStatusPlacement;
   placements: Record<string, ExtensionStatusPlacement>;
@@ -185,7 +185,21 @@ export function isExtensionStatusPlacement(
 export function isExtensionStatusColorMode(
   value: unknown,
 ): value is ExtensionStatusColorMode {
-  return value === "zentui" || value === "original";
+  return value === "themed" || value === "original";
+}
+
+/**
+ * Parses an extension status color mode. The historical `zentui` value is read
+ * as its `themed` replacement so existing configuration files keep working.
+ *
+ * @param value Raw configuration value.
+ * @returns The canonical color mode, or undefined when unsupported.
+ */
+export function parseExtensionStatusColorMode(
+  value: unknown,
+): ExtensionStatusColorMode | undefined {
+  if (value === "zentui") return "themed";
+  return isExtensionStatusColorMode(value) ? value : undefined;
 }
 
 function thresholds(value: unknown): ContextThresholds {
@@ -279,9 +293,11 @@ export function normalizeFooter(value: unknown): FooterComponentConfig {
             ),
           ),
           colorModes: Object.fromEntries(
-            Object.entries(recordValue(statuses.colorModes)).filter(
-              (entry): entry is [string, ExtensionStatusColorMode] =>
-                isExtensionStatusColorMode(entry[1]),
+            Object.entries(recordValue(statuses.colorModes)).flatMap(
+              (entry): Array<[string, ExtensionStatusColorMode]> => {
+                const mode = parseExtensionStatusColorMode(entry[1]);
+                return mode ? [[entry[0], mode]] : [];
+              },
             ),
           ),
         },

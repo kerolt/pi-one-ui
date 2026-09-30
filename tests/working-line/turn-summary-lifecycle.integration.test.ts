@@ -2,7 +2,10 @@ import { stripVTControlCharacters } from "node:util";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import type { Text } from "@earendil-works/pi-tui";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TURN_SUMMARY_ENTRY_TYPE } from "../../extensions/layouts/working-line/interaction-summary";
+import {
+  LEGACY_TURN_SUMMARY_ENTRY_TYPE,
+  TURN_SUMMARY_ENTRY_TYPE,
+} from "../../extensions/layouts/working-line/interaction-summary";
 
 const stripTerminalSequences = stripVTControlCharacters;
 
@@ -165,6 +168,8 @@ describe("turn summary lifecycle integration", () => {
     expect(current.appended).toHaveLength(1);
     expect(current.sendMessage).not.toHaveBeenCalled();
     expect(current.renderers.has(TURN_SUMMARY_ENTRY_TYPE)).toBe(true);
+    // 旧 session 的条目类型保持可渲染。
+    expect(current.renderers.has(LEGACY_TURN_SUMMARY_ENTRY_TYPE)).toBe(true);
   });
 
   it("persists thought in v3 even when the live Thinking segment is disabled", async () => {

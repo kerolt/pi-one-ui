@@ -193,7 +193,7 @@ Editor 专属颜色：`cwd`、`editorAccent`（rail 竖条）、`editorBorder`�
 |---|---|
 | `defaultPlacement` | 默认位置：`off` / `left` / `middle` / `right` |
 | `placements` | 按扩展名覆盖位置 |
-| `colorModes` | 按扩展名设置颜色模式（`zentui` / `original`） |
+| `colorModes` | 按扩展名设置颜色模式（`themed` / `original`；旧值 `zentui` 按 `themed` 读取） |
 
 ### 3.6 Footer 颜色字段
 
