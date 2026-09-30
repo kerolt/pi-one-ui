@@ -121,6 +121,50 @@ describe("minimalist editor frame", () => {
     expect(lines.length).toBeGreaterThan(0);
   });
 
+  // Pi 当前 Theme 暴露 fgAnsi Map 和解析完成的 colors 记录。
+  const paletteShapes: Array<[string, (tokens: string[]) => object]> = [
+    [
+      "fgAnsi",
+      (tokens) => ({
+        fgAnsi: new Map(tokens.map((token) => [token, "\u001b[39m"])),
+      }),
+    ],
+    [
+      "colors",
+      (tokens) => ({
+        colors: Object.fromEntries(tokens.map((token) => [token, "#a1a1aa"])),
+      }),
+    ],
+  ];
+
+  it.each(paletteShapes)(
+    "reads editor theme tokens from the %s palette",
+    (_label, palette) => {
+      const calls: Array<{ color: string; text: string }> = [];
+      const themed = {
+        ...recordingTheme(calls),
+        ...palette(["cwd", "editorModel", "editorBorder"]),
+      } as Theme;
+      renderMinimalistFrame({
+        width: 120,
+        editorLines: ["draft"],
+        inputText: "draft",
+        metadata: {
+          cwd: "/tmp/project",
+          modelLabel: "model-x",
+        },
+        uiTheme: themed,
+        config: config({ editorBorderColorMode: "static" }),
+      });
+      expect(calls).toContainEqual({ color: "cwd", text: "project" });
+      expect(calls).toContainEqual({ color: "editorModel", text: "model-x" });
+      expect(calls.some(({ color }) => color === "editorBorder")).toBe(true);
+      expect(calls.some(({ color }) => color === "syntaxKeyword")).toBe(false);
+      expect(calls.some(({ color }) => color === "syntaxFunction")).toBe(false);
+      expect(calls.some(({ color }) => color === "borderMuted")).toBe(false);
+    },
+  );
+
   it("renders metadata and framed autocomplete", () => {
     const lines = render();
     expect(lines[0]).toContain("12s · release prep");

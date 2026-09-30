@@ -16,6 +16,7 @@ import {
 } from "../../extensions/layouts/context/renderer/tool/result.ts";
 import { installToggleRenderCache } from "../../extensions/layouts/context/renderer/tool/toggle-render-cache.ts";
 import { toolLoadingIcon } from "../../extensions/tools/tool-loading-icon.ts";
+import { builtInToolDefinition } from "../support/built-in-tool-renderers.ts";
 
 initTheme("dark");
 
@@ -64,7 +65,7 @@ test("same result round-trips between expanded/collapsed without rebuilding", ()
       "b1",
       { command: "ls" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;
@@ -143,7 +144,7 @@ test("expanded/collapsed slots keep their own content across toggles", () => {
       "r1",
       { path: "/tmp/x" },
       {},
-      undefined,
+      builtInToolDefinition("read"),
       ui,
       process.cwd(),
     ) as any;
@@ -188,7 +189,7 @@ test("off mode bypasses the cache and rebuilds every time", () => {
       "b1",
       { command: "ls" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;
@@ -218,7 +219,7 @@ test("fallback branch (no renderer definition) stays correct and skips same-stat
       "c1",
       { arg: 1 },
       {},
-      undefined,
+      builtInToolDefinition("my_custom_tool"),
       ui,
       process.cwd(),
     ) as any;
@@ -265,7 +266,7 @@ test("coexists with tool grouping (on mode) and keeps group expand cheap", () =>
       "b1",
       { command: "ls" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;
@@ -275,7 +276,7 @@ test("coexists with tool grouping (on mode) and keeps group expand cheap", () =>
       "b2",
       { command: "pwd" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;
@@ -313,7 +314,7 @@ test("dispose restores the prototype method and clears caches", () => {
     "b1",
     { command: "ls" },
     {},
-    undefined,
+    builtInToolDefinition("bash"),
     ui,
     process.cwd(),
   ) as any;
@@ -344,7 +345,7 @@ test("reinstall replaces the previous patch without breaking the chain", () => {
       "b1",
       { command: "ls" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;
@@ -368,7 +369,7 @@ test("theme change invalidates the cache through setTheme", () => {
       "b1",
       { command: "ls" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;
@@ -397,7 +398,7 @@ test("coexists with compact mode (tools keep updating and toggling)", () => {
       "b1",
       { command: "ls" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;
@@ -434,7 +435,7 @@ test("pending streaming expand toggles without failing animation scheduling", ()
       "b1",
       { command: "ls" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;
@@ -479,7 +480,7 @@ test("pending tool keeps the loading animation loop alive across animation ticks
       "b-sleep",
       { command: "sleep 30" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;
@@ -528,7 +529,7 @@ test("expanded/collapsed slots keep independent renderer instances (no cross-slo
       "b1",
       { command: "x" },
       {},
-      undefined,
+      builtInToolDefinition("bash"),
       ui,
       process.cwd(),
     ) as any;

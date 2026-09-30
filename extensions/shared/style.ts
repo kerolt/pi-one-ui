@@ -407,21 +407,27 @@ export function renderThemeStyleOrFallbackStrict(
 }
 
 /**
- * 主题画板存在性探测：pi Theme 暴露 fgColors Map；测试或其他实现可
- * 提供 hasThemeToken 回调，缺失时保守按"无该 token"处理。
+ * 主题画板存在性探测：识别 Pi 当前 Theme 暴露的 fgAnsi Map 和解析完成的
+ * colors 记录；测试或其他实现可提供 hasThemeToken 回调，缺失时保守按
+ * "无该 token"处理。
  */
 function themeHasToken(theme: ThemeLike, token: string): boolean {
-  if (
-    typeof (theme as { hasThemeToken?: (t: string) => boolean })
-      .hasThemeToken === "function"
-  ) {
-    return (
-      theme as unknown as { hasThemeToken(t: string): boolean }
-    ).hasThemeToken(token);
+  const probe = theme as unknown as {
+    hasThemeToken?: (t: string) => boolean;
+    fgAnsi?: Map<string, string>;
+    colors?: Record<string, unknown>;
+  };
+  if (typeof probe.hasThemeToken === "function") {
+    return probe.hasThemeToken(token);
   }
-  const fgColors = (theme as unknown as { fgColors?: Map<string, string> })
-    .fgColors;
-  return fgColors instanceof Map && fgColors.has(token);
+  if (probe.fgAnsi instanceof Map && probe.fgAnsi.has(token)) {
+    return true;
+  }
+  return (
+    typeof probe.colors === "object" &&
+    probe.colors !== null &&
+    token in probe.colors
+  );
 }
 
 /**

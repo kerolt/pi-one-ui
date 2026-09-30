@@ -35,6 +35,7 @@ import {
   isExpandedToolIoView,
 } from "../../extensions/layouts/context/renderer/tool/result.ts";
 import { installCompactThinking } from "../../extensions/layouts/context/thinking/compact-thinking.ts";
+import { builtInToolDefinition } from "../support/built-in-tool-renderers.ts";
 
 initTheme("dark");
 
@@ -52,7 +53,7 @@ function tool(name: string, id: string, args: any = {}) {
     id,
     args,
     {},
-    undefined,
+    builtInToolDefinition(name),
     ui,
     process.cwd(),
   ) as any;

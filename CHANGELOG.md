@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Read Editor theme tokens from the palette field exposed by the running Pi version. Pi 0.99 renamed the theme palette map from `fgColors` to `fgAnsi` and added a resolved `colors` record, so the Editor model label, cwd label, and static border now pick up a theme's `editorModel` / `cwd` / `editorBorder` colors instead of falling back to `syntaxKeyword` / `syntaxFunction` / `borderMuted`.
+
 ## [0.7.2] - 2026-09-28
 
 ### Changed
