@@ -236,8 +236,8 @@ function renderExpandedTaskResult(
   return formatted ? new Text(`↳ ${formatted}`, 0, 0) : undefined;
 }
 
-/** 用 ccstyle call/result 包装任意工具定义。 */
-function createCcstyleTool(
+/** 用 pi-one-ui call/result 包装任意工具定义。 */
+function createPolishedTool(
   originalTool: any,
   writeExecutionMetadata: WriteExecutionMetadataStore,
 ): any {
@@ -465,7 +465,7 @@ function shouldGloballyStyleTool(
   const builtInDefinition = component.builtInToolDefinition;
   const definition = extensionDefinition ?? builtInDefinition;
   const toolName = String(component.toolName || definition?.name || "");
-  const useCcstyle =
+  const usePolishedToolStyle =
     patch.mode() === "on" &&
     !DEDICATED_RENDERER_TOOLS.has(toolName) &&
     !preservesOriginalRenderer(
@@ -473,8 +473,8 @@ function shouldGloballyStyleTool(
       toolName,
       builtInDefinition,
     );
-  component[COMPONENT_TOOL_RENDER_MODE] = useCcstyle;
-  return useCcstyle;
+  component[COMPONENT_TOOL_RENDER_MODE] = usePolishedToolStyle;
+  return usePolishedToolStyle;
 }
 
 function getGloballyStyledTool(
@@ -607,7 +607,7 @@ function installGlobalToolRendering(
     active: true,
     enabled: () => config.mode === "on",
     mode: () => config.mode,
-    wrap: (tool: any) => createCcstyleTool(tool, writeExecutionMetadata),
+    wrap: (tool: any) => createPolishedTool(tool, writeExecutionMetadata),
     byDefinition: new WeakMap(),
     byName: new Map(),
     downstream,
@@ -626,8 +626,8 @@ function installGlobalToolRendering(
     getRenderShell: function (this: any, ...args: any[]) {
       if (!patch.active)
         return patch.downstream.getRenderShell.apply(this, args);
-      const useCcstyle = shouldGloballyStyleTool(this, patch);
-      const shell = useCcstyle
+      const usePolishedToolStyle = shouldGloballyStyleTool(this, patch);
+      const shell = usePolishedToolStyle
         ? this.expanded
           ? "default"
           : "self"

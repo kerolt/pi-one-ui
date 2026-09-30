@@ -48,7 +48,7 @@ test("claude-code-style registers the write override at session_start", async ()
   await emit("session_shutdown", {}, { ui: { setStatus() {} } });
 });
 
-test("expanded ccstyle tools use Pi's native background card", async () => {
+test("expanded pi-one-ui tools use Pi's native background card", async () => {
   const events = new Map<string, Function>();
   const pi = {
     registerCommand() {},
@@ -391,7 +391,7 @@ test("MCP detection, titles, details, and custom tools use the global wrapper", 
   }
 });
 
-test("ccstyle is the default renderer and exclusions preserve dedicated renderers", () => {
+test("pi-one-ui is the default renderer and exclusions preserve dedicated renderers", () => {
   const builtIn = {
     name: "edit",
     renderShell: "self",
@@ -426,7 +426,7 @@ test("ccstyle is the default renderer and exclusions preserve dedicated renderer
   expect(preservesOriginalRenderer(undefined, "Agent")).toBe(false);
 });
 
-test("Agent and subagent keep their dedicated renderers under ccstyle", async () => {
+test("Agent and subagent keep their dedicated renderers under pi-one-ui", async () => {
   const events = new Map<string, Function>();
   const pi = {
     registerCommand() {},

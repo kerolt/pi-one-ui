@@ -97,7 +97,7 @@ type InteractionRegion = {
 
 type InteractionFrame = { regions: InteractionRegion[] };
 
-const TOOL_MOUSE_WIDGET_KEY = "ccstyle-tool-mouse";
+const TOOL_MOUSE_WIDGET_KEY = "oneui-tool-mouse";
 const TOOL_MOUSE_MOTION_ENABLE = "\x1b[?1003h\x1b[?1006h";
 const TOOL_MOUSE_MOTION_DISABLE = "\x1b[?1003l";
 const FULLSCREEN_MOTION_ENABLED = Symbol("pi-one-ui.fullscreen-motion-enabled");
@@ -118,7 +118,7 @@ let ownsFullscreenMotion = false;
 let sessionRenderTimer: ReturnType<typeof setTimeout> | null = null;
 let latestInteractionFrame: InteractionFrame = { regions: [] };
 
-/** Summary markers used by Pi and ccstyle; unlike the trailing hint, these survive truncation. */
+/** Summary markers used by Pi and pi-one-ui; unlike the trailing hint, these survive truncation. */
 const COLLAPSED_TOOL_SUMMARY = /^\s*(?:↳|└|⎿|●|✓|✗|…)/;
 
 function interactionRegionAt(packet: SgrMousePacket): InteractionRegion | null {

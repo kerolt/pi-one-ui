@@ -243,7 +243,6 @@ export default function (
     hooks.toolGrouping.setTheme(ctx.ui.theme);
     hooks.toggleRenderCache.setTheme(ctx.ui.theme);
     setMessageDisplayTheme(ctx.ui.theme);
-    ctx.ui.setStatus("ccstyle", undefined);
     // Collect the resumed context before syncing compact patches and expansion state.
     syncCompactMode(ctx);
     // compact-thinking 的 session_start 处理在本 handler 之后执行（在其之上再装

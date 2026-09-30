@@ -35,7 +35,7 @@ export const DEFAULT_TOOL_DISPLAY_CONFIG: ToolDisplayConfig = {
   /**
    * Expanded tool/diff body cap. 40 ≈ one screen of content after title,
    * Input section, editor, and status — keeps the TUI compact.
-   * Raise via /ccstyle → Diff → Expanded max lines when reviewing large dumps.
+   * Raise via /oneui → Diff → Expanded max lines when reviewing large dumps.
    */
   expandedPreviewMaxLines: 40,
 };

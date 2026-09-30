@@ -786,7 +786,7 @@ test("expanded group identical show-more labels open their own content", () => {
   }
 });
 
-test("ccstyle mode off restores native mouse input: no hover/click, wheel still scrolls", async () => {
+test("pi-one-ui mode off restores native mouse input: no hover/click, wheel still scrolls", async () => {
   const inputListeners = new Set<
     (data: string) => { consume?: boolean } | undefined
   >();

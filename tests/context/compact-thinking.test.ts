@@ -8,7 +8,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { expect, test } from "vitest";
 
-import { config as ccstyleConfig } from "../../extensions/app/config/renderer.ts";
+import { config as oneuiConfig } from "../../extensions/app/config/renderer.ts";
 import {
   animateCompactThinkingText,
   clearThinkingPreviewCache,
@@ -114,7 +114,7 @@ const headlessCtx = {
   ui: { theme: {}, setWidget() {}, requestRender() {} },
 };
 
-test("compact thinking patches the runtime component with ccstyle config", () => {
+test("compact thinking patches the runtime component with pi-one-ui config", () => {
   const dir = mkdtempSync(join(tmpdir(), "pi-compact-thinking-"));
   const previousDir = process.env.PI_CODING_AGENT_DIR;
   const { emit, pi } = runtime();
@@ -658,7 +658,7 @@ test("thinking preview counts wrapped hidden lines and does not restyle from cac
       `expected hidden-line hint after Thought, got: ${JSON.stringify(firstPlain)}`,
     ).toBeTruthy();
     expect(hint).toMatch(/<dim> • \(\d+ more lines/);
-    const bodyToken = ccstyleConfig.dimThinkingText ? "dim" : "thinkingText";
+    const bodyToken = oneuiConfig.dimThinkingText ? "dim" : "thinkingText";
     expect(
       !firstPlain.some(
         (line: string) =>

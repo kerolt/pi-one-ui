@@ -368,7 +368,7 @@ test("missing and unavailable write metadata never masquerade as create", () => 
 });
 
 test("write execution captures the 512000-byte boundary and degrades above it", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "ccstyle-diff-"));
+  const directory = await mkdtemp(join(tmpdir(), "one-ui-diff-"));
   const path = join(directory, "target.txt");
   const store = new WriteExecutionMetadataStore();
   try {

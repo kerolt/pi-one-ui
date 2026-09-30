@@ -1380,7 +1380,7 @@ export function installCompactMode(
       uiRef = ctx?.ui;
       resetRounds();
       // 始终保持补丁在链上：mode=on/off 走 passThrough，仍写入 lastMessage
-      // 与 tracked 集合，这样 /ccstyle 切回 compact 时不必 /reload。
+      // 与 tracked 集合，这样 /oneui 切回 compact 时不必 /reload。
       patch.assertAssistantOwnership();
       if (config.mode === "compact") syncGlobalExpanded(ctx);
       else hoveredAssistantComponent = undefined;

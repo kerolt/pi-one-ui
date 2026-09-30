@@ -60,7 +60,7 @@ function makeBranch(summary = "branch work") {
   );
 }
 
-test("message-display: ccstyle on 时三个组件渲染为工具调用风格", () => {
+test("message-display: pi-one-ui on 时三个组件渲染为工具调用风格", () => {
   setConfig(normalizeConfig({ ...DEFAULT_CONFIG, mode: "on" }));
   const dispose = installMessageDisplayRendering();
   setMessageDisplayTheme(fakeTheme());

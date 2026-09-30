@@ -46,7 +46,7 @@ export function renderRichToolResult(
   theme: any,
   context: any,
   writeMetadata: WriteExecutionMetadataStore,
-  /** Plain snapshot or live getter — getter lets /ccstyle panel changes repaint existing diffs. */
+  /** Plain snapshot or live getter — getter lets /oneui panel changes repaint existing diffs. */
   displayConfig: DisplayConfigInput = DEFAULT_TOOL_DISPLAY_CONFIG,
 ): any | undefined {
   if (options?.isPartial || options?.isError || context?.isError)

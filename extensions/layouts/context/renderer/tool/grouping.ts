@@ -237,7 +237,7 @@ function ioRenderRevision(
 }
 
 export class ToolGroupComponent extends Container {
-  readonly toolCallId = `ccstyle-tool-group-${nextGroupId++}`;
+  readonly toolCallId = `oneui-tool-group-${nextGroupId++}`;
   readonly toolName = "Tool group";
   private _expanded = false;
   /** 分组是否展开（只读；测试与外部读状态用）。 */

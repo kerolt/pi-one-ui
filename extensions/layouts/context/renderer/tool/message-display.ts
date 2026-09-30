@@ -13,7 +13,7 @@ import {
 import { showMoreHintText } from "./show-more-hint.ts";
 
 /**
- * 接管三个消息组件（`<skill>` 块、压缩摘要、分支摘要），ccstyle on 时渲染为
+ * 接管三个消息组件（`<skill>` 块、压缩摘要、分支摘要），pi-one-ui on 时渲染为
  * 与工具调用一致的单行风格（● Title · hint），off 时回退原生。
  *
  * 三者结构同构：Box + markdownTheme + updateDisplay，构造/setExpanded/invalidate
@@ -68,7 +68,7 @@ function ensureHintHover(component: any): void {
   };
 }
 
-function renderCcstyle(component: any, kind: DisplayKind): void {
+function renderPolishedMessage(component: any, kind: DisplayKind): void {
   const theme = displayTheme;
   if (!theme) return; // 主题未就绪时保留原生渲染
   if (component.bgFn) component.setBgFn?.(undefined); // 与工具调用一致，去掉灰底
@@ -128,7 +128,7 @@ export function installMessageDisplayRendering(): () => void {
     const installed = function (this: any) {
       if (patch.active && config.mode !== "off") {
         try {
-          renderCcstyle(this, kind);
+          renderPolishedMessage(this, kind);
           return;
         } catch {
           // 渲染失败回退原生
