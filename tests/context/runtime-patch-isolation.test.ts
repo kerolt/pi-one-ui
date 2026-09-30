@@ -62,7 +62,7 @@ test("stale TUI shutdown leaves the replacement runtime active", async () => {
     const replacementTool = Object.fromEntries(
       toolMethods.map((name) => [name, toolPrototype[name]]),
     ) as Record<string, Function>;
-    const patchKey = Symbol.for("pi.ccstyle.global-tool-render-patch");
+    const patchKey = Symbol.for("pi-one-ui.global-tool-render-patch");
     const replacementPatch = (globalThis as any)[patchKey];
 
     await runtimeA.events.get("session_shutdown")?.({}, ctx);
@@ -101,7 +101,7 @@ test("stale TUI shutdown leaves the replacement runtime active", async () => {
       containerPrototype[name] = originalContainer[name];
     for (const name of toolMethods) toolPrototype[name] = originalTool[name];
     delete (globalThis as any)[
-      Symbol.for("pi.ccstyle.global-tool-render-patch")
+      Symbol.for("pi-one-ui.global-tool-render-patch")
     ];
   }
 });

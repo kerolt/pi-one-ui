@@ -35,7 +35,7 @@ type RenderSlot = {
   shell: "box" | "self" | "text" | null;
   callComponent: unknown;
   resultComponent: unknown;
-  /** rendererState 中 ccstyle 渲染层的指针快照（切槽重装时恢复）。 */
+  /** rendererState 中 pi-one-ui 渲染层的指针快照（切槽重装时恢复）。 */
   stateSnapshot: [unknown, unknown, unknown];
 };
 
@@ -89,7 +89,7 @@ function fingerprintOf(
  * 不再排期，长命令期间 loading 图标就会冻结在当前帧。
  */
 function schedulesPendingAnimation(component: any): boolean {
-  const visualState = component?.rendererState?.ccstyleToolVisualState as
+  const visualState = component?.rendererState?.oneuiToolVisualState as
     | string
     | undefined;
   const pending =
@@ -166,9 +166,9 @@ function syncShell(component: any, shell: "box" | "self" | "text"): void {
 function stateSnapshotOf(component: any): [unknown, unknown, unknown] {
   const state = component?.rendererState;
   return [
-    state?.ccstyleIoView,
-    state?.ccstyleExpandedIoView,
-    state?.ccstyleToolVisualState,
+    state?.oneuiIoView,
+    state?.oneuiExpandedIoView,
+    state?.oneuiToolVisualState,
   ];
 }
 
@@ -186,14 +186,14 @@ function restoreStateSnapshot(
   const state = (component.rendererState ??= {});
   // ioView/visualState 每槽构建时都会写入，按槽恢复；
   // expandedIoView 是跨槽保留指针（折叠 renderer 不清），只在展开槽恢复。
-  state.ccstyleIoView = snapshot[0];
-  state.ccstyleToolVisualState = snapshot[1];
-  if (slotKey === "expanded") state.ccstyleExpandedIoView = snapshot[2];
+  state.oneuiIoView = snapshot[0];
+  state.oneuiToolVisualState = snapshot[1];
+  if (slotKey === "expanded") state.oneuiExpandedIoView = snapshot[2];
 }
 
 /**
  * 把缓存槽的 call/result 组件装回目标壳容器并恢复派生字段。
- * 同时恢复 ccstyle 渲染层的 rendererState 指针快照（ioView / expandedIoView /
+ * 同时恢复 pi-one-ui 渲染层的 rendererState 指针快照（ioView / expandedIoView /
  * visualState），补齐切槽跳过 renderer 调用导致的状态缺失；pending 展开时
  * 重新调度加载动画。text fallback 槽（无容器装载语义）返回 false，调用方
  * 退化为重建。

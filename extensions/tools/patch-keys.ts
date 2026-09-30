@@ -1,5 +1,5 @@
 /**
- * ccstyle 补丁所有权与跨模块协调键的单一来源（single source of truth）。
+ * pi-one-ui 补丁所有权与跨模块协调键的单一来源（single source of truth）。
  *
  * 全部使用 Symbol.for（全局注册表）：/reload 后新模块实例拿到的是同一个 symbol，
  * 这是跨 reload 识别/让渡补丁所有权的关键。切勿把这些 Symbol.for 改成模块局部 Symbol。
@@ -14,25 +14,25 @@
 
 // ── compact / compact-thinking 协调 ──
 export const COMPACT_MODE_PATCH_KEY = Symbol.for(
-  "pi.ccstyle.compact-mode-patch",
+  "pi-one-ui.compact-mode-patch",
 );
 export const COMPACT_THINKING_PATCH_KEY = Symbol.for(
-  "pi.ccstyle.compact-thinking-update",
+  "pi-one-ui.compact-thinking-update",
 );
 export const PROTOTYPE_ORIGINAL_KEY = Symbol.for(
-  "pi.ccstyle.prototype-original",
+  "pi-one-ui.prototype-original",
 );
 export const COMPACT_THINKING_OWNER = Symbol.for(
-  "pi.ccstyle.compact-thinking-owner",
+  "pi-one-ui.compact-thinking-owner",
 );
 
 // ── assistant 展开状态（实例标记；description 供旧模块按 symbol.description 清理） ──
 export const ASSISTANT_SET_EXPANDED_DESCRIPTION =
-  "pi.ccstyle.compact-assistant-set-expanded";
+  "pi-one-ui.compact-assistant-set-expanded";
 export const ASSISTANT_TOGGLE_ROUND_DESCRIPTION =
-  "pi.ccstyle.compact-assistant-toggle-round";
+  "pi-one-ui.compact-assistant-toggle-round";
 export const ASSISTANT_REENTRY_DESCRIPTION =
-  "pi.ccstyle.compact-assistant-reentry";
+  "pi-one-ui.compact-assistant-reentry";
 export const ASSISTANT_SET_EXPANDED_KEY = Symbol.for(
   ASSISTANT_SET_EXPANDED_DESCRIPTION,
 );
@@ -43,54 +43,54 @@ export const ASSISTANT_REENTRY_KEY = Symbol.for(ASSISTANT_REENTRY_DESCRIPTION);
 
 // ── 工具渲染补丁 ──
 export const GLOBAL_TOOL_RENDER_PATCH = Symbol.for(
-  "pi.ccstyle.global-tool-render-patch",
+  "pi-one-ui.global-tool-render-patch",
 );
 export const COMPONENT_TOOL_RENDER_MODE = Symbol.for(
-  "pi.ccstyle.component-tool-render-mode",
+  "pi-one-ui.component-tool-render-mode",
 );
 export const TOOL_EXPANDED_BACKGROUND_PATCH = Symbol.for(
-  "pi.ccstyle.tool-expanded-background-patch",
+  "pi-one-ui.tool-expanded-background-patch",
 );
 
 // ── 工具 updateDisplay 跨 toggle 重建缓存 ──
 export const TOGGLE_RENDER_CACHE_PATCH = Symbol.for(
-  "pi.ccstyle.toggle-render-cache-patch",
+  "pi-one-ui.toggle-render-cache-patch",
 );
 
 // ── 消息组件补丁 ──
 export const MESSAGE_DISPLAY_PATCH = Symbol.for(
-  "pi.ccstyle.message-display-patch",
+  "pi-one-ui.message-display-patch",
 );
 
 // ── 压缩渲染补丁（/reload 残留 deactivate 用） ──
 export const GLOBAL_COMPACTION_RENDER_PATCH = Symbol.for(
-  "pi.ccstyle.compaction-render-patch",
+  "pi-one-ui.compaction-render-patch",
 );
 
 // ── 工具分组 ──
 export const TOOL_GROUPING_PATCH_KEY = Symbol.for(
-  "pi.ccstyle.tool-grouping-patch",
+  "pi-one-ui.tool-grouping-patch",
 );
 export const TOOL_GROUPING_PARENT_KEY = Symbol.for(
-  "pi.ccstyle.tool-grouping-parent",
+  "pi-one-ui.tool-grouping-parent",
 );
 export const TOOL_GROUPING_GENERATION_KEY = Symbol.for(
-  "pi.ccstyle.tool-grouping-generation",
+  "pi-one-ui.tool-grouping-generation",
 );
 
 // ── 鼠标交互 ──
-export const TOOL_MOUSE_OWNER_KEY = Symbol.for("pi.ccstyle.tool-mouse-owner");
-export const TOOL_MOUSE_TUI_SLOT = Symbol.for("pi.ccstyle.tool-mouse-tui");
+export const TOOL_MOUSE_OWNER_KEY = Symbol.for("pi-one-ui.tool-mouse-owner");
+export const TOOL_MOUSE_TUI_SLOT = Symbol.for("pi-one-ui.tool-mouse-tui");
 export const SCROLL_BUTTON_STATE_SLOT = Symbol.for(
-  "pi.ccstyle.scroll-button-state",
+  "pi-one-ui.scroll-button-state",
 );
 export const FLUSH_DOCKED_BASH_PATCH = Symbol.for(
-  "pi.ccstyle.flush-docked-bash-patch",
+  "pi-one-ui.flush-docked-bash-patch",
 );
-export const TOOL_HOVER_STATE_KEY = Symbol.for("pi.ccstyle.tool-hover-state");
+export const TOOL_HOVER_STATE_KEY = Symbol.for("pi-one-ui.tool-hover-state");
 
 // ── rich diff 组件标记 ──
-export const RICH_DIFF_COMPONENT = Symbol.for("pi.ccstyle.rich-diff-component");
+export const RICH_DIFF_COMPONENT = Symbol.for("pi-one-ui.rich-diff-component");
 
 // ── PatchRegistry：所有权生命周期统一收口 ──
 

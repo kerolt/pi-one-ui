@@ -690,7 +690,7 @@ function compactEditWriteLines(
       outputText,
       theme,
       isError,
-      state.ccstyleIoView,
+      state.oneuiIoView,
       component.args,
       component,
       true, // 外层 Box(1,1) 已 pad

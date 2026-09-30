@@ -511,7 +511,7 @@ test("settled expanded cache replays fresh fullscreen IO markers", () => {
       1,
       true,
     );
-    read.rendererState.ccstyleIoView = view;
+    read.rendererState.oneuiIoView = view;
     read.resultRendererComponent = view;
     read.render = (width: number) => view.render(width);
     bash.render = () => ["✓ Bash done"];
@@ -576,7 +576,7 @@ test("pending child cache refreshes IO hover and frame markers", () => {
       true,
     );
     let settledRenders = 0;
-    read.rendererState.ccstyleIoView = view;
+    read.rendererState.oneuiIoView = view;
     read.resultRendererComponent = view;
     read.render = (width: number) => {
       settledRenders++;

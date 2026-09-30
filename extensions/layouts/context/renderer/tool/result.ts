@@ -247,8 +247,8 @@ const activeAnimationContexts = new Set<any>();
 let sharedAnimationTimer: ReturnType<typeof setTimeout> | null = null;
 
 function clearAnimation(context: any) {
-  if (!context?.state?.ccstyleAnimationScheduled) return;
-  context.state.ccstyleAnimationScheduled = false;
+  if (!context?.state?.oneuiAnimationScheduled) return;
+  context.state.oneuiAnimationScheduled = false;
   activeAnimationContexts.delete(context);
   if (activeAnimationContexts.size === 0 && sharedAnimationTimer) {
     clearTimeout(sharedAnimationTimer);
@@ -258,7 +258,7 @@ function clearAnimation(context: any) {
 
 export function clearAllAnimations() {
   for (const ctx of activeAnimationContexts) {
-    ctx.state.ccstyleAnimationScheduled = false;
+    ctx.state.oneuiAnimationScheduled = false;
   }
   activeAnimationContexts.clear();
   if (sharedAnimationTimer) {
@@ -272,8 +272,8 @@ export function scheduleAnimation(
   intervalMs = TOOL_LOADING_INTERVAL_MS,
 ) {
   const state = (context.state ??= {});
-  if (state.ccstyleAnimationScheduled) return;
-  state.ccstyleAnimationScheduled = true;
+  if (state.oneuiAnimationScheduled) return;
+  state.oneuiAnimationScheduled = true;
   activeAnimationContexts.add(context);
   if (!sharedAnimationTimer) {
     sharedAnimationTimer = setTimeout(() => {
@@ -281,7 +281,7 @@ export function scheduleAnimation(
       const contexts = Array.from(activeAnimationContexts);
       activeAnimationContexts.clear();
       for (const ctx of contexts) {
-        ctx.state.ccstyleAnimationScheduled = false;
+        ctx.state.oneuiAnimationScheduled = false;
         ctx.invalidate?.();
       }
     }, intervalMs);
@@ -307,8 +307,8 @@ export function settledIcon(
 export function setToolVisualState(context: any, visualState: ToolVisualState) {
   const state = (context.state ??= {});
   if (visualState !== "pending") clearAnimation(context);
-  if (state.ccstyleToolVisualState === visualState) return;
-  state.ccstyleToolVisualState = visualState;
+  if (state.oneuiToolVisualState === visualState) return;
+  state.oneuiToolVisualState = visualState;
   // Do not invalidate synchronously from renderResult. Pi is already rendering
   // this tool row; recursively scheduling another render here can retain both
   // the finalized result component and its previous secondary/partial component,
@@ -317,7 +317,7 @@ export function setToolVisualState(context: any, visualState: ToolVisualState) {
 }
 
 function getToolVisualState(context: any): ToolVisualState | undefined {
-  return context?.state?.ccstyleToolVisualState as ToolVisualState | undefined;
+  return context?.state?.oneuiToolVisualState as ToolVisualState | undefined;
 }
 
 export function resolveToolVisualState(
@@ -346,7 +346,7 @@ export function toolIconColor(
 }
 
 export function isToolExpanded(options: any, context: any): boolean {
-  const local = context?.state?.ccstyleToolExpanded;
+  const local = context?.state?.oneuiToolExpanded;
   return typeof local === "boolean"
     ? local
     : Boolean(options?.expanded ?? context?.expanded);
@@ -407,7 +407,7 @@ export type ToolIoSection = "input" | "output";
 // Module-local token: /reload creates a fresh token, so stale view instances are
 // replaced instead of retaining their old render implementation.
 const EXPANDED_TOOL_IO_VIEW_GENERATION = Symbol(
-  "ccstyle-expanded-tool-io-view",
+  "pi-one-ui.expanded-tool-io-view",
 );
 
 /**
@@ -931,7 +931,7 @@ export function renderExpandedToolResult(
 
   // Prefer structured Input/Output when we have args or non-empty output.
   if (inputBody.trim() || outputBody.trim()) {
-    const cached = context?.state?.ccstyleExpandedIoView;
+    const cached = context?.state?.oneuiExpandedIoView;
     let view: ExpandedToolIoView;
     if (isExpandedToolIoView(lastComponent)) {
       view = lastComponent;
@@ -962,8 +962,8 @@ export function renderExpandedToolResult(
   }
 
   if (context?.state) {
-    context.state.ccstyleIoView = undefined;
-    context.state.ccstyleExpandedIoView = undefined;
+    context.state.oneuiIoView = undefined;
+    context.state.oneuiExpandedIoView = undefined;
   }
   const color = isError ? "error" : "muted";
   return new Text(theme.fg(color, renderCollapsedToolResult("Done")), 0, 0);
@@ -1079,8 +1079,8 @@ function rememberIoView(context: any, view: ExpandedToolIoView): void {
     ioViewInvalidators.set(view, () => context.invalidate());
   }
   if (!context.state || typeof context.state !== "object") context.state = {};
-  context.state.ccstyleIoView = view;
-  context.state.ccstyleExpandedIoView = view;
+  context.state.oneuiIoView = view;
+  context.state.oneuiExpandedIoView = view;
 }
 
 /** hover 状态变更后刷新上一个/下一个视图（context.invalidate 缓存于 ioViewInvalidators）。 */

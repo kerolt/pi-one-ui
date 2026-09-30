@@ -73,7 +73,7 @@ function renderCcstyle(component: any, kind: DisplayKind): void {
   if (!theme) return; // 主题未就绪时保留原生渲染
   if (component.bgFn) component.setBgFn?.(undefined); // 与工具调用一致，去掉灰底
   if (component.paddingY !== 0) {
-    component._ccstyleOriginalPaddingY = component.paddingY;
+    component._oneuiOriginalPaddingY = component.paddingY;
     component.paddingY = 0; // 工具组件 paddingY=0；原生 Box 默认 1，会上下各留一个空行
   }
   component.clear();
@@ -135,9 +135,9 @@ export function installMessageDisplayRendering(): () => void {
         }
       }
       // 回退原生前恢复 paddingY，避免原生渲染丢失上下内边距
-      if (this._ccstyleOriginalPaddingY !== undefined) {
-        this.paddingY = this._ccstyleOriginalPaddingY;
-        delete this._ccstyleOriginalPaddingY;
+      if (this._oneuiOriginalPaddingY !== undefined) {
+        this.paddingY = this._oneuiOriginalPaddingY;
+        delete this._oneuiOriginalPaddingY;
       }
       original.call(this);
     };

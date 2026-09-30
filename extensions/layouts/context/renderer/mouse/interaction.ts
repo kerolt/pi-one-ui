@@ -100,7 +100,7 @@ type InteractionFrame = { regions: InteractionRegion[] };
 const TOOL_MOUSE_WIDGET_KEY = "ccstyle-tool-mouse";
 const TOOL_MOUSE_MOTION_ENABLE = "\x1b[?1003h\x1b[?1006h";
 const TOOL_MOUSE_MOTION_DISABLE = "\x1b[?1003l";
-const FULLSCREEN_MOTION_ENABLED = Symbol("ccstyle.fullscreen-motion-enabled");
+const FULLSCREEN_MOTION_ENABLED = Symbol("pi-one-ui.fullscreen-motion-enabled");
 const DEFAULT_TOOL_MOUSE_OWNER = {};
 export const TOOL_MOUSE_DISABLE = "\x1b[?1006l\x1b[?1003l\x1b[?1000l";
 
@@ -298,9 +298,9 @@ function releaseFullscreenToolMouseMotion(tui?: any): void {
   }
 }
 
-const FULLSCREEN_VIEWPORT_PATCH = Symbol("ccstyle.fullscreen-viewport-patch");
+const FULLSCREEN_VIEWPORT_PATCH = Symbol("pi-one-ui.fullscreen-viewport-patch");
 const FULLSCREEN_WHEEL_SCROLL_ORIGINAL = Symbol(
-  "ccstyle.fullscreen-wheel-scroll-original",
+  "pi-one-ui.fullscreen-wheel-scroll-original",
 );
 
 /**

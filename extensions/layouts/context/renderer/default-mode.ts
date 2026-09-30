@@ -400,7 +400,7 @@ function createCcstyleTool(
           true, // mode=on：贴左，由外层 Box(1,1) 提供 1 格 padding
         );
       }
-      if (context?.state) context.state.ccstyleIoView = undefined;
+      if (context?.state) context.state.oneuiIoView = undefined;
       let cachedWidth: number | undefined;
       let cachedLine: string | undefined;
       let cachedHoveredLine: string | undefined;
@@ -425,7 +425,7 @@ function createCcstyleTool(
           cachedWidth = undefined;
           cachedLine = undefined;
           cachedHoveredLine = undefined;
-          context?.state?.ccstyleExpandedIoView?.invalidate?.();
+          context?.state?.oneuiExpandedIoView?.invalidate?.();
         },
       };
     },

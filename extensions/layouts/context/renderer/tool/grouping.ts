@@ -213,8 +213,8 @@ type SettledExpandedChildCache = {
 
 function toolIoView(tool: any): ExpandedToolIoView | undefined {
   for (const candidate of [
-    tool?.rendererState?.ccstyleIoView,
-    tool?.state?.ccstyleIoView,
+    tool?.rendererState?.oneuiIoView,
+    tool?.state?.oneuiIoView,
     tool?.resultRendererComponent,
   ]) {
     if (isExpandedToolIoView(candidate)) {

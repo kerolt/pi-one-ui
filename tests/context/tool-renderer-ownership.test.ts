@@ -167,8 +167,8 @@ test("expanded ccstyle tools use Pi's native background card", async () => {
     expect(component.children.includes(component.selfRenderContainer)).toBe(
       true,
     );
-    expect(component.rendererState.ccstyleIoView).toBeUndefined();
-    expect(component.rendererState.ccstyleExpandedIoView).toBe(expandedView);
+    expect(component.rendererState.oneuiIoView).toBeUndefined();
+    expect(component.rendererState.oneuiExpandedIoView).toBe(expandedView);
     component.setExpanded(true);
     expect(component.resultRendererComponent).toBe(expandedView);
     expect(expandedView.render(58)).toBe(expandedBodyLines);
@@ -506,7 +506,7 @@ test("global renderer reload chains external wrappers and shutdown restores them
     claudeCodeStyleExtension(makePi(firstEvents) as any);
     await firstEvents.get("session_start")?.({}, ctx);
     const firstPatch = (globalThis as any)[
-      Symbol.for("pi.ccstyle.global-tool-render-patch")
+      Symbol.for("pi-one-ui.global-tool-render-patch")
     ];
     const externalCalls = Object.fromEntries(
       methodNames.map((name) => [name, 0]),
@@ -576,7 +576,7 @@ test("global renderer reload chains external wrappers and shutdown restores them
     await secondEvents.get("session_shutdown")?.({}, ctx);
     for (const name of methodNames) prototype[name] = originals[name];
     delete (globalThis as any)[
-      Symbol.for("pi.ccstyle.global-tool-render-patch")
+      Symbol.for("pi-one-ui.global-tool-render-patch")
     ];
   }
 });
@@ -623,7 +623,7 @@ test("global renderer migrates legacy Symbol state without retaining old wrapper
     if (shouldGloballyStyleTool()) return undefined;
     return legacy.originalGetResultRenderer.apply(this, args);
   };
-  (globalThis as any)[Symbol.for("pi.ccstyle.global-tool-render-patch")] =
+  (globalThis as any)[Symbol.for("pi-one-ui.global-tool-render-patch")] =
     legacy;
   const ctx = {
     mode: "tui",
@@ -641,7 +641,7 @@ test("global renderer migrates legacy Symbol state without retaining old wrapper
     } as any);
     await events.get("session_start")?.({}, ctx);
     const migrated = (globalThis as any)[
-      Symbol.for("pi.ccstyle.global-tool-render-patch")
+      Symbol.for("pi-one-ui.global-tool-render-patch")
     ];
     for (const name of methodNames)
       expect(migrated.downstream[name]).toBe(originals[name]);
@@ -653,7 +653,7 @@ test("global renderer migrates legacy Symbol state without retaining old wrapper
     await events.get("session_shutdown")?.({}, ctx);
     for (const name of methodNames) prototype[name] = originals[name];
     delete (globalThis as any)[
-      Symbol.for("pi.ccstyle.global-tool-render-patch")
+      Symbol.for("pi-one-ui.global-tool-render-patch")
     ];
   }
 });
@@ -703,7 +703,7 @@ test("global renderer shutdown does not overwrite wrappers installed later", asy
     await events.get("session_shutdown")?.({}, ctx);
     for (const name of methodNames) prototype[name] = originals[name];
     delete (globalThis as any)[
-      Symbol.for("pi.ccstyle.global-tool-render-patch")
+      Symbol.for("pi-one-ui.global-tool-render-patch")
     ];
   }
 });
