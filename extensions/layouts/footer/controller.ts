@@ -15,7 +15,7 @@ import { buildSessionDurationLabel } from "../../shared/format.ts";
 import { activeFooterReferences } from "./data.ts";
 import { installFooter, installHiddenFooter } from "./footer.ts";
 
-const ZENTUI_FOOTER_OWNER = Symbol.for("pi-zentui.footer-owner");
+const POLISHED_FOOTER_OWNER = Symbol.for("pi-zentui.footer-owner");
 
 type FooterKind = "starship" | "hidden";
 
@@ -244,7 +244,7 @@ export class FooterLayoutController {
    */
   private footerOwner(ctx: ExtensionContext): unknown {
     return (ctx.ui as unknown as Record<PropertyKey, unknown>)[
-      ZENTUI_FOOTER_OWNER
+      POLISHED_FOOTER_OWNER
     ];
   }
 
@@ -270,8 +270,8 @@ export class FooterLayoutController {
   private setOwnership(ctx: ExtensionContext, token: symbol | undefined): void {
     const ui = ctx.ui as unknown as Record<PropertyKey, unknown>;
     try {
-      if (token) ui[ZENTUI_FOOTER_OWNER] = token;
-      else delete ui[ZENTUI_FOOTER_OWNER];
+      if (token) ui[POLISHED_FOOTER_OWNER] = token;
+      else delete ui[POLISHED_FOOTER_OWNER];
     } catch {
       // Failure to mark ownership prevents destructive native restoration.
     }

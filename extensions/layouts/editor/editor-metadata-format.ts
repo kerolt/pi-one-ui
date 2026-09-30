@@ -1,5 +1,5 @@
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import type { ZentuiConfig } from "../../app/config/shell.ts";
+import type { PolishedTuiConfig } from "../../app/config/shell.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   renderThemeStyleOrFallback,
@@ -140,7 +140,7 @@ export function sanitizeEditorMetadataText(value: string): string {
 }
 
 function editorThinkingStyle(
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   level: string,
 ): string | undefined {
   switch (level.toLowerCase()) {
@@ -171,7 +171,7 @@ function renderVariable(
   name: string,
   values: EditorMetadataValues,
   uiTheme: Theme,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
 ): { plain: string; styled: string } {
   const thinking =
     values.thinking.toLowerCase() === "off" ? "" : values.thinking;
@@ -235,7 +235,7 @@ function renderTokens(
   tokens: FormatToken[],
   values: EditorMetadataValues,
   uiTheme: Theme,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
 ): RenderedTokens {
   let styled = "";
   let hasDynamic = false;
@@ -275,7 +275,7 @@ export function renderEditorMetadataFormat(
   format: string,
   values: EditorMetadataValues,
   uiTheme: Theme,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
 ): string {
   return renderTokens(
     parseFooterFormat(sanitizeEditorMetadataText(format)),

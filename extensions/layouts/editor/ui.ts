@@ -12,7 +12,7 @@ import {
   truncateToWidth,
   visibleWidth,
 } from "@earendil-works/pi-tui";
-import type { ZentuiConfig } from "../../app/config/shell.ts";
+import type { PolishedTuiConfig } from "../../app/config/shell.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   EDITOR_BORDER_FALLBACK,
@@ -101,7 +101,7 @@ type MinimalistFrameAdapterOptions = {
   autocompleteSource: AutocompleteEditorInternals;
   autocompleteCapture?: AutocompleteCapture;
   uiTheme: Theme;
-  config: ZentuiConfig;
+  config: PolishedTuiConfig;
   inputText: string;
   metadata: MinimalistEditorMetadata;
   ownedFrame?: PolishedFrameSplit;
@@ -293,7 +293,7 @@ export function renderWithAutocompleteCapture<T>(
  * （保持 Pi 原生 effort/主题变色不动）。
  */
 export function offEditorBorderColor(
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   uiTheme: Theme,
 ): ((text: string) => string) | undefined {
   const editor = config.components.editor;
@@ -316,7 +316,7 @@ function fillLine(content: string, width: number): string {
 }
 
 function getEditorChromeWidths(
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   uiTheme: Theme,
   reset: string,
 ) {
@@ -353,7 +353,7 @@ function parseEditorBorder(
 
 function unwrapPolishedFrameOnly(
   lines: string[],
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   uiTheme: Theme,
 ): { editorLines: string[]; viewport: ViewportCounts } | undefined {
   if (lines.length < 5) return undefined;
@@ -379,7 +379,7 @@ function unwrapPolishedFrameOnly(
 
 function splitPolishedFrame(
   lines: string[],
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   uiTheme: Theme,
 ): PolishedFrameSplit | undefined {
   if (!parseEditorBorder(lines[0] ?? "", "above")) return undefined;
@@ -399,7 +399,7 @@ function splitPolishedFrame(
 function inspectPolishedFrameProvenance(
   base: WrappedEditor,
   rendered: string[],
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   uiTheme: Theme,
 ): { safe: boolean; ownedFrame?: PolishedFrameSplit } {
   const provenance = POLISHED_FRAME_SPLITS.get(rendered);
@@ -485,7 +485,7 @@ export class PolishedEditor extends CustomEditor {
   private readonly getThinkingLevel: () => string | undefined;
   private readonly getMinimalistMetadata: () => MinimalistEditorMetadata;
   private readonly onMinimalistDecorationChange: (active: boolean) => void;
-  private readonly getConfig: () => ZentuiConfig;
+  private readonly getConfig: () => PolishedTuiConfig;
   private readonly uiTheme: Theme;
 
   constructor(
@@ -493,7 +493,7 @@ export class PolishedEditor extends CustomEditor {
     theme: EditorTheme,
     keybindings: KeybindingsManager,
     uiTheme: Theme,
-    getConfig: () => ZentuiConfig,
+    getConfig: () => PolishedTuiConfig,
     getModelMeta: () => EditorMeta,
     getThinkingLevel: () => string | undefined,
     getMinimalistMetadata: () => MinimalistEditorMetadata = () => ({ cwd: "" }),
@@ -569,7 +569,7 @@ export class WrappedPolishedEditor implements EditorComponent {
   constructor(
     private readonly base: WrappedEditor,
     private readonly uiTheme: Theme,
-    private readonly getConfig: () => ZentuiConfig,
+    private readonly getConfig: () => PolishedTuiConfig,
     private readonly getModelMeta: () => EditorMeta,
     private readonly getThinkingLevel: () => string | undefined,
     private readonly getMinimalistMetadata: () => MinimalistEditorMetadata = () => ({

@@ -24,7 +24,7 @@ function makeProject(entries: Array<{ path: string; dir?: boolean }>): {
   cwd: string;
   names: string[];
 } {
-  const cwd = mkdtempSync(join(tmpdir(), "zentui-runtime-"));
+  const cwd = mkdtempSync(join(tmpdir(), "one-ui-runtime-"));
   for (const entry of entries) {
     const fullPath = join(cwd, entry.path);
     if (entry.dir) mkdirSync(fullPath, { recursive: true });
@@ -159,7 +159,11 @@ describe("detectRuntime", () => {
   it.each([
     ["conda", { CONDA_DEFAULT_ENV: "py312" }, "bold green"],
     ["guix_shell", { GUIX_ENVIRONMENT: "/gnu/store/profile" }, "yellow bold"],
-    ["meson", { MESON_DEVENV: "1", MESON_PROJECT_NAME: "zentui" }, "blue bold"],
+    [
+      "meson",
+      { MESON_DEVENV: "1", MESON_PROJECT_NAME: "sample-app" },
+      "blue bold",
+    ],
     ["nix_shell", { IN_NIX_SHELL: "pure" }, "bold blue"],
     ["spack", { SPACK_ENV: "dev" }, "bold blue"],
   ])("detects %s from Starship environment markers", (name, env, style) => {
@@ -195,7 +199,7 @@ describe("readRuntimeInfo cache", () => {
 
   it("returns error when cwd cannot be read", async () => {
     const result = await readRuntimeInfo(
-      join(tmpdir(), "zentui-missing-runtime-dir-xyz"),
+      join(tmpdir(), "one-ui-missing-runtime-dir-xyz"),
     );
     expect(result).toEqual({ kind: "error" });
   });

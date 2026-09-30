@@ -2,9 +2,9 @@ import { visibleWidth } from "@earendil-works/pi-tui";
 import type {
   ColorSpec,
   PolishedTuiColors,
+  PolishedTuiConfig,
   WorkingLineComponentConfig,
   WorkingLineTextAnimation,
-  ZentuiConfig,
 } from "../../app/config/shell.ts";
 import { PI_WORKING_LINE_MESSAGES } from "../../app/config/working-line-messages.ts";
 import { formatCount } from "../../shared/format.ts";
@@ -1048,7 +1048,7 @@ export class WorkingLineController {
   private stopElapsedUpdates: (() => void) | undefined;
 
   constructor(
-    private readonly getConfig: () => ZentuiConfig,
+    private readonly getConfig: () => PolishedTuiConfig,
     private readonly getTheme: () => ThemeLike,
     private readonly durationClock: AgentDurationClock = new AgentDurationClock(),
     private readonly random: () => number = Math.random,
@@ -1214,7 +1214,7 @@ export class WorkingLineController {
   }
 
   private makeFrameKey(
-    rootConfig: ZentuiConfig,
+    rootConfig: PolishedTuiConfig,
     selectedMessage: string | undefined,
   ): string {
     const config = rootConfig.components.workingLine;
@@ -1253,7 +1253,7 @@ export class WorkingLineController {
 
   private applyIndicator(
     ui: WorkingLineUi,
-    rootConfig: ZentuiConfig,
+    rootConfig: PolishedTuiConfig,
     selectedMessage = this.selectedMessage,
     force = false,
     rebase = false,

@@ -24,7 +24,7 @@ import {
   type PolishedTuiConfig,
   type SeparatorStyle,
 } from "../../extensions/app/config/shell";
-import { ZENTUI_PROTOTYPE_PATCH_REGISTRY } from "../../extensions/app/runtime/prototype-patch-registry";
+import { POLISHED_PROTOTYPE_PATCH_REGISTRY } from "../../extensions/app/runtime/prototype-patch-registry";
 import { installUserMessageStyle as installUserMessageStyleProduction } from "../../extensions/layouts/context/message/user-message";
 import { sanitizeUserMessageSourceText } from "../../extensions/layouts/context/message/user-message-osc";
 import {
@@ -38,11 +38,11 @@ import {
 } from "../../extensions/layouts/overlay/selector-border";
 import { emptyGitStatus } from "../../extensions/services/git-data";
 import { createInitialState } from "../../extensions/services/session-state";
-import zentui, { activeFooterReferences } from "../support/layout-lifecycle";
+import oneui, { activeFooterReferences } from "../support/layout-lifecycle";
 
 const isolatedAgentDir = vi.hoisted(() => {
   const previous = process.env.PI_CODING_AGENT_DIR;
-  const path = `/tmp/pi-zentui-extension-compliance-${process.pid}`;
+  const path = `/tmp/pi-one-ui-extension-compliance-${process.pid}`;
   const fs = process.getBuiltinModule("node:fs");
   fs.rmSync(path, { recursive: true, force: true });
   fs.mkdirSync(path, { recursive: true });
@@ -453,7 +453,7 @@ function stripTestTags(line: string): string {
 
 function loadExtension() {
   const handlers = new Map<string, Handler[]>();
-  const layout = zentui({
+  const layout = oneui({
     on(eventName: string, handler: Handler) {
       handlers.set(eventName, [...(handlers.get(eventName) ?? []), handler]);
     },
@@ -538,7 +538,7 @@ afterEach(() => {
   );
   delete (
     UserMessageComponent.prototype as unknown as Record<PropertyKey, unknown>
-  )[ZENTUI_PROTOTYPE_PATCH_REGISTRY];
+  )[POLISHED_PROTOTYPE_PATCH_REGISTRY];
 
   restoreDescriptor(
     ModelSelectorComponent.prototype,
@@ -555,7 +555,7 @@ afterEach(() => {
     SettingsSelectorComponent.prototype,
   ]) {
     delete (selectorPrototype as unknown as Record<PropertyKey, unknown>)[
-      ZENTUI_PROTOTYPE_PATCH_REGISTRY
+      POLISHED_PROTOTYPE_PATCH_REGISTRY
     ];
   }
 });
@@ -1164,7 +1164,7 @@ describe("Pi docs compliance", () => {
             PropertyKey,
             unknown
           >
-        )[ZENTUI_PROTOTYPE_PATCH_REGISTRY],
+        )[POLISHED_PROTOTYPE_PATCH_REGISTRY],
       ).toBeUndefined();
       await emit(handlers, "session_shutdown", ctx);
     } finally {
@@ -1172,7 +1172,7 @@ describe("Pi docs compliance", () => {
     }
   });
 
-  it("tracks the active Zentui factory after nested patch-rollback failure", async () => {
+  it("tracks the active pi-one-ui factory after nested patch-rollback failure", async () => {
     const handlers = loadExtension();
     const existingFactory = () => ({
       render: () => ["existing"],
@@ -1222,7 +1222,7 @@ describe("Pi docs compliance", () => {
       );
       expect(editorFactory).not.toBe(existingFactory);
       expect(assignedFactories).toHaveLength(1);
-      // shutdown 恢复 existing 失败后回退，仍保持 Zentui 工厂在位。
+      // shutdown 恢复 existing 失败后回退，仍保持 pi-one-ui 工厂在位。
       await emit(handlers, "session_shutdown", ctx);
       expect(editorFactory).not.toBe(existingFactory);
       expect(editorFactory).toBeTypeOf("function");
@@ -1232,7 +1232,7 @@ describe("Pi docs compliance", () => {
     }
   });
 
-  it("retains shutdown ownership when restoration fails and rollback leaves Zentui active", async () => {
+  it("retains shutdown ownership when restoration fails and rollback leaves the layout active", async () => {
     const handlers = loadExtension();
     let editorFactory: unknown;
     const assignedFactories: unknown[] = [];
@@ -1257,11 +1257,11 @@ describe("Pi docs compliance", () => {
     });
 
     await emit(handlers, "session_start", ctx);
-    const zentuiFactory = editorFactory;
-    expect(zentuiFactory).toBeTypeOf("function");
+    const polishedFactory = editorFactory;
+    expect(polishedFactory).toBeTypeOf("function");
     failNextDefaultRestore = true;
     await emit(handlers, "session_shutdown", ctx);
-    expect(editorFactory).toBe(zentuiFactory);
+    expect(editorFactory).toBe(polishedFactory);
     expect(assignedFactories).toHaveLength(3);
 
     // off 透传：工厂保留，卸载恢复只发生在 shutdown 清理。
@@ -1269,7 +1269,7 @@ describe("Pi docs compliance", () => {
       { style: "off" },
       ctx as never,
     );
-    expect(editorFactory).toBe(zentuiFactory);
+    expect(editorFactory).toBe(polishedFactory);
     expect(assignedFactories).toHaveLength(3);
   });
 
@@ -1356,10 +1356,10 @@ describe("Pi docs compliance", () => {
     });
 
     await emit(handlers, "session_start", ctx);
-    const zentuiFactory = editorFactory as (...args: unknown[]) => {
+    const polishedFactory = editorFactory as (...args: unknown[]) => {
       render(width: number): string[];
     };
-    const opaqueWrapper = (...args: unknown[]) => zentuiFactory(...args);
+    const opaqueWrapper = (...args: unknown[]) => polishedFactory(...args);
     editorFactory = opaqueWrapper;
 
     handlers.layout.editorController.setComponent(
@@ -1411,7 +1411,7 @@ describe("Pi docs compliance", () => {
 
       await emit(handlers, "session_start", ctx);
       await vi.runOnlyPendingTimersAsync();
-      const zentuiFactory = editorFactory as (...args: unknown[]) => {
+      const polishedFactory = editorFactory as (...args: unknown[]) => {
         render(width: number): string[];
         invalidate(): void;
         handleInput(data: string): void;
@@ -1419,7 +1419,7 @@ describe("Pi docs compliance", () => {
         setText(text: string): void;
       };
       const keybindings = { matches: () => false };
-      const retainedEditor = zentuiFactory(
+      const retainedEditor = polishedFactory(
         { requestRender() {}, terminal: { rows: 24, cols: 80 } } as never,
         { borderColor: (text: string) => text, selectList: {} } as never,
         keybindings as never,
@@ -1440,24 +1440,24 @@ describe("Pi docs compliance", () => {
       };
       const opaqueFactory = () => opaqueEditor;
       editorFactory = opaqueFactory;
-      const zentuiLayers = (lines: string[]) =>
+      const polishedLayers = (lines: string[]) =>
         lines.filter((line) => line.includes("claude-sonnet")).length;
 
-      expect(zentuiLayers(opaqueEditor.render(80))).toBe(1);
+      expect(polishedLayers(opaqueEditor.render(80))).toBe(1);
       handlers.layout.editorController.setComponent(
         { style: "off" },
         ctx as never,
       );
 
       expect(editorFactory).toBe(opaqueFactory);
-      expect(zentuiLayers(opaqueEditor.render(80))).toBe(0);
+      expect(polishedLayers(opaqueEditor.render(80))).toBe(0);
 
       expect(editorFactory).toBe(opaqueFactory);
       expect(setEditorCalls).toBe(1);
       const disabledRender = opaqueEditor.render(80);
       expect(disabledRender[0]).toBe("third-party:80");
       expect(disabledRender.join("\n")).toContain("base editor");
-      expect(zentuiLayers(disabledRender)).toBe(0);
+      expect(polishedLayers(disabledRender)).toBe(0);
       expect(disabledRender.slice(1)).toEqual(retainedEditor.render(80));
 
       handlers.layout.editorController.setComponent(
@@ -1475,8 +1475,8 @@ describe("Pi docs compliance", () => {
       );
       const activeRender = activeEditor.render(80);
       expect(activeRender).toContain("third-party:76");
-      expect(zentuiLayers(activeRender)).toBe(1);
-      expect(zentuiLayers(opaqueEditor.render(80))).toBe(1);
+      expect(polishedLayers(activeRender)).toBe(1);
+      expect(polishedLayers(opaqueEditor.render(80))).toBe(1);
       activeEditor.handleInput("x");
       expect(outerInputs).toEqual(["x"]);
       expect(retainedEditor.getText()).toBe("base editorx");
@@ -1492,7 +1492,7 @@ describe("Pi docs compliance", () => {
         { style: "on" },
         ctx as never,
       );
-      expect(zentuiLayers(activeEditor.render(80))).toBe(1);
+      expect(polishedLayers(activeEditor.render(80))).toBe(1);
 
       await emit(handlers, "session_shutdown", ctx);
     } finally {
@@ -1501,7 +1501,7 @@ describe("Pi docs compliance", () => {
   });
 
   it.each(["exact", "metadata-wrapper"] as const)(
-    "deferred %s Zentui ownership activates minimalist-only project refresh",
+    "deferred %s pi-one-ui ownership activates minimalist-only project refresh",
     async (observation) => {
       vi.useFakeTimers();
       try {
@@ -1641,7 +1641,7 @@ describe("Pi docs compliance", () => {
     expect(runner.footerClears).toBe(0);
   });
 
-  it("refreshes a stale Zentui editor factory on extension reload instead of adopting old closures", async () => {
+  it("refreshes a stale pi-one-ui editor factory on extension reload instead of adopting old closures", async () => {
     const firstHandlers = loadExtension();
     let editorFactory: unknown;
     let setEditorCalls = 0;
@@ -1839,7 +1839,7 @@ describe("Pi docs compliance", () => {
     await emit(handlers, "session_shutdown", ctx);
   });
 
-  it("refreshes a stale wrapped Zentui editor without wrapping the old Zentui wrapper", async () => {
+  it("refreshes a stale wrapped pi-one-ui editor without wrapping the old wrapper", async () => {
     const firstHandlers = loadExtension();
     let baseFactoryCalls = 0;
     const existingEditorFactory = () => {
@@ -1902,7 +1902,7 @@ describe("Pi docs compliance", () => {
   it.each([
     ["the default editor", undefined],
     [
-      "a non-Zentui editor",
+      "a non-pi-one-ui editor",
       () => ({
         render: () => ["external editor"],
         invalidate() {},
@@ -2135,13 +2135,13 @@ describe("Pi docs compliance", () => {
     },
   );
 
-  it("renders user messages like the ZentUI prompt box", () => {
+  it("renders user messages like the pi-one-ui prompt box", () => {
     installUserMessageStyle(
       () => makeTaggedTheme(),
       () => defaultConfig,
     );
 
-    const lines = new UserMessageComponent("hello **zentui**")
+    const lines = new UserMessageComponent("hello **oneui**")
       .render(80)
       .map(stripPromptMarks);
     const rendered = lines.join("\n");
@@ -2153,7 +2153,7 @@ describe("Pi docs compliance", () => {
     expect(raw).toMatch(/\[borderMuted\]────|\u001b\[90m────/);
     expect(rendered).toContain("[userMessageText]");
     expect(rendered).toContain("[bold]");
-    expect(rendered).not.toContain("**zentui**");
+    expect(rendered).not.toContain("**oneui**");
     expect(rendered).not.toContain("claude-sonnet");
     expect(rendered).not.toContain("Anthropic");
     expect(rendered).not.toContain("xhigh");
@@ -2442,12 +2442,12 @@ describe("Pi docs compliance", () => {
       getTheme,
       () => defaultConfig,
     );
-    const zentuiWrapper = prototype.render;
+    const polishedWrapper = prototype.render;
     const thirdParty = function thirdParty(
       this: unknown,
       width: number,
     ): string[] {
-      return ["third-party", ...zentuiWrapper.call(this, width)];
+      return ["third-party", ...polishedWrapper.call(this, width)];
     };
     prototype.render = thirdParty;
 
@@ -2510,12 +2510,12 @@ describe("Pi docs compliance", () => {
       () => makeTaggedTheme(),
       () => defaultConfig,
     );
-    const modelZentuiWrapper = ModelSelectorComponent.prototype.render;
+    const modelPolishedWrapper = ModelSelectorComponent.prototype.render;
     const thirdPartyModelRender = function thirdPartyModelRender(
       this: unknown,
       width: number,
     ): string[] {
-      return modelZentuiWrapper.call(this as never, width);
+      return modelPolishedWrapper.call(this as never, width);
     };
     ModelSelectorComponent.prototype.render = thirdPartyModelRender;
 
@@ -3114,12 +3114,12 @@ describe("Pi docs compliance", () => {
     prototype.invalidate = predecessorInvalidate;
     const getTheme = vi.fn(() => makeTaggedTheme("old:"));
     const cleanup = installUserMessageStyle(getTheme, () => defaultConfig);
-    const zentuiWrapper = prototype.render;
+    const polishedWrapper = prototype.render;
     const thirdParty = function thirdParty(
       this: unknown,
       width: number,
     ): string[] {
-      return ["third-party", ...zentuiWrapper.call(this as never, width)];
+      return ["third-party", ...polishedWrapper.call(this as never, width)];
     };
     prototype.render = thirdParty;
 
@@ -3464,7 +3464,7 @@ describe("Pi docs compliance", () => {
   });
 
   it("forces an initial project refresh for minimalist mode without a status line or polling", async () => {
-    const cwd = mkdtempSync(join(tmpdir(), "zentui-minimalist-project-"));
+    const cwd = mkdtempSync(join(tmpdir(), "one-ui-minimalist-project-"));
     mkdirSync(join(cwd, ".git", "objects", "info"), { recursive: true });
     mkdirSync(join(cwd, ".git", "objects", "pack"), { recursive: true });
     mkdirSync(join(cwd, ".git", "refs", "heads"), { recursive: true });

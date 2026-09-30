@@ -1,4 +1,9 @@
-export const ZENTUI_PROTOTYPE_PATCH_REGISTRY = Symbol.for(
+/**
+ * Global registry slot for prototype patches. The registry string keeps the
+ * historical `pi-zentui` prefix on purpose: wrappers installed before a reload
+ * still read that key, so both sides must agree on the same symbol.
+ */
+export const POLISHED_PROTOTYPE_PATCH_REGISTRY = Symbol.for(
   "pi-zentui.prototype-patch-registry",
 );
 
@@ -35,7 +40,7 @@ type PatchRegistry = Map<PrototypePatchAdapter, PatchRecord>;
 type PatchTarget = Record<PropertyKey, unknown>;
 
 function existingRegistry(target: PatchTarget): PatchRegistry | undefined {
-  const existing = target[ZENTUI_PROTOTYPE_PATCH_REGISTRY];
+  const existing = target[POLISHED_PROTOTYPE_PATCH_REGISTRY];
   return existing instanceof Map ? (existing as PatchRegistry) : undefined;
 }
 
@@ -43,7 +48,7 @@ function registryFor(target: PatchTarget): PatchRegistry {
   const existing = existingRegistry(target);
   if (existing) return existing;
   const registry: PatchRegistry = new Map();
-  Object.defineProperty(target, ZENTUI_PROTOTYPE_PATCH_REGISTRY, {
+  Object.defineProperty(target, POLISHED_PROTOTYPE_PATCH_REGISTRY, {
     value: registry,
     configurable: true,
   });
@@ -100,7 +105,7 @@ function createCleanup(
     if (current !== record) return;
     restorePredecessor(target, record);
     registry.delete(adapter);
-    if (registry.size === 0) delete target[ZENTUI_PROTOTYPE_PATCH_REGISTRY];
+    if (registry.size === 0) delete target[POLISHED_PROTOTYPE_PATCH_REGISTRY];
   };
 }
 
@@ -124,7 +129,7 @@ export function installPrototypePatch(
     );
     const predecessor = target[method];
     if (typeof predecessor !== "function") {
-      if (registry.size === 0) delete target[ZENTUI_PROTOTYPE_PATCH_REGISTRY];
+      if (registry.size === 0) delete target[POLISHED_PROTOTYPE_PATCH_REGISTRY];
       throw new TypeError(
         `Cannot patch ${method}: predecessor is not a function`,
       );
@@ -135,7 +140,7 @@ export function installPrototypePatch(
       predecessorDescriptor,
       wrapper: () => undefined,
     };
-    const wrapper: PrototypeMethod = function zentuiPrototypeWrapper(
+    const wrapper: PrototypeMethod = function polishedPrototypeWrapper(
       this: unknown,
       ...args: unknown[]
     ): unknown {
@@ -152,7 +157,7 @@ export function installPrototypePatch(
     try {
       installWrapper(target, nextRecord);
     } catch (error) {
-      if (registry.size === 0) delete target[ZENTUI_PROTOTYPE_PATCH_REGISTRY];
+      if (registry.size === 0) delete target[POLISHED_PROTOTYPE_PATCH_REGISTRY];
       throw error;
     }
     record = nextRecord;
@@ -179,5 +184,5 @@ export function removePrototypePatch(
   deactivateRecord(record);
   restorePredecessor(target, record);
   registry.delete(adapter);
-  if (registry.size === 0) delete target[ZENTUI_PROTOTYPE_PATCH_REGISTRY];
+  if (registry.size === 0) delete target[POLISHED_PROTOTYPE_PATCH_REGISTRY];
 }

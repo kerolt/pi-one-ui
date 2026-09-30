@@ -192,7 +192,7 @@ function filterUserMessageTerminalText(
       }
 
       // Removing an unterminated introducer prevents it from consuming
-      // Zentui's prompt markers. Preserve visible trailing payload, except
+      // pi-one-ui's prompt markers. Preserve visible trailing payload, except
       // for a recognized partial OSC 133 command prefix.
       const payloadEnd = boundary?.index ?? text.length;
       const payload = text.slice(payloadStart, payloadEnd);

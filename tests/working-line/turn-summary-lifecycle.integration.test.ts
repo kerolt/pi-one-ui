@@ -39,7 +39,7 @@ vi.mock("../../extensions/app/config/shell", async (importOriginal) => {
   };
 });
 
-import zentui from "../support/layout-lifecycle";
+import oneui from "../support/layout-lifecycle";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
 
@@ -72,7 +72,7 @@ function harness(
   const renderers = new Map<string, unknown>();
   const workingIndicators: Array<{ frames?: string[] }> = [];
   const sendMessage = vi.fn();
-  zentui(
+  oneui(
     {
       on(name: string, handler: Handler) {
         handlers.set(name, [...(handlers.get(name) ?? []), handler]);

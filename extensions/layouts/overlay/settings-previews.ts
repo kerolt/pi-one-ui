@@ -65,8 +65,8 @@ export function renderEditorSettingsPreview(
     viewport,
     inputText: EDITOR_PREVIEW_INPUT,
     metadata: {
-      cwd: "/workspace/zentui/src",
-      projectRoot: "/workspace/zentui",
+      cwd: "/workspace/sample-app/src",
+      projectRoot: "/workspace/sample-app",
       branch: "feat/settings-previews",
       dirty: true,
       ahead: 2,

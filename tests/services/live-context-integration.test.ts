@@ -56,7 +56,7 @@ vi.mock("../../extensions/services/package-data", async (importOriginal) => {
   };
 });
 
-import zentui from "../support/layout-lifecycle";
+import oneui from "../support/layout-lifecycle";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
 type Footer = { render(width: number): string[]; dispose?: () => void };
@@ -130,7 +130,7 @@ function persistedEntry(
 
 function loadExtension() {
   const handlers = new Map<string, Handler[]>();
-  zentui({
+  oneui({
     on(name: string, handler: Handler) {
       handlers.set(name, [...(handlers.get(name) ?? []), handler]);
     },

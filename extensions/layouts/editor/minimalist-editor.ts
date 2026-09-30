@@ -1,7 +1,7 @@
 import { basename, isAbsolute, relative, sep } from "node:path";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import type { ColorSpec, ZentuiConfig } from "../../app/config/shell.ts";
+import type { ColorSpec, PolishedTuiConfig } from "../../app/config/shell.ts";
 import { formatCwdLabel, formatElapsedDuration } from "../../shared/format.ts";
 import { sanitizeEditorMetadataText } from "./editor-metadata-format.ts";
 
@@ -46,7 +46,7 @@ export type MinimalistFrameOptions = {
   inputText: string;
   metadata: MinimalistEditorMetadata;
   uiTheme: Theme;
-  config: ZentuiConfig;
+  config: PolishedTuiConfig;
   borderColor?: (text: string) => string;
 };
 
@@ -103,7 +103,7 @@ function joinStyled(parts: string[], separator: string): string {
 }
 
 function thinkingStyle(
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   level: string,
 ): string | undefined {
   switch (level.toLowerCase()) {
@@ -134,7 +134,7 @@ function renderTopLeft(
   inputText: string,
   metadata: MinimalistEditorMetadata,
   uiTheme: Theme,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   includeSessionName = true,
 ): string {
   const trimmed = inputText.trimStart();
@@ -184,7 +184,7 @@ function renderTopLeft(
 function renderTopRight(
   metadata: MinimalistEditorMetadata,
   uiTheme: Theme,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   renderBorder: (text: string) => string,
   renderThinking: (text: string) => string,
 ): string {
@@ -223,7 +223,7 @@ function renderTopRight(
 function renderBottomLeft(
   metadata: MinimalistEditorMetadata,
   uiTheme: Theme,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
 ): string {
   if (!config.components.editor.styles.minimalist.showGit) return "";
   const branch = sanitizeEditorMetadataText(metadata.branch ?? "");
@@ -251,7 +251,7 @@ function renderBottomLeft(
 
 function minimalistCwdLabel(
   metadata: MinimalistEditorMetadata,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
 ): string {
   const full = () =>
     formatCwdLabel(metadata.cwd, "", { mode: "full", depth: 0 });
@@ -276,7 +276,7 @@ function minimalistCwdLabel(
 function renderBottomRight(
   metadata: MinimalistEditorMetadata,
   uiTheme: Theme,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
 ): string {
   if (config.components.editor.styles.minimalist.showCwd === false) {
     return "";

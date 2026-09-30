@@ -5,7 +5,7 @@ import {
   truncateToWidth,
   visibleWidth,
 } from "@earendil-works/pi-tui";
-import type { ZentuiConfig } from "../../../app/config/shell.ts";
+import type { PolishedTuiConfig } from "../../../app/config/shell.ts";
 import {
   EDITOR_ACCENT_FALLBACK,
   EDITOR_BORDER_FALLBACK,
@@ -17,7 +17,7 @@ export type UserMessageStyleRenderInput = {
   text: string;
   width: number;
   theme?: Theme;
-  config: ZentuiConfig;
+  config: PolishedTuiConfig;
 };
 
 function themeFg(
@@ -70,7 +70,7 @@ function fillLine(content: string, width: number): string {
 
 function accent(
   theme: Theme | undefined,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   text: string,
 ): string {
   return theme
@@ -85,7 +85,7 @@ function accent(
 
 function border(
   theme: Theme | undefined,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   text: string,
 ): string {
   return theme
@@ -98,7 +98,10 @@ function border(
     : text;
 }
 
-function renderRail(theme: Theme | undefined, config: ZentuiConfig): string {
+function renderRail(
+  theme: Theme | undefined,
+  config: PolishedTuiConfig,
+): string {
   return `${accent(theme, config, config.icons.rail)} `;
 }
 
@@ -202,7 +205,7 @@ function renderLabeled({
   return [top, ...body.map(side), bottom];
 }
 
-export function userMessageStyleCacheKey(config: ZentuiConfig): string {
+export function userMessageStyleCacheKey(config: PolishedTuiConfig): string {
   const messages = config.components.userMessages;
   switch (messages.style) {
     case "framed":

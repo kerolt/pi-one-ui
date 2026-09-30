@@ -6,7 +6,7 @@ import type {
 import { type Config, config } from "../../app/config/renderer.ts";
 import {
   hasUnsupportedComponentStyle,
-  type ZentuiConfig,
+  type PolishedTuiConfig,
 } from "../../app/config/shell.ts";
 import { installUserMessageStyle } from "./message/user-message.ts";
 import registerContextRenderer, {
@@ -22,7 +22,7 @@ export type ContextRuntimeController = RendererRuntimeController & {
   applyConfig(ctx: ExtensionContext, previous: Config): void;
 };
 export type ContextExtensionOptions = {
-  readonly getConfig: () => ZentuiConfig;
+  readonly getConfig: () => PolishedTuiConfig;
   readonly services?: RendererExtensionOptions["services"];
 };
 

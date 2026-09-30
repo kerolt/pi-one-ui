@@ -306,7 +306,7 @@ function isSafeSgrParameters(parameters: string): boolean {
   return true;
 }
 
-/** Accept only the bounded SGR subset emitted by Zentui's supported style tokens. */
+/** Accept only the bounded SGR subset emitted by pi-one-ui's supported style tokens. */
 export function isSafeSgrStylePrefix(value: unknown): value is string {
   if (
     typeof value !== "string" ||

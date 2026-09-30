@@ -393,28 +393,35 @@ describe("formatCwdLabel", () => {
   const home = "/Users/me";
 
   it("defaults to basename and preserves current behavior", () => {
-    expect(formatCwdLabel("/Users/me/Projects/zentui", "")).toBe("zentui");
-    expect(formatCwdLabel("/Users/me/Projects/zentui/", "")).toBe("zentui");
+    expect(formatCwdLabel("/Users/me/Projects/sample-app", "")).toBe(
+      "sample-app",
+    );
+    expect(formatCwdLabel("/Users/me/Projects/sample-app/", "")).toBe(
+      "sample-app",
+    );
     expect(formatCwdLabel("/", "")).toBe("/");
-    expect(formatCwdLabel("C:\\Users\\me\\zentui", "")).toBe("zentui");
+    expect(formatCwdLabel("C:\\Users\\me\\sample-app", "")).toBe("sample-app");
     expect(formatCwdLabel("/tmp/project", "󰝰")).toBe("󰝰 project");
   });
 
   it("renders full paths with home contracted to ~", () => {
     expect(
-      formatCwdLabel("/Users/me/Projects/zentui", "", { mode: "full", home }),
-    ).toBe("~/Projects/zentui");
+      formatCwdLabel("/Users/me/Projects/sample-app", "", {
+        mode: "full",
+        home,
+      }),
+    ).toBe("~/Projects/sample-app");
     expect(formatCwdLabel("/Users/me", "", { mode: "full", home })).toBe("~");
     expect(formatCwdLabel("/tmp/project", "", { mode: "full", home })).toBe(
       "/tmp/project",
     );
     expect(formatCwdLabel("/", "", { mode: "full", home })).toBe("/");
     expect(
-      formatCwdLabel("C:\\Users\\me\\Projects\\zentui", "", {
+      formatCwdLabel("C:\\Users\\me\\Projects\\sample-app", "", {
         mode: "full",
         home: "C:\\Users\\me",
       }),
-    ).toBe("~/Projects/zentui");
+    ).toBe("~/Projects/sample-app");
     // Prefix-safe: /Users/me2 must not match home /Users/me
     expect(
       formatCwdLabel("/Users/me2/Projects", "", { mode: "full", home }),
@@ -444,19 +451,19 @@ describe("formatCwdLabel", () => {
       }),
     ).toBe("…/c/d");
     expect(
-      formatCwdLabel("/Users/me/Projects/zentui", "", {
+      formatCwdLabel("/Users/me/Projects/sample-app", "", {
         mode: "full",
         home,
         depth: 5,
       }),
-    ).toBe("~/Projects/zentui");
+    ).toBe("~/Projects/sample-app");
     expect(
-      formatCwdLabel("/Users/me/Projects/zentui", "", {
+      formatCwdLabel("/Users/me/Projects/sample-app", "", {
         mode: "full",
         home,
         depth: 1,
       }),
-    ).toBe("…/zentui");
+    ).toBe("…/sample-app");
     expect(
       formatCwdLabel("/Users/me", "", { mode: "full", home, depth: 2 }),
     ).toBe("~");
@@ -466,26 +473,26 @@ describe("formatCwdLabel", () => {
     );
     expect(formatCwdLabel("//", "")).toBe("/");
     expect(
-      formatCwdLabel("/Users/me/Projects/zentui", "", {
+      formatCwdLabel("/Users/me/Projects/sample-app", "", {
         mode: "full",
         home,
         depth: 0,
       }),
-    ).toBe("~/Projects/zentui");
+    ).toBe("~/Projects/sample-app");
     // depth is ignored for basename
     expect(
-      formatCwdLabel("/Users/me/Projects/zentui", "", {
+      formatCwdLabel("/Users/me/Projects/sample-app", "", {
         mode: "basename",
         depth: 2,
       }),
-    ).toBe("zentui");
+    ).toBe("sample-app");
     expect(
-      formatCwdLabel("/Users/me/Projects/zentui", "󰝰", {
+      formatCwdLabel("/Users/me/Projects/sample-app", "󰝰", {
         mode: "full",
         home,
         depth: 1,
       }),
-    ).toBe("󰝰 …/zentui");
+    ).toBe("󰝰 …/sample-app");
   });
 });
 

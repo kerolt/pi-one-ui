@@ -79,7 +79,7 @@ vi.mock("../../extensions/services/package-data", () => ({
   readPackageVersionResult: async () => ({ kind: "ok" as const, result: null }),
 }));
 
-import zentui from "../support/layout-lifecycle";
+import oneui from "../support/layout-lifecycle";
 
 type Handler = (event: unknown, ctx: unknown) => unknown | Promise<unknown>;
 type Footer = { render(width: number): string[]; dispose?: () => void };
@@ -173,7 +173,7 @@ function createHarness(name: string) {
 
 function loadExtension() {
   const handlers = new Map<string, Handler[]>();
-  zentui({
+  oneui({
     on(name: string, handler: Handler) {
       handlers.set(name, [...(handlers.get(name) ?? []), handler]);
     },

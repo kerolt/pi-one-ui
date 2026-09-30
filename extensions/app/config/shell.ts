@@ -127,16 +127,15 @@ export type PolishedTuiColors = {
   workingLineMid?: ColorSpec;
   workingLineHigh?: ColorSpec;
 };
-export type ZentuiConfig = {
+export type PolishedTuiConfig = {
   projectRefreshIntervalMs: number;
   icons: ResolvedIcons;
   colors: PolishedTuiColors;
   components: ComponentsConfig;
 };
-export type PolishedTuiConfig = ZentuiConfig;
 export const configPath = defaultConfigPath;
 
-export const defaultConfig: ZentuiConfig = {
+export const defaultConfig: PolishedTuiConfig = {
   projectRefreshIntervalMs: 30_000,
   icons: { mode: "auto", ...NERD_DEFAULT_ICONS },
   colors: {
@@ -226,7 +225,7 @@ const retiredEditorStyleIds = new Set([
   "accent-rail",
 ]);
 const unsupportedComponentStyles = new WeakMap<
-  ZentuiConfig,
+  PolishedTuiConfig,
   ReadonlySet<ComponentStyleOwner>
 >();
 const styleOwners = Object.keys(
@@ -247,7 +246,7 @@ function unsupportedSelectedStyleId(
 }
 
 export function hasUnsupportedComponentStyle(
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   owner: ComponentStyleOwner,
 ): boolean {
   return unsupportedComponentStyles.get(config)?.has(owner) ?? false;
@@ -269,12 +268,12 @@ function resolveComponents(value: unknown): ComponentsConfig {
 }
 
 /** 各配置领域在此组合，运行时仅使用 canonical 结构。 */
-export function mergeConfig(parsed: unknown): ZentuiConfig {
+export function mergeConfig(parsed: unknown): PolishedTuiConfig {
   const record = recordValue(parsed);
   const icons = recordValue(record.icons);
   const colors = recordValue(record.colors);
   const interval = record.projectRefreshIntervalMs;
-  const config: ZentuiConfig = {
+  const config: PolishedTuiConfig = {
     projectRefreshIntervalMs:
       typeof interval === "number" && Number.isFinite(interval)
         ? Math.round(interval) <= 0
@@ -314,12 +313,12 @@ export function mergeConfig(parsed: unknown): ZentuiConfig {
   return config;
 }
 
-export function loadConfig(): ZentuiConfig {
+export function loadConfig(): PolishedTuiConfig {
   return mergeConfig(configStore.read());
 }
 
 export function getExtensionStatusPlacement(
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   key: string,
 ): ExtensionStatusPlacement {
   const statuses = config.components.footer.styles.starship.extensionStatuses;
@@ -335,7 +334,7 @@ export function getExtensionStatusPlacement(
 }
 
 export function getExtensionStatusColorMode(
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
   key: string,
 ): ExtensionStatusColorMode {
   const modes =
@@ -371,7 +370,7 @@ export function mutateComponentsRecord(
 function mutateConfig(
   path: string,
   update: (record: ConfigRecord) => void,
-): ZentuiConfig {
+): PolishedTuiConfig {
   const mutate = (record: ConfigRecord) => {
     record.version = 1;
     update(record);
@@ -387,7 +386,7 @@ function saveComponentsMutation(
   update: (components: ComponentsConfig) => void,
   path: string,
   replacedStyle?: ComponentStyleOwner,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return mutateConfig(path, (record) =>
     mutateComponentsRecord(
       record,
@@ -405,7 +404,7 @@ export function saveEditorComponentPatch(
     >
   >,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation(
     (components) => {
       components.editor = overlayKnown(
@@ -420,7 +419,7 @@ export function saveEditorComponentPatch(
 export function saveMinimalistEditorStylePatch(
   patch: Partial<MinimalistEditorStyleConfig>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation((components) => {
     components.editor.styles.minimalist = overlayKnown(
       components.editor.styles.minimalist,
@@ -431,7 +430,7 @@ export function saveMinimalistEditorStylePatch(
 export function saveUserMessagesComponentPatch(
   patch: Partial<Pick<UserMessagesComponentConfig, "enabled" | "style">>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation(
     (components) => {
       components.userMessages = overlayKnown(
@@ -446,7 +445,7 @@ export function saveUserMessagesComponentPatch(
 export function saveWorkingLineComponentPatch(
   patch: WorkingLineComponentPatch,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation((components) => {
     components.workingLine = overlayKnown(
       components.workingLine,
@@ -457,7 +456,7 @@ export function saveWorkingLineComponentPatch(
 export function saveSelectorBordersComponentPatch(
   patch: Partial<SelectorBordersComponentConfig>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation(
     (components) => {
       components.selectorBorders = overlayKnown(
@@ -472,7 +471,7 @@ export function saveSelectorBordersComponentPatch(
 export function saveFooterComponentPatch(
   patch: Partial<Pick<FooterComponentConfig, "style" | "modelLabel">>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation(
     (components) => {
       components.footer = overlayKnown(
@@ -506,7 +505,7 @@ export type StarshipFooterStylePatch = Partial<
 export function saveStarshipFooterStylePatch(
   patch: StarshipFooterStylePatch,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation((components) => {
     components.footer.styles.starship = overlayKnown(
       components.footer.styles.starship,
@@ -517,7 +516,7 @@ export function saveStarshipFooterStylePatch(
 export function saveUiFeaturesPatch(
   patch: Partial<UiFeaturesConfig>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation(
     (components) => {
       if (typeof patch.editor === "boolean") {
@@ -539,7 +538,7 @@ export function saveUiFeaturesPatch(
 export function saveFooterSegmentsPatch(
   patch: Partial<FooterSegmentsConfig>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   const segments = Object.fromEntries(
     Object.entries(patch).filter(
       ([key, value]) =>
@@ -551,7 +550,7 @@ export function saveFooterSegmentsPatch(
 export function saveFooterFormatPatch(
   value: string,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveStarshipFooterStylePatch(
     { format: typeof value === "string" ? value : "" },
     path,
@@ -564,7 +563,7 @@ export function saveResponsiveFooterPatch(
     compactFooterMaxLines?: CompactFooterMaxLines;
   },
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   const canonical: Partial<StarshipFooterStyleConfig> = {};
   if (typeof patch.responsiveFooter === "boolean") {
     canonical.responsive = patch.responsiveFooter;
@@ -582,7 +581,7 @@ export function saveResponsiveFooterPatch(
 export function saveIconsModePatch(
   mode: IconMode,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return mutateConfig(path, (record) => {
     record.icons = {
       ...recordValue(record.icons),
@@ -593,7 +592,7 @@ export function saveIconsModePatch(
 export function saveContextStylePatch(
   style: ContextStyle,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveStarshipFooterStylePatch(
     { contextStyle: parseContextStyle(style) },
     path,
@@ -602,7 +601,7 @@ export function saveContextStylePatch(
 export function saveSeparatorPatch(
   separator: SeparatorStyle,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveStarshipFooterStylePatch(
     { separator: parseSeparatorStyle(separator) },
     path,
@@ -611,7 +610,7 @@ export function saveSeparatorPatch(
 export function saveContextThresholdsPatch(
   patch: Partial<ContextThresholds>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   if (typeof patch.warning === "bigint" || typeof patch.error === "bigint") {
     throw new TypeError("Context thresholds must be JSON-serializable numbers");
   }
@@ -620,19 +619,19 @@ export function saveContextThresholdsPatch(
 export function savePathDisplayPatch(
   patch: Partial<PathDisplayConfig>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveStarshipFooterStylePatch({ pathDisplay: patch }, path);
 }
 export function saveGitBranchPatch(
   patch: Partial<GitBranchConfig>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveStarshipFooterStylePatch({ gitBranch: patch }, path);
 }
 export function saveEditorModelLabel(
   value: ModelLabelSource,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation((components) => {
     components.editor.modelLabel = parseEditorModelLabel(value);
     components.footer.modelLabel = parseEditorModelLabel(value);
@@ -641,19 +640,19 @@ export function saveEditorModelLabel(
 export function saveEditorStyle(
   value: EditorStyle,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveEditorComponentPatch({ style: parseEditorStyle(value) }, path);
 }
 export function saveMinimalistPatch(
   patch: Partial<MinimalistConfig>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveMinimalistEditorStylePatch(patch, path);
 }
 export function saveEditorBorderColorMode(
   value: EditorBorderColorMode,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveEditorComponentPatch(
     { borderColorMode: parseEditorBorderColorMode(value) },
     path,
@@ -662,7 +661,7 @@ export function saveEditorBorderColorMode(
 export function saveGitCommitPatch(
   patch: Partial<Pick<GitCommitConfig, "onlyDetached" | "showTag">>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   const valid = Object.fromEntries(
     Object.entries(patch).filter(
       ([key, value]) =>
@@ -675,7 +674,7 @@ export function saveGitCommitPatch(
 export function saveGitMetricsPatch(
   patch: Partial<GitMetricsConfig>,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   const valid = Object.fromEntries(
     Object.entries(patch).filter(
       ([key, value]) =>
@@ -688,7 +687,7 @@ export function saveGitMetricsPatch(
 export function saveExtensionStatusDefaultPlacement(
   placement: ExtensionStatusPlacement,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation((components) => {
     components.footer.styles.starship.extensionStatuses.defaultPlacement =
       isExtensionStatusPlacement(placement) ? placement : "right";
@@ -698,7 +697,7 @@ export function saveExtensionStatusPlacement(
   key: string,
   placement: ExtensionStatusPlacement,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation((components) => {
     Object.defineProperty(
       components.footer.styles.starship.extensionStatuses.placements,
@@ -716,7 +715,7 @@ export function saveExtensionStatusColorMode(
   key: string,
   colorMode: ExtensionStatusColorMode,
   path = configPath,
-): ZentuiConfig {
+): PolishedTuiConfig {
   return saveComponentsMutation((components) => {
     Object.defineProperty(
       components.footer.styles.starship.extensionStatuses.colorModes,

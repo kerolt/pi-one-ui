@@ -1,6 +1,9 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
-import type { SeparatorStyle, ZentuiConfig } from "../../app/config/shell.ts";
+import type {
+  PolishedTuiConfig,
+  SeparatorStyle,
+} from "../../app/config/shell.ts";
 import { FOOTER_FORMAT_ALIASES } from "../../app/config/shell.ts";
 import type { LiveContextOverride } from "../../services/live-context.ts";
 import {
@@ -228,7 +231,7 @@ function composeFooterContent(
 export function installFooter(
   ctx: ExtensionContext,
   state: FooterState,
-  getConfig: () => ZentuiConfig,
+  getConfig: () => PolishedTuiConfig,
   hooks: {
     setRequestRender: (fn: ((force: boolean) => void) | undefined) => void;
     scheduleProjectRefresh: (ctx: ExtensionContext) => void;

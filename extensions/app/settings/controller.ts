@@ -6,7 +6,7 @@ import { type Config, normalizeConfig } from "../config/renderer.ts";
 import {
   mergeConfig,
   mutateComponentsRecord,
-  type ZentuiConfig,
+  type PolishedTuiConfig,
 } from "../config/shell.ts";
 import {
   type ConfigRecord,
@@ -19,7 +19,7 @@ import { applyPresetRecord, isPreset } from "./presets.ts";
 export type SettingsChange = Readonly<{ id: string; value: string }>;
 
 export type SettingsSnapshot = Readonly<{
-  shell: ZentuiConfig;
+  shell: PolishedTuiConfig;
   renderer: Config;
   panel: PanelOverlayConfig;
 }>;

@@ -20,9 +20,9 @@ import {
 } from "./factory.ts";
 import {
   type EditorFactory,
-  getZentuiEditorBaseFactory,
+  getPolishedEditorBaseFactory,
   isOwnedEditorFactory,
-  isZentuiEditorFactory,
+  isPolishedEditorFactory,
 } from "./ownership.ts";
 
 export type EditorChangeResult = { ok: true } | { ok: false; reason: string };
@@ -72,18 +72,18 @@ export class EditorLayoutController {
    * Installs or reconciles the configured Editor for an active session.
    *
    * @param ctx Active Pi extension context.
-   * @param allowStaleZentui Whether a stale predecessor may be replaced.
+   * @param allowStalePolished Whether a stale predecessor may be replaced.
    * @returns The replacement result when a host factory changed.
    */
   install(
     ctx: ExtensionContext,
-    allowStaleZentui = true,
+    allowStalePolished = true,
   ): EditorChangeResult | undefined {
     if (!this.isTuiContext(ctx)) return;
     this.activeTuiContext = ctx;
     if (this.isEditorEnabled()) this.clearEditorOwnership();
-    else this.uninstall(ctx, { allowStaleZentui });
-    const result = this.reconcile(ctx, { allowStaleZentui });
+    else this.uninstall(ctx, { allowStalePolished });
+    const result = this.reconcile(ctx, { allowStalePolished });
     this.scheduleReconciliation(ctx);
     return result;
   }
@@ -97,15 +97,15 @@ export class EditorLayoutController {
    */
   reconcile(
     ctx: ExtensionContext,
-    options: { allowStaleZentui?: boolean } = {},
+    options: { allowStalePolished?: boolean } = {},
   ): EditorChangeResult | undefined {
     try {
       if (this.isEditorEnabled()) {
         const currentFactory = ctx.ui.getEditorComponent();
         if (
-          isZentuiEditorFactory(currentFactory) &&
+          isPolishedEditorFactory(currentFactory) &&
           !this.ownsFactory(currentFactory) &&
-          !options.allowStaleZentui
+          !options.allowStalePolished
         ) {
           this.clearEditorOwnership();
           return;
@@ -254,7 +254,7 @@ export class EditorLayoutController {
    */
   uninstall(
     ctx: ExtensionContext,
-    options: { allowStaleZentui?: boolean } = {},
+    options: { allowStalePolished?: boolean } = {},
   ): EditorChangeResult {
     let currentFactory: EditorFactory | undefined;
     try {
@@ -266,17 +266,17 @@ export class EditorLayoutController {
           "the current editor factory could not be observed safely; reload Pi to apply this change",
       };
     }
-    if (!currentFactory || !isZentuiEditorFactory(currentFactory)) {
+    if (!currentFactory || !isPolishedEditorFactory(currentFactory)) {
       this.clearEditorOwnership();
       return { ok: true };
     }
-    if (!this.ownsFactory(currentFactory) && !options.allowStaleZentui) {
+    if (!this.ownsFactory(currentFactory) && !options.allowStalePolished) {
       this.clearEditorOwnership();
       return { ok: true };
     }
     const result = this.replace(
       ctx,
-      getZentuiEditorBaseFactory(currentFactory) ??
+      getPolishedEditorBaseFactory(currentFactory) ??
         (this.editorInstallMode === "wrapper"
           ? this.wrappedEditorFactory
           : undefined),
@@ -299,7 +299,7 @@ export class EditorLayoutController {
         if (currentFactory && this.ownsFactory(currentFactory)) {
           this.replace(
             ctx,
-            getZentuiEditorBaseFactory(currentFactory) ??
+            getPolishedEditorBaseFactory(currentFactory) ??
               (this.editorInstallMode === "wrapper"
                 ? this.wrappedEditorFactory
                 : undefined),
@@ -395,7 +395,7 @@ export class EditorLayoutController {
    * @param factory Factory created by this controller.
    */
   private trackFactory(factory: EditorFactory): void {
-    const baseFactory = getZentuiEditorBaseFactory(factory);
+    const baseFactory = getPolishedEditorBaseFactory(factory);
     this.wrappedEditorFactory = baseFactory;
     this.installedEditorFactory = factory;
     this.editorInstallMode = baseFactory ? "wrapper" : "standalone";
@@ -444,8 +444,8 @@ export class EditorLayoutController {
       return { ok: true };
     }
     const baseFactory =
-      getZentuiEditorBaseFactory(currentFactory) ??
-      (currentFactory && !isZentuiEditorFactory(currentFactory)
+      getPolishedEditorBaseFactory(currentFactory) ??
+      (currentFactory && !isPolishedEditorFactory(currentFactory)
         ? currentFactory
         : undefined);
     const runtime = this.factoryRuntime(ctx);

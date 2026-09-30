@@ -11,7 +11,7 @@ import {
   type EditorFactory,
   markEditorFactory,
   markWrappedEditorFactory,
-  type ZentuiEditorFactory,
+  type PolishedEditorFactory,
 } from "./ownership.ts";
 import { PolishedEditor, WrappedPolishedEditor } from "./ui.ts";
 
@@ -38,7 +38,7 @@ export type EditorFactoryRuntime = {
 export function createEditorFactory(
   ctx: ExtensionContext,
   runtime: EditorFactoryRuntime,
-): ZentuiEditorFactory {
+): PolishedEditorFactory {
   const factory = ((
     tui: TUI,
     theme: EditorTheme,
@@ -56,7 +56,7 @@ export function createEditorFactory(
       () => editorDecoration(ctx, runtime),
       runtime.onDecorationActive,
     );
-  }) as ZentuiEditorFactory;
+  }) as PolishedEditorFactory;
   return markEditorFactory(factory, runtime.ownerToken);
 }
 
@@ -72,7 +72,7 @@ export function createWrappedEditorFactory(
   ctx: ExtensionContext,
   baseFactory: EditorFactory,
   runtime: EditorFactoryRuntime,
-): ZentuiEditorFactory {
+): PolishedEditorFactory {
   const factory = ((
     tui: TUI,
     theme: EditorTheme,
@@ -88,7 +88,7 @@ export function createWrappedEditorFactory(
       () => editorDecoration(ctx, runtime),
       runtime.onDecorationActive,
     );
-  }) as ZentuiEditorFactory;
+  }) as PolishedEditorFactory;
   return markWrappedEditorFactory(factory, baseFactory, runtime.ownerToken);
 }
 

@@ -7,7 +7,7 @@ import {
   hasUnsupportedComponentStyle,
   loadConfig,
   mergeConfig,
-  type ZentuiConfig,
+  type PolishedTuiConfig,
 } from "../../extensions/app/config/shell.ts";
 import {
   type ConfigRecord,
@@ -46,7 +46,7 @@ export default function (
   pi: ExtensionAPI,
   options: TestLayoutOptions = {},
 ): ReturnType<typeof registerLayoutLifecycle> {
-  let contextConfig: ZentuiConfig = loadConfig();
+  let contextConfig: PolishedTuiConfig = loadConfig();
   let activeTheme: Theme | undefined;
   let cleanupUserMessageStyle: () => void = () => {};
   let userMessageStyleInstalled = false;

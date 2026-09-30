@@ -14,9 +14,9 @@ import {
 } from "../../../../tools/patch-keys.ts";
 import { parseSgrMousePackets } from "./packets.ts";
 
-const ZENTUI_PAGE_UP_INPUT =
+const PAGE_UP_INPUT =
   /^\x1b\[5;9(?::[12])?~$|^\x1b\[57421;9(?::[12])?u$|^\x1b\[1;6A$/;
-const ZENTUI_PAGE_DOWN_INPUT =
+const PAGE_DOWN_INPUT =
   /^\x1b\[6;9(?::[12])?~$|^\x1b\[57422;9(?::[12])?u$|^\x1b\[1;6B$/;
 const SCROLL_BOTTOM_SHORTCUT = "ctrl+end";
 
@@ -123,8 +123,8 @@ function isScrollNavigationInput(data: string): boolean {
   if (
     matchesKey(data, "pageUp") ||
     matchesKey(data, "pageDown") ||
-    ZENTUI_PAGE_UP_INPUT.test(data) ||
-    ZENTUI_PAGE_DOWN_INPUT.test(data) ||
+    PAGE_UP_INPUT.test(data) ||
+    PAGE_DOWN_INPUT.test(data) ||
     // 官方 fullscreen viewport 的可滚动键（half-page/prompt/top/bottom）。
     [
       "tui.altScreen.pageUp",

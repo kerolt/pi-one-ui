@@ -2,7 +2,7 @@ import { stripVTControlCharacters } from "node:util";
 import type {
   ExtensionStatusColorMode,
   ExtensionStatusPlacement,
-  ZentuiConfig,
+  PolishedTuiConfig,
 } from "../../app/config/shell.ts";
 import {
   getExtensionStatusColorMode,
@@ -24,7 +24,7 @@ export type ExtensionStatusSegmentsByPlacement = {
 };
 
 const safeSgrPattern = /\x1b\[[0-9;:]*m/g;
-const sgrPlaceholderPattern = /__ZENTUI_SGR_(\d+)__/g;
+const sgrPlaceholderPattern = /__ONEUI_SGR_(\d+)__/g;
 
 function compareKeys(
   a: ExtensionStatusSegment,
@@ -53,7 +53,7 @@ export function sanitizeExtensionStatusOriginalText(value: string): string {
   const safeSequences: string[] = [];
   const protectedValue = value.replace(safeSgrPattern, (sequence) => {
     const index = safeSequences.push(sequence) - 1;
-    return `__ZENTUI_SGR_${index}__`;
+    return `__ONEUI_SGR_${index}__`;
   });
   const cleaned = normalizeStatusWhitespace(
     stripVTControlCharacters(protectedValue),
@@ -71,7 +71,7 @@ export function sanitizeExtensionStatusOriginalText(value: string): string {
 
 export function collectExtensionStatusSegments(
   statuses: ReadonlyMap<string, string>,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
 ): ExtensionStatusSegmentsByPlacement {
   const segments: ExtensionStatusSegmentsByPlacement = {
     left: [],

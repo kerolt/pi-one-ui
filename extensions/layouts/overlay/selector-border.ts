@@ -3,7 +3,7 @@ import {
   SettingsSelectorComponent,
   type Theme,
 } from "@earendil-works/pi-coding-agent";
-import type { ZentuiConfig } from "../../app/config/shell.ts";
+import type { PolishedTuiConfig } from "../../app/config/shell.ts";
 import {
   installPrototypePatch,
   removePrototypePatch,
@@ -31,7 +31,7 @@ function isHorizontalBorderLine(line: string): boolean {
 function renderBorderLine(
   width: number,
   theme: Theme | undefined,
-  config: ZentuiConfig | undefined,
+  config: PolishedTuiConfig | undefined,
 ): string {
   const text = "─".repeat(Math.max(1, width));
   if (theme && config) {
@@ -49,7 +49,7 @@ function renderBorderLine(
 export function patchSelectorBorderStyle(
   prototype: PatchableSelectorPrototype,
   getTheme?: () => Theme | undefined,
-  getConfig?: () => ZentuiConfig,
+  getConfig?: () => PolishedTuiConfig,
 ): Cleanup {
   return installPrototypePatch(
     prototype,
@@ -85,7 +85,7 @@ export function removeSelectorBorderStyle(): void {
 
 export function installSelectorBorderStyle(
   getTheme?: () => Theme | undefined,
-  getConfig?: () => ZentuiConfig,
+  getConfig?: () => PolishedTuiConfig,
 ): Cleanup {
   const cleanupModel = patchSelectorBorderStyle(
     ModelSelectorComponent.prototype as unknown as PatchableSelectorPrototype,

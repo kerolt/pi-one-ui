@@ -3,7 +3,7 @@ import {
   UserMessageComponent,
 } from "@earendil-works/pi-coding-agent";
 import { wrapTextWithAnsi } from "@earendil-works/pi-tui";
-import type { ZentuiConfig } from "../../../app/config/shell.ts";
+import type { PolishedTuiConfig } from "../../../app/config/shell.ts";
 import {
   installPrototypePatch,
   removePrototypePatch,
@@ -79,11 +79,11 @@ function getCachedMarkdownText(instance: object): string | undefined {
   return text;
 }
 
-function renderZentuiUserMessage(
+function renderPolishedUserMessage(
   instance: PatchableUserMessagePrototype,
   width: number,
   theme: Theme | undefined,
-  config: ZentuiConfig,
+  config: PolishedTuiConfig,
 ): string[] | undefined {
   if (!isRecord(instance)) return undefined;
 
@@ -171,7 +171,7 @@ export function removeUserMessageStyle(): void {
 
 export function installUserMessageStyle(
   getTheme: () => Theme | undefined,
-  getConfig: () => ZentuiConfig,
+  getConfig: () => PolishedTuiConfig,
 ): Cleanup {
   const prototype = UserMessageComponent.prototype;
   const cleanupInvalidate = installPrototypePatch(
@@ -195,7 +195,7 @@ export function installUserMessageStyle(
         const width = args[0];
         if (typeof width !== "number") return renderPredecessor();
         try {
-          const lines = renderZentuiUserMessage(
+          const lines = renderPolishedUserMessage(
             receiver as PatchableUserMessagePrototype,
             width,
             getTheme(),

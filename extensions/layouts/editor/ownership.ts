@@ -1,24 +1,28 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-/** Symbol used to identify factories created by the Editor layout. */
-export const ZENTUI_EDITOR_FACTORY = Symbol.for("pi-zentui.editor-factory");
+/**
+ * Symbol used to identify factories created by the Editor layout. The registry
+ * string keeps the historical `pi-zentui` prefix on purpose: wrappers installed
+ * before a reload still carry it, and both sides must agree on the same key.
+ */
+export const POLISHED_EDITOR_FACTORY = Symbol.for("pi-zentui.editor-factory");
 
 /** Symbol used to retain the wrapped third-party editor factory. */
-export const ZENTUI_EDITOR_BASE_FACTORY = Symbol.for(
+export const POLISHED_EDITOR_BASE_FACTORY = Symbol.for(
   "pi-zentui.editor-base-factory",
 );
 
 /** Symbol used to identify the active Editor layout owner. */
-export const ZENTUI_EDITOR_OWNER = Symbol.for("pi-zentui.editor-owner");
+export const POLISHED_EDITOR_OWNER = Symbol.for("pi-zentui.editor-owner");
 
 export type EditorFactory = NonNullable<
   Parameters<ExtensionContext["ui"]["setEditorComponent"]>[0]
 >;
 
-export type ZentuiEditorFactory = EditorFactory & {
-  [ZENTUI_EDITOR_FACTORY]?: true;
-  [ZENTUI_EDITOR_BASE_FACTORY]?: EditorFactory;
-  [ZENTUI_EDITOR_OWNER]?: symbol;
+export type PolishedEditorFactory = EditorFactory & {
+  [POLISHED_EDITOR_FACTORY]?: true;
+  [POLISHED_EDITOR_BASE_FACTORY]?: EditorFactory;
+  [POLISHED_EDITOR_OWNER]?: symbol;
 };
 
 /**
@@ -27,11 +31,11 @@ export type ZentuiEditorFactory = EditorFactory & {
  * @param factory Candidate host editor factory.
  * @returns Whether the factory carries the Editor layout marker.
  */
-export function isZentuiEditorFactory(
+export function isPolishedEditorFactory(
   factory: EditorFactory | undefined,
 ): boolean {
   return Boolean(
-    (factory as ZentuiEditorFactory | undefined)?.[ZENTUI_EDITOR_FACTORY],
+    (factory as PolishedEditorFactory | undefined)?.[POLISHED_EDITOR_FACTORY],
   );
 }
 
@@ -41,11 +45,11 @@ export function isZentuiEditorFactory(
  * @param factory Candidate host editor factory.
  * @returns The retained base factory, when present.
  */
-export function getZentuiEditorBaseFactory(
+export function getPolishedEditorBaseFactory(
   factory: EditorFactory | undefined,
 ): EditorFactory | undefined {
-  return (factory as ZentuiEditorFactory | undefined)?.[
-    ZENTUI_EDITOR_BASE_FACTORY
+  return (factory as PolishedEditorFactory | undefined)?.[
+    POLISHED_EDITOR_BASE_FACTORY
   ];
 }
 
@@ -61,7 +65,7 @@ export function isOwnedEditorFactory(
   ownerToken: symbol,
 ): boolean {
   return (
-    (factory as ZentuiEditorFactory | undefined)?.[ZENTUI_EDITOR_OWNER] ===
+    (factory as PolishedEditorFactory | undefined)?.[POLISHED_EDITOR_OWNER] ===
     ownerToken
   );
 }
@@ -77,9 +81,9 @@ export function markEditorFactory<T extends EditorFactory>(
   factory: T,
   ownerToken: symbol,
 ): T {
-  const marked = factory as T & ZentuiEditorFactory;
-  marked[ZENTUI_EDITOR_FACTORY] = true;
-  marked[ZENTUI_EDITOR_OWNER] = ownerToken;
+  const marked = factory as T & PolishedEditorFactory;
+  marked[POLISHED_EDITOR_FACTORY] = true;
+  marked[POLISHED_EDITOR_OWNER] = ownerToken;
   return factory;
 }
 
@@ -97,7 +101,7 @@ export function markWrappedEditorFactory<T extends EditorFactory>(
   ownerToken: symbol,
 ): T {
   const marked = markEditorFactory(factory, ownerToken) as T &
-    ZentuiEditorFactory;
-  marked[ZENTUI_EDITOR_BASE_FACTORY] = baseFactory;
+    PolishedEditorFactory;
+  marked[POLISHED_EDITOR_BASE_FACTORY] = baseFactory;
   return factory;
 }

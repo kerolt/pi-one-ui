@@ -1,6 +1,6 @@
 import {
   FOOTER_FORMAT_ALIASES,
-  type ZentuiConfig,
+  type PolishedTuiConfig,
 } from "../../app/config/shell.ts";
 import {
   collectFooterFormatReferences,
@@ -13,7 +13,7 @@ import {
  * @param config Current normalized plugin configuration.
  * @returns Names of project, session, runtime, and clock data dependencies.
  */
-export function activeFooterReferences(config: ZentuiConfig): Set<string> {
+export function activeFooterReferences(config: PolishedTuiConfig): Set<string> {
   const starship = config.components.footer.styles.starship;
   const references = starship.format
     ? collectFooterFormatReferences(
