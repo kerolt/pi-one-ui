@@ -76,9 +76,9 @@ Then open the unified settings panel:
 /oneui
 ```
 
-### Upgrading to 0.8.0
+### Upgrading to 0.9.0
 
-Pi `>= 0.99.0` is now required. The Editor model label, cwd label, and static border read a theme's `editorModel` / `cwd` / `editorBorder` keys through the palette shape the current Pi exposes; `colors.*` accepts Pi official theme tokens and explicit terminal colors only, so bare terminal color names such as `purple` must be written as `fg:purple`; and the legacy `zentui` values in `selectorBorders.style`, extension status `colorModes`, and the turn summary entry type use new names, with legacy values still read for compatibility.
+This release removes the `renderer.scrollStepLines` setting: wheel stepping is now controlled by Pi's own `fullscreenWheelScrollLines` setting in `~/.pi/agent/settings.json` (an integer such as `3`, or `"auto"`), and a leftover `scrollStepLines` key in the pi-one-ui config is ignored and preserved on save. The fullscreen "Back to bottom" button and its `Ctrl+End` binding are removed; use the official `End` shortcut and indicator instead. The indicator keeps the pi-one-ui button look (accent color, hover highlight).
 
 For an unpinned npm installation, run:
 
@@ -86,7 +86,7 @@ For an unpinned npm installation, run:
 pi update npm:pi-one-ui
 ```
 
-If your installation pins a version, run `pi install npm:pi-one-ui@0.8.0` to update the pin. Fully exit and restart Pi after updating the package instead of running `/reload`: the cross-reload patch coordination keys were renamed, so an in-place reload would leave the previous instance's marks unrecognized.
+If your installation pins a version, run `pi install npm:pi-one-ui@0.9.0` to update the pin. Fully exit and restart Pi after updating the package.
 
 ## Configuration
 

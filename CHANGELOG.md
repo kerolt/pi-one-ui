@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-02
+
 ### Changed
 
 - Restyle Pi's built-in fullscreen end-of-transcript indicator with the pi-one-ui button look: `[ ↓ Back to bottom · <shortcut> ]` in accent color, switching to the text color while hovered. The shortcut text follows the actual `tui.altScreen.bottom` binding. Display conditions, centering, click-to-scroll, and the keyboard shortcut stay on Pi's native mechanism.
@@ -14,6 +16,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Remove `renderer.scrollStepLines`. Wheel stepping is controlled by Pi's own `fullscreenWheelScrollLines` setting; the removed wiring assigned a `tui.wheelScrollLines` property that Pi's TUI does not expose, so the configured value never reached the wheel accelerator. A `scrollStepLines` key left in an existing config file is ignored and preserved on save.
 - Remove the fullscreen "Back to bottom" button and its `Ctrl+End` binding. The button duplicated Pi's built-in end-of-transcript indicator (present since Pi 0.99); use the official `End` shortcut and indicator instead.
+
+### Migration
+
+- Wheel stepping is now controlled by Pi's own `fullscreenWheelScrollLines` setting in `~/.pi/agent/settings.json` (an integer such as `3`, or `"auto"`). A leftover `renderer.scrollStepLines` key in the pi-one-ui config is ignored and preserved on save.
+- The fullscreen "Back to bottom" button and its `Ctrl+End` binding are gone. Use the official `End` shortcut and the restyled end-of-transcript indicator instead.
+- For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.9.0`. Fully exit and restart Pi after updating the package.
 
 ## [0.8.0] - 2026-09-30
 
@@ -215,7 +223,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/kerolt/pi-one-ui/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/kerolt/pi-one-ui/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/kerolt/pi-one-ui/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/kerolt/pi-one-ui/compare/v0.7.0...v0.7.1

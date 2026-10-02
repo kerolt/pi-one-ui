@@ -76,9 +76,9 @@ pi install git:github.com/kerolt/pi-one-ui
 /oneui
 ```
 
-### 升级到 0.8.0
+### 升级到 0.9.0
 
-本次要求 Pi `>= 0.99.0`。Editor 的模型名、目录标签与 static 外框改为从当前 Pi 的调色板结构读取主题里的 `editorModel` / `cwd` / `editorBorder` 键；`colors.*` 收敛为 Pi 官方主题 token 与显式终端色两种写法，裸终端色名（如 `purple`）不再接受，需写成 `fg:purple`；`selectorBorders.style`、扩展状态 `colorModes` 与轮次摘要条目类型中的旧 `zentui` 值改为新名称，读取端仍兼容旧值。
+本次移除了 `renderer.scrollStepLines` 配置项，滚轮步进改由 Pi 官方设置 `fullscreenWheelScrollLines` 控制（`~/.pi/agent/settings.json` 中写入整数如 `3`，或 `"auto"`），配置文件里遗留的 `scrollStepLines` 键会被忽略并保留。fullscreen 的回到底部按钮与 `Ctrl+End` 绑定一并移除，请使用官方 `End` 快捷键与指示条；指示条外观已替换为 pi-one-ui 样式（accent 色、悬停变色）。
 
 未固定版本的 npm 安装可执行：
 
@@ -86,7 +86,7 @@ pi install git:github.com/kerolt/pi-one-ui
 pi update npm:pi-one-ui
 ```
 
-若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.8.0` 更新版本指定。更新安装包后，完整退出并重启 Pi，不要使用 `/reload`：跨 reload 的补丁协调键已改名，直接重载会让旧实例留下的标记无法被识别。
+若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.9.0` 更新版本指定。更新安装包后，完整退出并重启 Pi。
 
 ## 配置
 
