@@ -1,3 +1,4 @@
+import { getKeybindings } from "@earendil-works/pi-tui";
 import {
   type InputRouter,
   inputRouter,
@@ -89,6 +90,11 @@ const TOOL_MOUSE_WIDGET_KEY = "oneui-tool-mouse";
 const TOOL_MOUSE_MOTION_ENABLE = "\x1b[?1003h\x1b[?1006h";
 const TOOL_MOUSE_MOTION_DISABLE = "\x1b[?1003l";
 const FULLSCREEN_MOTION_ENABLED = Symbol("pi-one-ui.fullscreen-motion-enabled");
+const FULLSCREEN_SCROLL_END_STYLE_PATCH = Symbol(
+  "pi-one-ui.fullscreen-scroll-end-style-patch",
+);
+/** 指示条 hover 状态：样式函数与命中检测同模块，模块级绑定即可。 */
+let scrollEndIndicatorHovered = false;
 const DEFAULT_TOOL_MOUSE_OWNER = {};
 export const TOOL_MOUSE_DISABLE = "\x1b[?1006l\x1b[?1003l\x1b[?1000l";
 
@@ -289,6 +295,8 @@ function handleFullscreenToolClick(tui: any, packet: SgrMousePacket): boolean {
   const x = packet.col - 1;
   const y = packet.row - 1;
   if (isScrollbarColumnAt(layout, x)) return false;
+  // 指示条覆盖层优先：命中区放行官方，由官方 rect 命中触发 scrollToBottom。
+  if (isScrollEndIndicatorAt(tui, x, y)) return false;
   const hit = fullscreenLeafAt(layout, x, y);
   if (!hit) return false;
   const width = Math.max(1, Number(tui.terminal?.columns) || 80);
@@ -368,14 +376,91 @@ function handleFullscreenToolClick(tui: any, packet: SgrMousePacket): boolean {
 
 /**
  * fullscreen 鼠标悬停：collapsed 卡 [click to show more] hint、
- * expanded 卡截断头 show-more、回到底部按钮。motion 不 consume，官方链照常。
+ * expanded 卡截断头 show-more、回到底部指示条。motion 不 consume，官方链照常。
  */
+function formatKeyDisplay(keys: string[]): string {
+  return keys
+    .join("/")
+    .split("/")
+    .map((part) =>
+      part
+        .split("+")
+        .map((piece) =>
+          piece.length <= 1
+            ? piece.toUpperCase()
+            : `${piece[0]?.toUpperCase() ?? ""}${piece.slice(1)}`,
+        )
+        .join("+"),
+    )
+    .join("/");
+}
+
+/** 回到底部快捷键（tui.altScreen.bottom）显示文本；未配置时省略快捷键段。 */
+function scrollEndShortcutText(): string {
+  const keys = getKeybindings().getKeys("tui.altScreen.bottom");
+  return keys.length > 0 ? formatKeyDisplay(keys) : "";
+}
+
+/** pi-one-ui 按钮样式：[ ↓ Back to bottom · <key> ]，accent 色、hover 转 text 色。 */
+function renderScrollEndIndicatorLabel(theme: any): string {
+  const shortcut = scrollEndShortcutText();
+  const label = `[ ↓ Back to bottom${shortcut ? ` · ${shortcut}` : ""} ]`;
+  return theme.fg(scrollEndIndicatorHovered ? "text" : "accent", label);
+}
+
+/** 指示条是 composite 层覆盖物（不在布局树内），按官方 rect 判定命中。 */
+function isScrollEndIndicatorAt(tui: any, x: number, y: number): boolean {
+  const rect = tui.scrollToEndIndicatorRect;
+  return Boolean(
+    rect && y === rect.row && x >= rect.column && x < rect.column + rect.width,
+  );
+}
+
+/** 指示条 hover 同步；返回是否悬停在指示条上（命中时优先于下方组件）。 */
+function updateScrollEndIndicatorHover(
+  tui: any,
+  x: number,
+  y: number,
+): boolean {
+  const hovered = isScrollEndIndicatorAt(tui, x, y);
+  if (hovered !== scrollEndIndicatorHovered) {
+    scrollEndIndicatorHovered = hovered;
+    tui.requestRender?.();
+  }
+  return hovered;
+}
+
+/**
+ * 覆盖官方 scrollToEndIndicator 样式函数（实例字段，官方每帧调用取标签文本；
+ * 显示条件、居中、点击命中、scrollToBottom 均保留官方机制）。惰性 Proxy 的
+ * get 会包装函数属性，保存到 Symbol 的是等价转发包装，恢复后行为不变。
+ */
+function installScrollEndIndicatorStyle(tui: any, theme: any): void {
+  if (tui[FULLSCREEN_SCROLL_END_STYLE_PATCH]) return;
+  const original = tui.scrollToEndIndicator;
+  if (typeof original !== "function") return;
+  tui[FULLSCREEN_SCROLL_END_STYLE_PATCH] = original;
+  tui.scrollToEndIndicator = () => renderScrollEndIndicatorLabel(theme);
+}
+
+function restoreScrollEndIndicatorStyle(tui: any): void {
+  const original = tui?.[FULLSCREEN_SCROLL_END_STYLE_PATCH];
+  if (typeof original !== "function") return;
+  tui.scrollToEndIndicator = original;
+  tui[FULLSCREEN_SCROLL_END_STYLE_PATCH] = undefined;
+  scrollEndIndicatorHovered = false;
+}
+
 function handleFullscreenToolHover(tui: any, packet: SgrMousePacket): void {
   if (packet.final !== "M") return;
   const layout = tui.currentLayout;
   if (!layout?.root) return;
   const x = packet.col - 1;
   const y = packet.row - 1;
+  if (updateScrollEndIndicatorHover(tui, x, y)) {
+    applyFullscreenHover(tui, null);
+    return;
+  }
   let target: FullscreenHoverTarget | null = null;
   const hit = fullscreenLeafAt(layout, x, y);
   if (hit) {
@@ -853,6 +938,7 @@ export function teardownToolMouseInteraction(
   }
   restoreToolMouseRenderPatch();
   restoreFullscreenViewportInput(getToolMouseTui());
+  restoreScrollEndIndicatorStyle(getToolMouseTui());
   setToolMouseTui(null);
   toolMouseUi = null;
   patchRegistry.dispose(TOOL_MOUSE_OWNER_KEY, owner);
@@ -910,10 +996,13 @@ export function installToolMouseInteraction(
     if (isLazyProxyTui(tui)) {
       patchFullscreenViewportInput(tui);
       ensureFullscreenToolMouseMotion(tui);
+      installScrollEndIndicatorStyle(tui, theme);
       return {
         render: () => {
+          // 惰性 Proxy 下 renderer 可能被替换，每帧补装 viewport 包装与 motion。
           patchFullscreenViewportInput(tui);
           ensureFullscreenToolMouseMotion(tui);
+          installScrollEndIndicatorStyle(tui, theme);
           return [];
         },
         invalidate() {},
@@ -921,6 +1010,7 @@ export function installToolMouseInteraction(
     }
     // Wrap doRender to capture the live frame for tool click/hover mapping.
     patchToolMouseMotionAfterRender(tui);
+    installScrollEndIndicatorStyle(tui, theme);
     if (toolMouseInteractionActive())
       tui?.terminal?.write?.(TOOL_MOUSE_MOTION_ENABLE);
     return { render: () => [], invalidate() {} };

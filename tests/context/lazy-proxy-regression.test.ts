@@ -329,6 +329,14 @@ class FullscreenRenderer {
   renderCalls = 0;
   altScreenActive = true;
   mouseEnabled = true;
+  scrollToEndIndicatorRect:
+    | { row: number; column: number; width: number }
+    | undefined = undefined;
+
+  /** 官方构造选项 scrollToEndIndicator：每帧取标签文本。 */
+  scrollToEndIndicator() {
+    return "official-label";
+  }
 
   constructor(tool: any, widget: any, terminal: any) {
     this.children = [tool];
@@ -582,6 +590,50 @@ test("lazy-proxy tui: fullscreen tool clicks expand and official input passes th
   ).toBe(officialBeforeShowMore);
 
   installToolMouseInteraction({});
+});
+
+test("lazy-proxy tui: scroll-to-end indicator uses pi-one-ui style and restores", () => {
+  const tool = createTool("tool-indicator");
+  const { terminal } = createTerminalFixture();
+  const renderer = new FullscreenRenderer(tool, null, terminal);
+  const tui = createLazyProxy(() => renderer);
+  const ui = createUi(tui);
+  installToolMouseInteraction(ui.ctx);
+
+  // 样式替换：官方 label 被 pi-one-ui 按钮样式取代，默认 accent 色。
+  const label = renderer.scrollToEndIndicator();
+  expect(label, "pi-one-ui style replaces official label").toContain(
+    "Back to bottom",
+  );
+  expect(label, "default color is accent").toContain("<accent>");
+
+  // hover：指示条 rect 内 motion 切 text 色，移出恢复 accent 色。
+  renderer.scrollToEndIndicatorRect = { row: 21, column: 30, width: 25 };
+  tui.handleViewportInput(`\x1b[<32;32;22M`);
+  expect(
+    renderer.scrollToEndIndicator(),
+    "hover switches label to text color",
+  ).toContain("<text>");
+  tui.handleViewportInput(`\x1b[<32;5;2M`);
+  expect(
+    renderer.scrollToEndIndicator(),
+    "hover leave restores accent color",
+  ).toContain("<accent>");
+
+  // 点击命中区放行官方（官方 rect 命中触发 scrollToBottom）。
+  const officialBefore = renderer.officialInputs.length;
+  tui.handleViewportInput(`\x1b[<0;32;22M`);
+  expect(
+    renderer.officialInputs.length,
+    "indicator click reaches official chain",
+  ).toBe(officialBefore + 1);
+
+  // teardown 恢复官方样式函数。
+  installToolMouseInteraction({});
+  expect(
+    renderer.scrollToEndIndicator(),
+    "teardown restores official label",
+  ).toBe("official-label");
 });
 
 test("lazy-proxy tui: fullscreen compact assistant hint toggles and hovers", () => {
