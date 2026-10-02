@@ -328,7 +328,6 @@ class FullscreenRenderer {
   currentLayout: any;
   scrollBottomCalls = 0;
   renderCalls = 0;
-  wheelScrollLines = 1;
   altScreenActive = true;
   mouseEnabled = true;
 
@@ -413,9 +412,6 @@ test("lazy-proxy tui: fullscreen owns all-motion under a multiplexer", () => {
 });
 
 test("lazy-proxy tui: fullscreen tool clicks expand and official input passes through", async () => {
-  // 步进数来自用户配置，测试固定为默认 3（避免受本机 claude-code-style.json 影响）。
-  const previousStep = config.scrollStepLines;
-  config.scrollStepLines = 3;
   const tool = createTool("tool-fullscreen");
   const { terminal, writes } = createTerminalFixture();
   let renderer = new FullscreenRenderer(tool, null, terminal);
@@ -423,10 +419,6 @@ test("lazy-proxy tui: fullscreen tool clicks expand and official input passes th
   const ui = createUi(tui);
   installToolMouseInteraction(ui.ctx);
 
-  expect(
-    renderer.wheelScrollLines,
-    "fullscreen native wheel step is raised to 3",
-  ).toBe(3);
   expect(
     !writes.some((value) => value.includes("?1000h")),
     "click reporting belongs to official",
@@ -647,10 +639,6 @@ test("lazy-proxy tui: fullscreen tool clicks expand and official input passes th
   expect(renderer.scrollBottomCalls, "Ctrl+End scrolls to bottom").toBe(2);
   expect(ui.widget.render(80)).toStrictEqual([]);
   installToolMouseInteraction({});
-  config.scrollStepLines = previousStep;
-  expect(renderer.wheelScrollLines, "teardown restores native wheel step").toBe(
-    1,
-  );
 });
 
 test("lazy-proxy tui: fullscreen compact assistant hint toggles and hovers", () => {

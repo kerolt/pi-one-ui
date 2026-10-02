@@ -1,4 +1,3 @@
-import { config } from "../../../../app/config/renderer.ts";
 import {
   type InputRouter,
   inputRouter,
@@ -255,13 +254,6 @@ function ensureFullscreenToolMouseMotion(tui: any): void {
     releaseFullscreenToolMouseMotion(tui);
     return;
   }
-  // 面板改 scrollStepLines 后，下一帧渲染即同步（restore 仍按 original 恢复）。
-  if (
-    typeof tui.wheelScrollLines === "number" &&
-    tui.wheelScrollLines !== config.scrollStepLines
-  ) {
-    tui.wheelScrollLines = config.scrollStepLines;
-  }
   if (
     !toolMouseInteractionActive() ||
     tui.mouseEnabled === false ||
@@ -299,9 +291,6 @@ function releaseFullscreenToolMouseMotion(tui?: any): void {
 }
 
 const FULLSCREEN_VIEWPORT_PATCH = Symbol("pi-one-ui.fullscreen-viewport-patch");
-const FULLSCREEN_WHEEL_SCROLL_ORIGINAL = Symbol(
-  "pi-one-ui.fullscreen-wheel-scroll-original",
-);
 
 /**
  * 官方 fullscreen 工具卡点击：collapsed hint 单击展开
@@ -489,11 +478,6 @@ function patchFullscreenViewportInput(tui: any): void {
   const proto = Object.getPrototypeOf(tui);
   const original = proto?.handleViewportInput;
   if (typeof original !== "function") return;
-  // 官方原生 routeWheel 已完整处理嵌套 ScrollView；只调整默认步进（config.scrollStepLines）。
-  if (typeof tui.wheelScrollLines === "number") {
-    tui[FULLSCREEN_WHEEL_SCROLL_ORIGINAL] = tui.wheelScrollLines;
-    tui.wheelScrollLines = config.scrollStepLines;
-  }
   tui[FULLSCREEN_VIEWPORT_PATCH] = true;
   tui.handleViewportInput = function (this: any, data: string) {
     if (toolMouseInteractionActive() && tui.mode === "fullscreen") {
@@ -528,11 +512,6 @@ function restoreFullscreenViewportInput(tui: any): void {
   const proto = Object.getPrototypeOf(tui);
   if (typeof proto?.handleViewportInput === "function") {
     tui.handleViewportInput = proto.handleViewportInput;
-  }
-  const originalWheelScrollLines = tui[FULLSCREEN_WHEEL_SCROLL_ORIGINAL];
-  if (typeof originalWheelScrollLines === "number") {
-    tui.wheelScrollLines = originalWheelScrollLines;
-    tui[FULLSCREEN_WHEEL_SCROLL_ORIGINAL] = undefined;
   }
   tui[FULLSCREEN_VIEWPORT_PATCH] = false;
 }

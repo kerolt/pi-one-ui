@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Removed
+
+- Remove `renderer.scrollStepLines`. Wheel stepping is controlled by Pi's own `fullscreenWheelScrollLines` setting; the removed wiring assigned a `tui.wheelScrollLines` property that Pi's TUI does not expose, so the configured value never reached the wheel accelerator. A `scrollStepLines` key left in an existing config file is ignored and preserved on save.
+
 ## [0.8.0] - 2026-09-30
 
 ### Changed
