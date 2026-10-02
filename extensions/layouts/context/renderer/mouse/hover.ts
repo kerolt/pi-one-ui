@@ -12,7 +12,6 @@ import {
   type ToolIoSection,
 } from "../tool/result.ts";
 import { type ComponentRowHit, componentAtLocalRow } from "./layout.ts";
-import { setScrollButtonHovered } from "./scroll.ts";
 
 type SharedToolHoverState = { toolCallId: string | null };
 
@@ -132,7 +131,6 @@ export function cachedFullscreenComponentAtRow(
 
 /** fullscreen 鼠标悬停目标。 */
 export type FullscreenHoverTarget =
-  | { kind: "button" }
   | { kind: "group"; component: ToolGroupComponent }
   | { kind: "thinking"; component: ThinkingPreviewBlock }
   | { kind: "message"; component: any }
@@ -169,7 +167,5 @@ export function applyFullscreenHover(
   const nextView = target?.kind === "tool" ? target.view : null;
   const nextSection = target?.kind === "tool" ? target.section : null;
   if (setHoveredToolIo(nextView, nextSection)) changed = true;
-  const nextButton = target?.kind === "button";
-  if (setScrollButtonHovered(nextButton)) changed = true;
   if (changed) tui.requestRender?.();
 }

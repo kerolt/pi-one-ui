@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Removed
 
 - Remove `renderer.scrollStepLines`. Wheel stepping is controlled by Pi's own `fullscreenWheelScrollLines` setting; the removed wiring assigned a `tui.wheelScrollLines` property that Pi's TUI does not expose, so the configured value never reached the wheel accelerator. A `scrollStepLines` key left in an existing config file is ignored and preserved on save.
+- Remove the fullscreen "Back to bottom" button and its `Ctrl+End` binding. The button duplicated Pi's built-in end-of-transcript indicator (present since Pi 0.99); use the official `End` shortcut and indicator instead.
 
 ## [0.8.0] - 2026-09-30
 

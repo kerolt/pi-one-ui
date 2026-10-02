@@ -81,9 +81,6 @@ export const TOOL_GROUPING_GENERATION_KEY = Symbol.for(
 // ── 鼠标交互 ──
 export const TOOL_MOUSE_OWNER_KEY = Symbol.for("pi-one-ui.tool-mouse-owner");
 export const TOOL_MOUSE_TUI_SLOT = Symbol.for("pi-one-ui.tool-mouse-tui");
-export const SCROLL_BUTTON_STATE_SLOT = Symbol.for(
-  "pi-one-ui.scroll-button-state",
-);
 export const FLUSH_DOCKED_BASH_PATCH = Symbol.for(
   "pi-one-ui.flush-docked-bash-patch",
 );

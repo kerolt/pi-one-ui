@@ -267,7 +267,7 @@ type FakeScrollView = {
 };
 
 /** 官方 TuiAltScreen 布局树的最小模型：leaf box 是容器（documentContainer/
- * widgetContainer），工具卡与按钮在其 children 内，按行定位。 */
+ * widgetContainer），工具卡与 widget 在其 children 内，按行定位。 */
 function fullscreenLayout(tool: any, widget: any, scrollbarVisible = false) {
   const tools = Array.isArray(tool) ? tool : [tool];
   const toolLines = tools.flatMap((t: any) => t.render(80));
@@ -326,7 +326,6 @@ class FullscreenRenderer {
   terminal: any;
   officialInputs: string[] = [];
   currentLayout: any;
-  scrollBottomCalls = 0;
   renderCalls = 0;
   altScreenActive = true;
   mouseEnabled = true;
@@ -355,17 +354,8 @@ class FullscreenRenderer {
     return false;
   }
 
-  scrollToBottom() {
-    this.scrollBottomCalls++;
-    this.currentLayout.primaryScrollView.isFollowingEnd = true;
-  }
-
   getPrimaryScrollView() {
     return this.currentLayout.primaryScrollView;
-  }
-
-  get isFollowingOutput() {
-    return this.currentLayout.primaryScrollView.isFollowingEnd;
   }
 }
 
@@ -512,7 +502,6 @@ test("lazy-proxy tui: fullscreen tool clicks expand and official input passes th
   expect(toolA.expanded, "expanding B collapses A").toBe(false);
   expect(toolB.expanded).toBe(true);
 
-  // 回到底部按钮：滚动离开底部后按钮可见，点击触发 scrollToBottom。
   renderer = new FullscreenRenderer(tool, ui.widget, terminal);
 
   // 非工具区域（dock 行）：放行官方。
@@ -592,52 +581,6 @@ test("lazy-proxy tui: fullscreen tool clicks expand and official input passes th
     "show-more click consumed, official untouched",
   ).toBe(officialBeforeShowMore);
 
-  // 回到底部按钮：滚动离开底部后按钮可见，点击触发 scrollToBottom。
-  renderer = new FullscreenRenderer(tool, ui.widget, terminal);
-  renderer.currentLayout.primaryScrollView.isFollowingEnd = false;
-  renderer.currentLayout.primaryScrollView.scrollTop = 50;
-  ui.widget.render(80); // renderer 切换后重新安装点击包装
-  tui.handleViewportInput(`\x1b[<65;10;2M`); // wheel：同步按钮显隐
-  await new Promise<void>((resolve) => process.nextTick(resolve));
-  expect(
-    ui.widget.render(80)[0]?.includes("↓"),
-    "wheel away from bottom shows the button",
-  ).toBeTruthy();
-  tui.handleViewportInput(`\x1b[<0;40;21M`);
-  expect(renderer.scrollBottomCalls, "button click scrolls to bottom").toBe(1);
-  expect(ui.widget.render(80)).toStrictEqual([]);
-
-  // 按钮 hover：motion 到按钮行高亮（accent → text），离开恢复。
-  renderer.currentLayout.primaryScrollView.isFollowingEnd = false;
-  renderer.currentLayout.primaryScrollView.scrollTop = 50;
-  ui.widget.render(80);
-  tui.handleViewportInput(`\x1b[<65;10;2M`); // wheel：按钮重新出现
-  await new Promise<void>((resolve) => process.nextTick(resolve));
-  renderer.currentLayout = fullscreenLayout(tool, ui.widget, false); // 重建布局（按钮行已可见）
-  tui.handleViewportInput(`\x1b[<32;40;21M`); // motion 到按钮行
-  expect(
-    ui.widget.render(80)[0]?.includes("<text>[ ↓"),
-    "button hover switches label to text color",
-  ).toBeTruthy();
-  tui.handleViewportInput(`\x1b[<32;10;21M`); // motion 移出按钮行
-  expect(
-    ui.widget.render(80)[0]?.includes("<accent>[ ↓"),
-    "hover leave restores accent color",
-  ).toBeTruthy();
-
-  // 键盘滚动（官方 PageUp）：同样同步按钮显隐（官方消费按键，扩展监听器无法补偿）。
-  renderer.currentLayout.primaryScrollView.isFollowingEnd = false;
-  renderer.currentLayout.primaryScrollView.scrollTop = 30;
-  ui.widget.render(80);
-  tui.handleViewportInput("\x1b[5~"); // PageUp
-  await new Promise<void>((resolve) => process.nextTick(resolve));
-  expect(
-    ui.widget.render(80)[0]?.includes("↓"),
-    "PageUp away from bottom shows the button",
-  ).toBeTruthy();
-  ui.inputHandler?.("\x1b[8^"); // Ctrl+End 官方不消费，经 onTerminalInput 回到底部
-  expect(renderer.scrollBottomCalls, "Ctrl+End scrolls to bottom").toBe(2);
-  expect(ui.widget.render(80)).toStrictEqual([]);
   installToolMouseInteraction({});
 });
 

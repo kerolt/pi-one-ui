@@ -62,20 +62,9 @@ import {
 } from "./packets.ts";
 import {
   fullscreenLazyTui,
-  getScrollButtonVisible,
-  getScrollButtonWidget,
   getToolMouseTui,
-  hideScrollButton,
-  isScrollBottomInput,
-  renderScrollButton,
-  resetScrollButtonState,
-  scheduleScrollButtonSync,
-  setScrollButtonHovered,
-  setScrollButtonVisible,
-  setScrollButtonWidget,
   setToolMouseTui,
   toolMouseInteractionActive,
-  updateScrollButtonFromInput,
 } from "./scroll.ts";
 
 type FrameToolRender = {
@@ -85,7 +74,7 @@ type FrameToolRender = {
 };
 
 type InteractionRegion = {
-  kind: "collapsed-hint" | "expanded-card" | "show-more" | "scroll-bottom";
+  kind: "collapsed-hint" | "expanded-card" | "show-more";
   row: number;
   startCol: number;
   endCol: number;
@@ -129,7 +118,6 @@ function interactionRegionAt(packet: SgrMousePacket): InteractionRegion | null {
   );
   return (
     matches.find((region) => region.kind === "show-more") ??
-    matches.find((region) => region.kind === "scroll-bottom") ??
     matches.find((region) => region.kind === "collapsed-hint") ??
     matches.find((region) => region.kind === "expanded-card") ??
     null
@@ -155,8 +143,6 @@ function tryOpenToolIoShowMore(region: InteractionRegion): boolean {
 function updateToolSummaryHover(tui: any, packet: SgrMousePacket): void {
   if ((packet.code & 32) === 0 || packet.final !== "M") return;
   const region = interactionRegionAt(packet);
-  const nextScrollButtonHovered = region?.kind === "scroll-bottom";
-  const scrollButtonChanged = setScrollButtonHovered(nextScrollButtonHovered);
   const component = region?.component;
   const nextToolCallId =
     region?.kind === "collapsed-hint" ? (component?.toolCallId ?? null) : null;
@@ -168,7 +154,6 @@ function updateToolSummaryHover(tui: any, packet: SgrMousePacket): void {
   const changed = nextToolCallId !== sharedToolHoverState().toolCallId;
   setHoveredToolCallId(nextToolCallId);
   if (
-    scrollButtonChanged ||
     setHoveredToolIo(nextIoView, nextIoSection) ||
     setHoveredToolGroup(nextGroup) ||
     changed
@@ -217,7 +202,6 @@ function collapseExpandedCard(tui: any, card: any): boolean {
 function toggleToolAtMouseClick(tui: any, packet: SgrMousePacket): boolean {
   const region = interactionRegionAt(packet);
   if (!region) return false;
-  if (region.kind === "scroll-bottom") return false;
   if (region.kind === "show-more") return tryOpenToolIoShowMore(region);
   const component = region.component;
   if (!component) return false;
@@ -295,7 +279,7 @@ const FULLSCREEN_VIEWPORT_PATCH = Symbol("pi-one-ui.fullscreen-viewport-patch");
 /**
  * 官方 fullscreen 工具卡点击：collapsed hint 单击展开
  * （有且仅保持一个展开：展开前收起其他工具卡），expanded 整卡双击收起，
- * 截断头 show-more 单击打开全量预览；回到底部按钮 scrollToBottom。
+ * 截断头 show-more 单击打开全量预览。
  * 滚动条列、含 OSC8 链接行、非工具区域、展开卡单击放行官方。
  */
 function handleFullscreenToolClick(tui: any, packet: SgrMousePacket): boolean {
@@ -319,12 +303,6 @@ function handleFullscreenToolClick(tui: any, packet: SgrMousePacket): boolean {
   if (!target) return false;
   const component = target.component;
   const card = target.group ?? component;
-  // 回到底部按钮：按组件引用命中，不依赖渲染行缓存。
-  if (getScrollButtonVisible() && component === getScrollButtonWidget()) {
-    tui.scrollToBottom?.();
-    hideScrollButton(tui);
-    return true;
-  }
   const line = hit.box.lines?.[hit.localRow];
   if (typeof line !== "string" || /\x1b]8;[^;]*;/.test(line)) return false;
   const isTool = isToolExecutionComponent(component);
@@ -402,18 +380,7 @@ function handleFullscreenToolHover(tui: any, packet: SgrMousePacket): void {
   const hit = fullscreenLeafAt(layout, x, y);
   if (hit) {
     const line = hit.box.lines?.[hit.localRow];
-    // 回到底部按钮：渲染行文本 + 列区间识别（零组件树开销）。
-    if (
-      typeof line === "string" &&
-      getScrollButtonVisible() &&
-      line.includes("[ ↓")
-    ) {
-      const plain = stripTerminalSequencesPreservingLayout(line);
-      const idx = plain.indexOf("[ ↓");
-      if (idx >= 0 && x >= idx && x <= idx + plain.length - 1) {
-        target = { kind: "button" };
-      }
-    } else if (typeof line === "string" && !/\x1b]8;/.test(line)) {
+    if (typeof line === "string" && !/\x1b]8;/.test(line)) {
       const width = Math.max(1, Number(tui.terminal?.columns) || 80);
       const contentWidth = fullscreenContentWidth(hit.box, width);
       // 与点击共用同一定位算法，避免 hover 自建行段与真实组件树错位。
@@ -481,9 +448,6 @@ function patchFullscreenViewportInput(tui: any): void {
   tui[FULLSCREEN_VIEWPORT_PATCH] = true;
   tui.handleViewportInput = function (this: any, data: string) {
     if (toolMouseInteractionActive() && tui.mode === "fullscreen") {
-      // 滚动输入（wheel/pageUp/end 等）后同步回到底部按钮显隐；
-      // 官方 viewport 会消费键盘，扩展监听器无法补偿，必须在这里调度。
-      scheduleScrollButtonSync(tui, data);
       const packets = parseSgrMousePackets(data);
       // 官方 fullscreen 会消费全部鼠标；文本预览 overlay 活动时放行给 focused
       // custom component，使 [esc] 点击和滚轮可用。
@@ -836,24 +800,12 @@ function handleToolMouseInput(data: string): { consume: true } | undefined {
   if (!getToolMouseTui()) return undefined;
   // 惰性 Proxy fullscreen：鼠标由 handleViewportInput 包装消费（官方链之前），
   // 此处只处理键盘（鼠标事件在官方 listener 已被 consume，到不了这里）。
-  if (fullscreenLazyTui(getToolMouseTui())) {
-    scheduleScrollButtonSync(getToolMouseTui(), data);
-    if (isScrollBottomInput(data)) {
-      getToolMouseTui().scrollToBottom?.();
-      hideScrollButton(getToolMouseTui());
-      return { consume: true };
-    }
-    return undefined;
-  }
-  updateScrollButtonFromInput(getToolMouseTui(), data);
+  if (fullscreenLazyTui(getToolMouseTui())) return undefined;
   // Off mode restores native input: wheel keeps scrolling through Pi's normal
   // dispatcher, while hover/click affordances are entirely inactive.
   if (!toolMouseInteractionActive()) return undefined;
   const packets = parseSgrMousePackets(data);
-  if (!packets) {
-    scheduleScrollButtonSync(getToolMouseTui(), data);
-    return undefined;
-  }
+  if (!packets) return undefined;
 
   let consumed = false;
   for (const packet of packets) {
@@ -866,7 +818,6 @@ function handleToolMouseInput(data: string): { consume: true } | undefined {
 
   // Let scrolling, motion, release, and clicks outside tool results reach the
   // normal TUI input chain (including other extensions such as pi-zentui).
-  scheduleScrollButtonSync(getToolMouseTui(), data);
   return consumed ? { consume: true } : undefined;
 }
 
@@ -902,21 +853,18 @@ export function teardownToolMouseInteraction(
   }
   restoreToolMouseRenderPatch();
   restoreFullscreenViewportInput(getToolMouseTui());
-  resetScrollButtonState();
   setToolMouseTui(null);
   toolMouseUi = null;
   patchRegistry.dispose(TOOL_MOUSE_OWNER_KEY, owner);
   if (toolMouseInstallationOwner === owner) toolMouseInstallationOwner = null;
 }
 
-/** off 模式清理：清空 hover 与回到底部按钮状态（跨模块 rebind 统一经由此函数）。 */
+/** off 模式清理：清空 hover 状态（跨模块 rebind 统一经由此函数）。 */
 export function resetToolHoverState(): void {
   setHoveredToolCallId(null);
   setHoveredThinking(null);
   setHoveredMessageDisplay(null);
   setHoveredCompactAssistant(null);
-  setScrollButtonVisible(false);
-  setScrollButtonHovered(false);
   releaseFullscreenToolMouseMotion(getToolMouseTui());
 }
 
@@ -962,26 +910,20 @@ export function installToolMouseInteraction(
     if (isLazyProxyTui(tui)) {
       patchFullscreenViewportInput(tui);
       ensureFullscreenToolMouseMotion(tui);
-      setScrollButtonWidget({
-        render: (width: number) => {
+      return {
+        render: () => {
           patchFullscreenViewportInput(tui);
           ensureFullscreenToolMouseMotion(tui);
-          return renderScrollButton(width, theme);
+          return [];
         },
         invalidate() {},
-      });
-      return getScrollButtonWidget();
+      };
     }
     // Wrap doRender to capture the live frame for tool click/hover mapping.
     patchToolMouseMotionAfterRender(tui);
     if (toolMouseInteractionActive())
       tui?.terminal?.write?.(TOOL_MOUSE_MOTION_ENABLE);
-    const widget = {
-      render: (width: number) => renderScrollButton(width, theme),
-      invalidate() {},
-    };
-    setScrollButtonWidget(widget);
-    return widget;
+    return { render: () => [], invalidate() {} };
   });
   const removeInput = services.input.bind(
     ctx.ui,
