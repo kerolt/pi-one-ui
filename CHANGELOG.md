@@ -23,6 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The fullscreen "Back to bottom" button and its `Ctrl+End` binding are gone. Use the official `End` shortcut and the restyled end-of-transcript indicator instead.
 - For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.9.0`. Fully exit and restart Pi after updating the package.
 
+### Release verification
+
+- Release source: [`bd915d1`](https://github.com/kerolt/pi-one-ui/commit/bd915d1376486a2aa6c21626f645893e99e29791). [CI](https://github.com/kerolt/pi-one-ui/actions/runs/36949089996) and [Publish](https://github.com/kerolt/pi-one-ui/actions/runs/36949089612) completed successfully; local `npm run verify` passed 1,190 tests across 69 files, and `npm run pack:check` confirmed 124 package files.
+- npm `latest` resolves to `0.9.0`, published `2026-10-02T01:05:39.420Z` with `gitHead` `bd915d1376486a2aa6c21626f645893e99e29791`, package SHA-1 `c354b2f6eafb4e2fe00c915ec43925d0304918dc`, integrity `sha512-uipQsMexnSRrB/7fNPNotgsjsHuHMRwLKtgRrp9EmmfoPaYJhtkrMZ+CPkBiXlHqt63sDfHVgcSvp/5rvA5GvQ==`, and a published provenance statement (SLSA v1).
+- Real Pi fullscreen TUI probes were not run for this release (no TTY), so terminal, theme, and reload combinations still require manual verification.
+
 ## [0.8.0] - 2026-09-30
 
 ### Changed
