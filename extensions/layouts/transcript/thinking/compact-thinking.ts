@@ -33,8 +33,8 @@ import {
   formatThoughtDuration,
   styleCompactThinkingText,
 } from "../renderer/compact-mode.ts";
-import { refreshMountedContext } from "../renderer/context-refresh.ts";
 import { isToolTuiFullscreen } from "../renderer/tool/show-more-hint.ts";
+import { refreshMountedTranscript } from "../renderer/transcript-refresh.ts";
 
 // 保持导出兼容：渲染函数已并入 renderer/compact-mode.ts，这里 re-export。
 export {
@@ -1088,15 +1088,15 @@ function compactThinking(pi: ExtensionAPI) {
 
     // pi 在 reload/resume 时先于 session_start 用原始原型重建聊天组件
     // （rebuildChatFromMessages / renderCurrentSessionState）。由共享的
-    // refreshMountedContext 扫描挂载树重绘这些组件，恢复 compact 渲染、
+    // refreshMountedTranscript 扫描挂载树重绘这些组件，恢复 compact 渲染、
     // 持久化时长与工具调用显示。
-    refreshMountedContext(activeTui);
+    refreshMountedTranscript(activeTui);
     activeTui?.requestRender(true);
   });
 
   pi.on("session_tree", (_event, ctx) => {
     restoreDurationEntries(ctx.sessionManager.getBranch(), completedDurations);
-    refreshMountedContext(activeTui);
+    refreshMountedTranscript(activeTui);
     activeTui?.requestRender(true);
   });
 

@@ -17,7 +17,7 @@ import {
   installMessageDisplayRendering,
   refreshMessageDisplays,
   setMessageDisplayTheme,
-} from "../../extensions/layouts/context/renderer/tool/message-display.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/message-display.ts";
 
 function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");

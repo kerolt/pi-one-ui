@@ -287,7 +287,7 @@ test("/oneui leaves the effective value unchanged when persistence fails", async
   await opened;
 });
 
-test("/oneui rebuilds a failed Context row from the effective config", async () => {
+test("/oneui rebuilds a failed Transcript row from the effective config", async () => {
   const snapshot = {
     ...rendererConfig,
     excludeRenderers: [...rendererConfig.excludeRenderers],
@@ -303,10 +303,10 @@ test("/oneui rebuilds a failed Context row from the effective config", async () 
     .mockImplementation(() => {
       throw new Error("disk offline");
     });
-  const updateContextConfig = vi.fn((id: string, value: string) =>
+  const updateTranscriptConfig = vi.fn((id: string, value: string) =>
     harness.settings.update(id, value),
   );
-  const harness = createPanelHarness({ update: updateContextConfig });
+  const harness = createPanelHarness({ update: updateTranscriptConfig });
   const opened = harness.open();
   const component = harness.component();
 
@@ -318,12 +318,12 @@ test("/oneui rebuilds a failed Context row from the effective config", async () 
     component.handleInput(" ");
     component.handleInput(" ");
 
-    expect(updateContextConfig).toHaveBeenNthCalledWith(
+    expect(updateTranscriptConfig).toHaveBeenNthCalledWith(
       1,
       "diffViewMode",
       expectedDiffViewMode,
     );
-    expect(updateContextConfig).toHaveBeenNthCalledWith(
+    expect(updateTranscriptConfig).toHaveBeenNthCalledWith(
       2,
       "diffViewMode",
       expectedDiffViewMode,

@@ -23,7 +23,7 @@ import {
 
 const SECTIONS = [
   { id: "header", label: "Header" },
-  { id: "context", label: "Context" },
+  { id: "transcript", label: "Transcript" },
   { id: "workingLine", label: "WorkingLine" },
   { id: "editor", label: "Editor" },
   { id: "footer", label: "Footer" },
@@ -111,7 +111,7 @@ function itemsFor(
           ["starship", "native", "hidden"],
         ),
       ];
-    case "context":
+    case "transcript":
       return [
         toggle(
           "userMessagesEnabled",
@@ -127,7 +127,7 @@ function itemsFor(
           ["framed", "framed-copy-friendly", "compact", "labeled"],
         ),
         item(
-          "contextMode",
+          "transcriptMode",
           "Tool style",
           "on = rich cards, compact = one summary per assistant message, off = native.",
           config.mode,
@@ -212,10 +212,10 @@ function itemsFor(
           `preset:${preset}`,
           preset,
           preset === "native"
-            ? "Disable custom Editor, Footer, WorkingLine and Context rendering."
+            ? "Disable custom Editor, Footer, WorkingLine and Transcript rendering."
             : preset === "compact"
-              ? "Enable Editor, Footer, WorkingLine and compact Context rendering."
-              : "Enable Editor, Footer, WorkingLine and rich Context rendering.",
+              ? "Enable Editor, Footer, WorkingLine and compact Transcript rendering."
+              : "Enable Editor, Footer, WorkingLine and rich Transcript rendering.",
           "apply",
           ["apply"],
         ),
@@ -225,7 +225,8 @@ function itemsFor(
 
 const descriptions: Record<SectionId, string> = {
   header: "Header owns startup branding and startup guidance.",
-  context: "Context owns messages, tool cards, diffs, thinking, and summaries.",
+  transcript:
+    "Transcript owns messages, tool cards, diffs, thinking, and summaries.",
   workingLine: "WorkingLine is the sole owner of Pi's unkeyed working row.",
   editor: "Editor owns the input editor factory and its styles.",
   footer: "Footer owns footer rendering and project status segments.",
@@ -317,7 +318,7 @@ export function createSettingsPanel(
                 (line) => `  ${line}`,
               ),
             ]
-          : section === "context"
+          : section === "transcript"
             ? [
                 "",
                 theme.fg("muted", "  User message preview"),

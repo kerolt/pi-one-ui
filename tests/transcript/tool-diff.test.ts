@@ -12,12 +12,12 @@ import {
   config,
   normalizeConfig,
 } from "../../extensions/app/config/renderer.ts";
-import { installDefaultMode } from "../../extensions/layouts/context/renderer/default-mode.ts";
-import { shouldRenderRichDiff } from "../../extensions/layouts/context/renderer/index.ts";
+import { installDefaultMode } from "../../extensions/layouts/transcript/renderer/default-mode.ts";
+import { shouldRenderRichDiff } from "../../extensions/layouts/transcript/renderer/index.ts";
 import {
   renderEditDiffResult,
   renderWriteDiffResult,
-} from "../../extensions/layouts/context/renderer/tool/diff/diff-renderer.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/diff/diff-renderer.ts";
 
 initTheme("dark");
 
@@ -27,12 +27,12 @@ import {
   renderRichToolResult,
   type ToolDisplayConfig,
   WriteExecutionMetadataStore,
-} from "../../extensions/layouts/context/renderer/tool/diff/index.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/diff/index.ts";
 import {
   executeWriteWithMetadata,
   MAX_COMPARABLE_WRITE_BYTES,
   MAX_WRITE_METADATA_ENTRIES,
-} from "../../extensions/layouts/context/renderer/tool/diff/write-execution.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/diff/write-execution.ts";
 
 const theme = {
   fg(_color: string, text: string) {

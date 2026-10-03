@@ -13,7 +13,7 @@
 ## 2. 界面职责
 
 - Header：启动信息与提示，拥有 `ctx.ui.setHeader()`。
-- Context：用户消息、Assistant、Thinking、Tool、Diff、Markdown 和摘要的内容渲染。
+- Transcript：用户消息、Assistant、Thinking、Tool、Diff、Markdown 和摘要的内容渲染。
 - WorkingLine：工作状态、耗时、统计及对应的 Pi working row。
 - Editor：编辑器工厂、装饰、输入内容转移及 Editor 自身 ownership。
 - Footer：Footer 工厂、内容、状态数据展示及 Footer 自身 ownership。
@@ -37,9 +37,9 @@ Layout 只操作自己负责的 Pi UI 接口。跨组件共享数据通过 app �
 ### `app/config/`
 
 - `store.ts`：canonical 路径、JSON 读取、文件状态检查、原子写入和更新通知。
-- `editor.ts`、`footer.ts`、`context.ts`、`working-line.ts`：对应配置的类型、默认值与规范化。
+- `editor.ts`、`footer.ts`、`user-messages.ts`、`working-line.ts`：对应配置的类型、默认值与规范化。
 - `shell.ts`：组合各组件的 canonical 配置，并提供组件配置修改操作。
-- `renderer.ts`：Context 渲染配置及现有 `renderer` 字段内的功能开关。
+- `renderer.ts`：Transcript 渲染配置及现有 `renderer` 字段内的功能开关。
 - `panel.ts`：面板位置和尺寸。
 - `values.ts`：配置对象的共享处理。
 

@@ -173,7 +173,7 @@ export function isMessageDisplayComponent(value: any): boolean {
 }
 
 /**
- * Refreshes mounted context message components after a mode change.
+ * Refreshes mounted transcript message components after a mode change.
  */
 export function refreshMessageDisplays(root: any): void {
   walkComponentTree(root, (value: any) => {

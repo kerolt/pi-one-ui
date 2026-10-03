@@ -9,12 +9,12 @@ import { Container, Text } from "@earendil-works/pi-tui";
 import { expect, test, vi } from "vitest";
 
 import { config } from "../../extensions/app/config/renderer.ts";
-import { installToolGrouping } from "../../extensions/layouts/context/renderer/tool/grouping.ts";
+import { installToolGrouping } from "../../extensions/layouts/transcript/renderer/tool/grouping.ts";
 import {
   clearAllAnimations,
   scheduleAnimation,
-} from "../../extensions/layouts/context/renderer/tool/result.ts";
-import { installToggleRenderCache } from "../../extensions/layouts/context/renderer/tool/toggle-render-cache.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/result.ts";
+import { installToggleRenderCache } from "../../extensions/layouts/transcript/renderer/tool/toggle-render-cache.ts";
 import { toolLoadingIcon } from "../../extensions/tools/tool-loading-icon.ts";
 import { builtInToolDefinition } from "../support/built-in-tool-renderers.ts";
 

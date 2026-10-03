@@ -1,10 +1,10 @@
 import { expect, test } from "vitest";
-import { setHoveredToolCallId } from "../../extensions/layouts/context/renderer/mouse/hover.ts";
-import * as interaction from "../../extensions/layouts/context/renderer/mouse/interaction.ts";
+import { setHoveredToolCallId } from "../../extensions/layouts/transcript/renderer/mouse/hover.ts";
+import * as interaction from "../../extensions/layouts/transcript/renderer/mouse/interaction.ts";
 import {
   getToolMouseTui,
   setToolMouseTui,
-} from "../../extensions/layouts/context/renderer/mouse/scroll.ts";
+} from "../../extensions/layouts/transcript/renderer/mouse/scroll.ts";
 
 // jiti 转译下经 re-export 链读取的模块级 let 是初始值快照；跨模块必须走 getter。
 test("toolMouseTui getter reads the global slot written by setter", () => {

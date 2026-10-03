@@ -9,10 +9,6 @@ import {
 } from "../../shared/icons.ts";
 import { isSupportedColorSpec } from "../../shared/style.ts";
 import {
-  normalizeUserMessages,
-  type UserMessagesComponentConfig,
-} from "./context.ts";
-import {
   defaultEditor,
   type EditorBorderColorMode,
   type EditorComponentConfig,
@@ -55,6 +51,10 @@ import {
   configPath as defaultConfigPath,
   mutateConfigFile,
 } from "./store.ts";
+import {
+  normalizeUserMessages,
+  type UserMessagesComponentConfig,
+} from "./user-messages.ts";
 import { booleanValue, overlayKnown, recordValue } from "./values.ts";
 import {
   defaultWorkingLine,
@@ -64,9 +64,9 @@ import {
 } from "./working-line.ts";
 
 export type { IconMode } from "../../shared/icons.ts";
-export * from "./context.ts";
 export * from "./editor.ts";
 export * from "./footer.ts";
+export * from "./user-messages.ts";
 export * from "./working-line.ts";
 export type ColorSpec = string;
 /** 选择框边框样式：`one-ui` 是唯一实现，旧配置里的 `zentui` 按同一样式读取。 */

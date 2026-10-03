@@ -9,12 +9,12 @@ import { expect, test } from "vitest";
 import {
   installToolGrouping,
   ToolGroupComponent,
-} from "../../extensions/layouts/context/renderer/tool/grouping.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/grouping.ts";
 import {
   ExpandedToolIoView,
   type IoViewFrameState,
   setActiveIoViewFrame,
-} from "../../extensions/layouts/context/renderer/tool/result.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/result.ts";
 
 initTheme("dark");
 const ui = {

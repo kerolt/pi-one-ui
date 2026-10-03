@@ -20,11 +20,11 @@
 `pi-one-ui` 将 Pi 的交互界面划分为以下布局层级：
 
 ```text
-Header → Context → WorkingLine → Editor → Footer
+Header → Transcript → WorkingLine → Editor → Footer
 ```
 
 - **Header**：启动信息、Logo 和快捷键提示。
-- **Context**：对话内容区，包含用户消息、Assistant 消息、Thinking 思考过程、Tool 执行、Diff 对比、Markdown 及回合摘要。
+- **Transcript**：对话内容区，包含用户消息、Assistant 消息、Thinking 思考过程、Tool 执行、Diff 对比、Markdown 及回合摘要。
 - **WorkingLine**：工作状态指示、Spinner、Token/思考时长统计、实时吞吐速率及回合摘要。
 - **Editor**：输入编辑器、补全建议、元数据展示及 Minimalist 极简样式（支持一键切换 Pi 原生）。
 - **Footer**：工作目录、Git 状态、运行时信息、Token/费用统计及扩展状态等。
@@ -34,7 +34,7 @@ Header → Context → WorkingLine → Editor → Footer
 
 | 功能                  | 说明                                                                   | 入口              |
 | --------------------- | ---------------------------------------------------------------------- | ----------------- |
-| 统一设置面板          | 集中管理 Header、Context、WorkingLine、Editor、Footer 等组件及功能设置   | `/oneui`          |
+| 统一设置面板          | 集中管理 Header、Transcript、WorkingLine、Editor、Footer 等组件及功能设置 | `/oneui`          |
 | Context Inspector     | 查看上下文占用，并预览 System prompt、Memory、Skills、Tools 及消息内容 | `/context`        |
 | Session reference     | 搜索并引用注入历史 Pi 会话或 Subagent 的有效上下文                     | `@` 补全          |
 | Subagent autocomplete | 提供 Subagent 名称补全与委派提示                                       | `@` 补全          |
@@ -167,7 +167,7 @@ pi update npm:pi-one-ui
 | 上游项目                                                        | 融入 `pi-one-ui` 的主要能力                                                | 参照 Baseline              |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------- |
 | [pi-zentui](https://github.com/lmilojevicc/pi-zentui)           | Starship 风格 Footer、Editor 基础布局与 Shell 交互能力                      | v0.21.0，commit `5341b38` |
-| [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code 风格 Context 渲染器、Tool/Diff 视图、Context Inspector 与会话引用 | v0.8.67，commit `dba37e5` |
+| [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code 风格 Transcript 渲染器、Tool/Diff 视图、Context Inspector 与会话引用 | v0.8.67，commit `dba37e5` |
 
 融合后的生产代码位于 `extensions/`。`pi-one-ui` 在原始实现之上完成了入口统一、配置存储规范化、生命周期治理、Layout Ownership 收敛、Overlay 统一调度与输入路由解耦，并持续独立演进。当前实现已完全独立于上游，不依赖也不自动同步上游分支。
 
@@ -247,7 +247,7 @@ npm run pack:check
 所有测试统一由 Vitest 执行，并按照功能领域组织在子目录中：
 
 - `tests/config/`：canonical 配置、存储和兼容性边界。
-- `tests/context/`：Context 内容区、Tool、Diff、Thinking 和鼠标交互。
+- `tests/transcript/`：Transcript 内容区、Tool、Diff、Thinking 和鼠标交互。
 - `tests/header/`、`tests/working-line/`、`tests/editor/`、`tests/footer/`：各 Layout 的行为和生命周期。
 - `tests/runtime/`、`tests/overlay/`、`tests/integration/`：运行时基础设施、Overlay 和组合入口。
 - `tests/services/`：Git、runtime、project、session 和 telemetry。

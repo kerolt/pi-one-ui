@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Rename the `/oneui` settings section from `Context` to `Transcript`. Names that refer to the model context window are unchanged: the `/context` command, the Context Inspector, the Footer `context` segment with `contextStyle` and `contextThresholds`, and the `context*` color keys. No configuration key, command, or stored value changes.
+
 ## [0.9.0] - 2026-10-02
 
 ### Changed

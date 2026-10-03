@@ -8,10 +8,10 @@ import {
   formatDuration,
   summaryLine,
   summaryMarkdown,
-} from "../../extensions/layouts/context/summary/core.ts";
+} from "../../extensions/layouts/transcript/summary/core.ts";
 import agentSummaryFeature, {
   AGENT_SUMMARY_ENTRY_TYPE,
-} from "../../extensions/layouts/context/summary/index.ts";
+} from "../../extensions/layouts/transcript/summary/index.ts";
 
 function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");

@@ -25,8 +25,6 @@ import {
   type SeparatorStyle,
 } from "../../extensions/app/config/shell";
 import { POLISHED_PROTOTYPE_PATCH_REGISTRY } from "../../extensions/app/runtime/prototype-patch-registry";
-import { installUserMessageStyle as installUserMessageStyleProduction } from "../../extensions/layouts/context/message/user-message";
-import { sanitizeUserMessageSourceText } from "../../extensions/layouts/context/message/user-message-osc";
 import {
   PolishedEditor as PolishedEditorProduction,
   WrappedPolishedEditor as WrappedPolishedEditorProduction,
@@ -36,6 +34,8 @@ import {
   installSelectorBorderStyle as installSelectorBorderStyleProduction,
   patchSelectorBorderStyle as patchSelectorBorderStyleProduction,
 } from "../../extensions/layouts/overlay/selector-border";
+import { installUserMessageStyle as installUserMessageStyleProduction } from "../../extensions/layouts/transcript/message/user-message";
+import { sanitizeUserMessageSourceText } from "../../extensions/layouts/transcript/message/user-message-osc";
 import { emptyGitStatus } from "../../extensions/services/git-data";
 import { createInitialState } from "../../extensions/services/session-state";
 import oneui, { activeFooterReferences } from "../support/layout-lifecycle";

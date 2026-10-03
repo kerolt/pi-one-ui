@@ -62,7 +62,7 @@ import {
 
 let compactModeHooks: CompactModeHooks | undefined;
 
-function refreshCurrentContext(
+function refreshCurrentTranscript(
   ctx?: any,
   toolGrouping?: ToolGroupingHooks,
   render?: ToolMouseServices["render"],
@@ -104,15 +104,15 @@ function applyStyleMode(
       tui.terminal?.write?.(TOOL_MOUSE_DISABLE);
     }
   } else if (mode === "compact") {
-    // Enter compact mode after collecting the current context and syncing ownership.
+    // Enter compact mode after collecting the current transcript and syncing ownership.
     syncCompactMode(ctx);
   }
   // Reshape immediately and once more after the panel/custom UI unmounts and
-  // the main context is mounted again.
-  refreshCurrentContext(ctx, toolGrouping, render);
+  // the main transcript is mounted again.
+  refreshCurrentTranscript(ctx, toolGrouping, render);
   scheduleSessionRender(() => {
     if (mode === "compact") syncCompactMode(ctx);
-    refreshCurrentContext(ctx, toolGrouping, render);
+    refreshCurrentTranscript(ctx, toolGrouping, render);
   });
   ctx.ui.notify(`Claude Code style: ${mode}`, "info");
 }
@@ -203,7 +203,7 @@ export default function (
       // 配置（如 expandedPreviewMaxLines / excludeRenderers）变化可能改变
       // 渲染结果：丢弃工具卡跨 toggle 缓存，下次 updateDisplay 重建。
       installation?.toggleRenderCache.clear();
-      refreshCurrentContext(
+      refreshCurrentTranscript(
         ctx,
         installation?.toolGrouping,
         options.services?.render,
@@ -243,7 +243,7 @@ export default function (
     hooks.toolGrouping.setTheme(ctx.ui.theme);
     hooks.toggleRenderCache.setTheme(ctx.ui.theme);
     setMessageDisplayTheme(ctx.ui.theme);
-    // Collect the resumed context before syncing compact patches and expansion state.
+    // Collect the resumed transcript before syncing compact patches and expansion state.
     syncCompactMode(ctx);
     // compact-thinking 的 session_start 处理在本 handler 之后执行（在其之上再装
     // 一层 updateContent）；延迟再同步一次，保证 compact 补丁最终位于外层。
@@ -253,7 +253,7 @@ export default function (
 
   pi.on("session_compact", async (event, ctx) => {
     const hooks = ensureTuiInstallation(ctx);
-    // Compaction rebuilds the context without session_start. Rebind after
+    // Compaction rebuilds the transcript without session_start. Rebind after
     // other TUI extensions may have replaced the root input dispatcher.
     if (ctx?.mode === "tui" && ctx?.hasUI)
       installToolMouseInteraction(ctx, mouseOwner, options.services);

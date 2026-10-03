@@ -7,28 +7,28 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { expect, test } from "vitest";
 import { config } from "../../extensions/app/config/renderer.ts";
-import { installCompactMode } from "../../extensions/layouts/context/renderer/compact-mode.ts";
+import { showTextPreview } from "../../extensions/layouts/overlay/context-inspector.ts";
+import { installCompactMode } from "../../extensions/layouts/transcript/renderer/compact-mode.ts";
 import claudeCodeStyleExtension, {
   ExpandedToolIoView,
   installToolMouseInteraction,
   SHOW_MORE_LABEL,
-} from "../../extensions/layouts/context/renderer/index.ts";
+} from "../../extensions/layouts/transcript/renderer/index.ts";
 import {
   isToolCallHovered,
   sharedToolHoverState,
-} from "../../extensions/layouts/context/renderer/mouse/hover.ts";
-import { WriteExecutionMetadataStore } from "../../extensions/layouts/context/renderer/tool/diff/write-execution.ts";
-import { ToolGroupComponent } from "../../extensions/layouts/context/renderer/tool/grouping.ts";
+} from "../../extensions/layouts/transcript/renderer/mouse/hover.ts";
+import { WriteExecutionMetadataStore } from "../../extensions/layouts/transcript/renderer/tool/diff/write-execution.ts";
+import { ToolGroupComponent } from "../../extensions/layouts/transcript/renderer/tool/grouping.ts";
 import {
   getMessageDisplayTheme,
   installMessageDisplayRendering,
   setMessageDisplayTheme,
-} from "../../extensions/layouts/context/renderer/tool/message-display.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/message-display.ts";
 import {
   installCompactThinking,
   ThinkingPreviewBlock,
-} from "../../extensions/layouts/context/thinking/compact-thinking.ts";
-import { showTextPreview } from "../../extensions/layouts/overlay/context-inspector.ts";
+} from "../../extensions/layouts/transcript/thinking/compact-thinking.ts";
 
 // 0.84+ 的稳定 TUI 引用会在 renderer 切换时重绑方法。插件不得捕获后回写
 // doRender/render/handleInput；regular 的工具点击改为按左键输入即时捕获内存 frame。
@@ -863,8 +863,8 @@ test("lazy-proxy tui: fullscreen hover uses scroll ancestor content width after 
   // isToolCallHovered 已移入 hover.ts（interaction.ts 不再 re-export）；
   // reload 语义不变：reset 走 interaction.ts 原生导出，状态读 globalThis 槽。
   expect(isToolCallHovered("width-tool-b")).toBe(true);
-  const reloadSpecifier = `../../extensions/layouts/context/renderer/mouse/interaction.ts?reload=${Date.now()}`;
-  const reloadedMouse: typeof import("../../extensions/layouts/context/renderer/mouse/interaction.ts") =
+  const reloadSpecifier = `../../extensions/layouts/transcript/renderer/mouse/interaction.ts?reload=${Date.now()}`;
+  const reloadedMouse: typeof import("../../extensions/layouts/transcript/renderer/mouse/interaction.ts") =
     await import(reloadSpecifier);
   reloadedMouse.resetToolHoverState();
   expect(

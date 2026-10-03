@@ -21,20 +21,20 @@ import {
   isCompactAssistantComponent,
   refreshCompactModeComponents,
   styleCompactThinkingText,
-} from "../../extensions/layouts/context/renderer/compact-mode.ts";
-import { refreshMountedContext } from "../../extensions/layouts/context/renderer/context-refresh.ts";
-import claudeCodeStyleExtension from "../../extensions/layouts/context/renderer/index.ts";
-import { WriteExecutionMetadataStore } from "../../extensions/layouts/context/renderer/tool/diff/write-execution.ts";
+} from "../../extensions/layouts/transcript/renderer/compact-mode.ts";
+import claudeCodeStyleExtension from "../../extensions/layouts/transcript/renderer/index.ts";
+import { WriteExecutionMetadataStore } from "../../extensions/layouts/transcript/renderer/tool/diff/write-execution.ts";
 import {
   getMessageDisplayTheme,
   setMessageDisplayTheme,
-} from "../../extensions/layouts/context/renderer/tool/message-display.ts";
-import { toolCallSummary } from "../../extensions/layouts/context/renderer/tool/names.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/message-display.ts";
+import { toolCallSummary } from "../../extensions/layouts/transcript/renderer/tool/names.ts";
 import {
   invalidateIoView,
   isExpandedToolIoView,
-} from "../../extensions/layouts/context/renderer/tool/result.ts";
-import { installCompactThinking } from "../../extensions/layouts/context/thinking/compact-thinking.ts";
+} from "../../extensions/layouts/transcript/renderer/tool/result.ts";
+import { refreshMountedTranscript } from "../../extensions/layouts/transcript/renderer/transcript-refresh.ts";
+import { installCompactThinking } from "../../extensions/layouts/transcript/thinking/compact-thinking.ts";
 import { builtInToolDefinition } from "../support/built-in-tool-renderers.ts";
 
 initTheme("dark");
@@ -1189,10 +1189,10 @@ test("unknown assistant wrappers keep ownership without creating a recursion cyc
   }
 });
 
-test("refreshMountedContext asserts compact ownership before redraw (resume without new messages)", async () => {
+test("refreshMountedTranscript asserts compact ownership before redraw (resume without new messages)", async () => {
   // resume 场景：renderer 先装 compact 补丁，compact-thinking 后装（外层）。
   // 无新消息 → message_update 的重新认领不触发 → 链序反。
-  // refreshMountedContext 必须先断言链序再重绘，round 摘要才含工具统计。
+  // refreshMountedTranscript 必须先断言链序再重绘，round 摘要才含工具统计。
   const dir = mkdtempSync(join(tmpdir(), "pi-compact-resume-"));
   const previousDir = process.env.PI_CODING_AGENT_DIR;
   process.env.PI_CODING_AGENT_DIR = dir;
@@ -1211,7 +1211,7 @@ test("refreshMountedContext asserts compact ownership before redraw (resume with
     const msg = toolCallMessage(Date.now());
     const component = new AssistantMessageComponent(msg, true) as any;
     const tui = { getMountedRoots: () => [component] } as any;
-    refreshMountedContext(tui);
+    refreshMountedTranscript(tui);
     const lines = renderText(component);
     expect(
       lines.some((line) => /bash×1/.test(line)),

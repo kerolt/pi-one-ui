@@ -4,8 +4,8 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Container } from "@earendil-works/pi-tui";
 import { expect, test } from "vitest";
-import claudeCodeStyleExtension from "../../extensions/layouts/context/renderer/index.ts";
-import { ToolGroupComponent } from "../../extensions/layouts/context/renderer/tool/grouping.ts";
+import claudeCodeStyleExtension from "../../extensions/layouts/transcript/renderer/index.ts";
+import { ToolGroupComponent } from "../../extensions/layouts/transcript/renderer/tool/grouping.ts";
 
 initTheme("dark");
 

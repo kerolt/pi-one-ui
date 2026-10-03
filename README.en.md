@@ -20,11 +20,11 @@ The result is a single installable and configurable Pi package that continues to
 `pi-one-ui` organizes the Pi interface into a clean hierarchy:
 
 ```text
-Header → Context → WorkingLine → Editor → Footer
+Header → Transcript → WorkingLine → Editor → Footer
 ```
 
 - **Header**: Startup information, logo, and shortcut hints.
-- **Context**: Conversation content area, including user messages, assistant messages, thinking blocks, tool calls, diffs, Markdown, and turn summaries.
+- **Transcript**: Conversation content area, including user messages, assistant messages, thinking blocks, tool calls, diffs, Markdown, and turn summaries.
 - **WorkingLine**: Working state indicator, spinner, token/thought/elapsed statistics, live output throughput, and turn summaries.
 - **Editor**: Input editor, completion menu, metadata display, and the Minimalist style (with effortless toggle to Pi native).
 - **Footer**: Current directory, Git status, runtime info, token/cost tracking, and extension statuses.
@@ -34,7 +34,7 @@ Header → Context → WorkingLine → Editor → Footer
 
 | Feature                | Description                                                                                 | Entry point       |
 | ---------------------- | ------------------------------------------------------------------------------------------- | ----------------- |
-| Unified settings panel | Centrally manages settings for Header, Context, WorkingLine, Editor, Footer, and Features    | `/oneui`          |
+| Unified settings panel | Centrally manages settings for Header, Transcript, WorkingLine, Editor, Footer, and Features | `/oneui`          |
 | Context Inspector      | Shows context usage and previews system prompt, memory, skills, tools, and message contents | `/context`        |
 | Session reference      | Searches previous Pi sessions or subagents and injects their relevant context               | `@` completion    |
 | Subagent autocomplete  | Provides subagent name completion and delegation hints                                      | `@` completion    |
@@ -165,7 +165,7 @@ To keep the configuration section clean and focused, in-depth options, template 
 | Upstream project                                                | Capabilities incorporated into `pi-one-ui`                                                 | Reference baseline        |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------- |
 | [pi-zentui](https://github.com/lmilojevicc/pi-zentui)           | Starship-style Footer, Editor layouts, and shell interaction capabilities                  | v0.21.0, commit `5341b38` |
-| [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code-style Context renderer, Tool/Diff rendering, Context Inspector, and references | v0.8.67, commit `dba37e5` |
+| [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code-style Transcript renderer, Tool/Diff rendering, Context Inspector, and references | v0.8.67, commit `dba37e5` |
 
 Production code lives in `extensions/`. `pi-one-ui` has unified the composition entry point, configuration storage, lifecycle management, layout ownership, overlay orchestration, and input routing. The project now evolves independently and no longer tracks upstream changes directly.
 
@@ -245,7 +245,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for module rules and real Pi TUI verifi
 All tests run through Vitest and are organized into domain directories:
 
 - `tests/config/`: canonical configuration, storage, and compatibility boundaries.
-- `tests/context/`: Context content, tools, diffs, thinking, and mouse interaction.
+- `tests/transcript/`: Transcript content, tools, diffs, thinking, and mouse interaction.
 - `tests/header/`, `tests/working-line/`, `tests/editor/`, and `tests/footer/`: Layout behavior and lifecycle coverage.
 - `tests/runtime/`, `tests/overlay/`, and `tests/integration/`: runtime infrastructure, overlays, and the composed entry point.
 - `tests/services/`: Git, runtime, project, session, and telemetry data.

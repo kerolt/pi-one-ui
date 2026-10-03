@@ -2,7 +2,7 @@
  * Shared recursive traversal for component trees.
  *
  * The implementation covers the children/getMountedRoots/seen traversal used by
- * context rendering, grouping and mouse packet handling.
+ * transcript rendering, grouping and mouse packet handling.
  *
  * The visitor runs once for every non-array object. Returning `false` stops
  * traversal into that node's children and mounted roots.

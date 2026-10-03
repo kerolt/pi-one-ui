@@ -14,11 +14,11 @@ import {
   configStore,
 } from "../../extensions/app/config/store.ts";
 import { EventCoordinator } from "../../extensions/app/runtime/event-coordinator.ts";
+import { removeSelectorBorderStyle } from "../../extensions/layouts/overlay/selector-border.ts";
 import {
   installUserMessageStyle,
   removeUserMessageStyle,
-} from "../../extensions/layouts/context/message/user-message.ts";
-import { removeSelectorBorderStyle } from "../../extensions/layouts/overlay/selector-border.ts";
+} from "../../extensions/layouts/transcript/message/user-message.ts";
 import registerLayoutLifecycle from "./standalone-layout-runtime.ts";
 
 /**

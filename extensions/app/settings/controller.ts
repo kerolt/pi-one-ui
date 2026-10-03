@@ -151,7 +151,7 @@ export class SettingsController {
             ["footer"],
           );
           break;
-        case "contextMode":
+        case "transcriptMode":
           this.enum(value, ["on", "compact", "off"]);
           this.updateRenderer(record, { mode: value });
           break;

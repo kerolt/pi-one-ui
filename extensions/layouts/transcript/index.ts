@@ -9,7 +9,7 @@ import {
   type PolishedTuiConfig,
 } from "../../app/config/shell.ts";
 import { installUserMessageStyle } from "./message/user-message.ts";
-import registerContextRenderer, {
+import registerTranscriptRenderer, {
   getCompactThinkingConfig,
   type RendererExtensionOptions,
   type RendererRuntimeController,
@@ -18,19 +18,19 @@ import markdownEnhance from "./renderer/markdown-enhance.ts";
 import agentSummary from "./summary/index.ts";
 import { installCompactThinking } from "./thinking/compact-thinking.ts";
 
-export type ContextRuntimeController = RendererRuntimeController & {
+export type TranscriptRuntimeController = RendererRuntimeController & {
   applyConfig(ctx: ExtensionContext, previous: Config): void;
 };
-export type ContextExtensionOptions = {
+export type TranscriptExtensionOptions = {
   readonly getConfig: () => PolishedTuiConfig;
   readonly services?: RendererExtensionOptions["services"];
 };
 
-/** Context 仅组织自身内容组件，Feature 的启用由 app 决定。 */
-export default function registerContext(
+/** Transcript 仅组织自身内容组件，Feature 的启用由 app 决定。 */
+export default function registerTranscript(
   pi: ExtensionAPI,
-  options: ContextExtensionOptions,
-): ContextRuntimeController {
+  options: TranscriptExtensionOptions,
+): TranscriptRuntimeController {
   let activeTheme: Theme | undefined;
   let cleanupUserMessages: (() => void) | undefined;
   const reconcile = (): void => {
@@ -53,7 +53,7 @@ export default function registerContext(
 
   markdownEnhance(pi);
   const thinking = installCompactThinking(pi, getCompactThinkingConfig());
-  const renderer = registerContextRenderer(pi, undefined, thinking, {
+  const renderer = registerTranscriptRenderer(pi, undefined, thinking, {
     services: options.services,
   });
   if (config.enableAgentSummary) {

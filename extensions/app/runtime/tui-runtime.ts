@@ -9,15 +9,15 @@ import contextInspector from "../../features/context-inspector/index.ts";
 import effortCommand from "../../features/effort-command.ts";
 import sessionReference from "../../features/session-reference/index.ts";
 import subagentAutocomplete from "../../features/subagent-autocomplete.ts";
-import registerContext, {
-  type ContextRuntimeController,
-} from "../../layouts/context/index.ts";
 import { EditorLayoutController } from "../../layouts/editor/index.ts";
 import { FooterLayoutController } from "../../layouts/footer/index.ts";
 import registerHeader, {
   applyStartupHeader,
 } from "../../layouts/header/index.ts";
 import { SelectorController } from "../../layouts/overlay/selector-controller.ts";
+import registerTranscript, {
+  type TranscriptRuntimeController,
+} from "../../layouts/transcript/index.ts";
 import { WorkingLineLayoutController } from "../../layouts/working-line/controller.ts";
 import {
   LEGACY_TURN_SUMMARY_ENTRY_TYPE,
@@ -61,7 +61,7 @@ export class TuiRuntime {
   readonly input = new InputRouter();
   private readonly coordinator: EventCoordinator;
   private readonly coordinatedPi: ExtensionAPI;
-  private context: ContextRuntimeController | undefined;
+  private transcript: TranscriptRuntimeController | undefined;
   private installed = false;
   private currentContext: ExtensionContext | undefined;
 
@@ -92,7 +92,7 @@ export class TuiRuntime {
       render: this.render,
       settings: this.settings,
       onConfigChanged: (previous, ctx) => {
-        this.context?.applyConfig(ctx, previous);
+        this.transcript?.applyConfig(ctx, previous);
         if (previous.showStartupHeader !== config.showStartupHeader) {
           applyStartupHeader(ctx);
         }
@@ -101,7 +101,7 @@ export class TuiRuntime {
     bindings.workingLineController.setSummaryWriterEnabled(false);
     bindings.installEventHandlers(this.coordinator);
     registerHeader(pi);
-    this.context = registerContext(pi, {
+    this.transcript = registerTranscript(pi, {
       getConfig: bindings.getConfig,
       services: {
         input: this.input,

@@ -14,7 +14,7 @@ import {
   clearThinkingPreviewCache,
   installCompactThinking,
   ThinkingPreviewBlock,
-} from "../../extensions/layouts/context/thinking/compact-thinking.ts";
+} from "../../extensions/layouts/transcript/thinking/compact-thinking.ts";
 
 const config = {
   useSummaryTitlesAsThinkingTitle: false,

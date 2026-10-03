@@ -13,7 +13,7 @@ import claudeCodeStyleExtension, {
   humanizeMcpToolName,
   isMcpToolDefinition,
   preservesOriginalRenderer,
-} from "../../extensions/layouts/context/renderer/index.ts";
+} from "../../extensions/layouts/transcript/renderer/index.ts";
 
 initTheme("dark");
 

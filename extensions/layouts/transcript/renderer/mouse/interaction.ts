@@ -955,7 +955,7 @@ export function resetToolHoverState(): void {
 }
 
 /**
- * Installs the Context mouse route through the shared input router.
+ * Installs the transcript mouse route through the shared input router.
  *
  * @param ctx Active TUI extension context.
  * @param owner Ownership token used to make teardown safe across reloads.
@@ -1037,7 +1037,7 @@ export function scheduleSessionRender(refresh?: () => void): void {
   const tui = getToolMouseTui();
   if (!tui || typeof tui.requestRender !== "function") return;
   if (sessionRenderTimer) clearTimeout(sessionRenderTimer);
-  // Restored context components are populated at different points for startup, reload,
+  // Restored transcript components are populated at different points for startup, reload,
   // and session replacement. Repaint after session_start and the surrounding UI
   // rebuild finish so messages are not left hidden until the next terminal input.
   sessionRenderTimer = setTimeout(() => {

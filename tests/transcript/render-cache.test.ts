@@ -9,8 +9,8 @@ import {
   ExpandedToolResultText,
   formatToolInputArgs,
   SHOW_MORE_LABEL,
-} from "../../extensions/layouts/context/renderer/index.ts";
-import { textFromResult } from "../../extensions/layouts/context/renderer/tool/result.ts";
+} from "../../extensions/layouts/transcript/renderer/index.ts";
+import { textFromResult } from "../../extensions/layouts/transcript/renderer/tool/result.ts";
 
 function expectedExpandedLines(
   text: string,

@@ -11,22 +11,22 @@ import {
 
 // pi-coding-agent 类型声明中 AssistantMessageComponent 仅能以 value 形式使用，
 // updateContent/lastMessage 用结构化类型访问。
-type ContextComponentInternals = {
+type TranscriptComponentInternals = {
   lastMessage?: AssistantMessage;
   updateContent(message: AssistantMessage): void;
   invalidate?(): void;
 };
 
 /**
- * Refreshes one constructed context component.
+ * Refreshes one constructed transcript component.
  *
  * Assistant components receive their latest message, while tool components
  * refresh their display so resumed content returns to the current shell.
  */
-export function refreshContextComponent(value: unknown): boolean {
+export function refreshTranscriptComponent(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
   if (value instanceof AssistantMessageComponent) {
-    const self = value as unknown as ContextComponentInternals;
+    const self = value as unknown as TranscriptComponentInternals;
     if (self.lastMessage) self.updateContent(self.lastMessage);
     else self.invalidate?.();
     return true;
@@ -65,13 +65,13 @@ function assertCompactModeOutermost(): void {
  * This covers reload, resume and compaction paths where Pi rebuilds components
  * before the renderer patches are installed.
  */
-export function refreshMountedContext(tui?: unknown): void {
+export function refreshMountedTranscript(tui?: unknown): void {
   if (!tui || typeof (tui as any).getMountedRoots !== "function") return;
   // Fix patch order before refreshing so updateContent runs through the outer patch.
   assertCompactModeOutermost();
   walkComponentTree(tui, (value: any) => {
     try {
-      refreshContextComponent(value);
+      refreshTranscriptComponent(value);
     } catch {
       // Isolate one component failure; a later tree rebuild can retry it.
     }

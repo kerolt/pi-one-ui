@@ -47,7 +47,6 @@ import {
 } from "../../../tools/patch-keys.ts";
 import { toolLoadingIcon } from "../../../tools/tool-loading-icon.ts";
 import { sanitizeToolResultText } from "../../../tools/tool-result-sanitize.ts";
-import { refreshContextComponent } from "./context-refresh.ts";
 import { isToolCallHovered } from "./mouse/hover.ts";
 import {
   countEditDiffStats,
@@ -64,6 +63,7 @@ import {
   scheduleAnimation,
 } from "./tool/result.ts";
 import { showMoreHintText } from "./tool/show-more-hint.ts";
+import { refreshTranscriptComponent } from "./transcript-refresh.ts";
 
 /** compact 渲染层对 compact-thinking 的只读查询面（不建第二套计时器）。 */
 export type CompactThinkingQuery = {
@@ -843,7 +843,7 @@ function collectMountedComponents(root: any): void {
     }
   });
   // Replace tracking only after scanning components. The root often omits the
-  // context while a panel or custom UI is open,
+  // transcript while a panel or custom UI is open,
   // so clearing here would lose live updateContent/updateDisplay instances,
   // and mode changes would require a /reload to rebuild them.
   if (assistants.size > 0 || tools.size > 0) {
@@ -1425,7 +1425,7 @@ function refreshTrackedComponents(): void {
   for (const component of [...trackedAssistantComponents]) {
     try {
       if (config.mode !== "compact") detachAssistantExpansion(component);
-      refreshContextComponent(component);
+      refreshTranscriptComponent(component);
     } catch {
       trackedAssistantComponents.delete(component);
     }
@@ -1433,7 +1433,7 @@ function refreshTrackedComponents(): void {
   for (const component of [...trackedToolComponents]) {
     try {
       // 共享实现负责 updateDisplay；invalidate 属于 compact-mode 的跟踪语义。
-      refreshContextComponent(component);
+      refreshTranscriptComponent(component);
       component.invalidate?.();
     } catch {
       trackedToolComponents.delete(component);

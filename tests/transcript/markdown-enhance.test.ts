@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { default as enhance } from "../../extensions/layouts/context/renderer/markdown-enhance.ts";
+import { default as enhance } from "../../extensions/layouts/transcript/renderer/markdown-enhance.ts";
 
 const transformers: Array<(md: string, ctx?: object) => string> = [];
 enhance({
