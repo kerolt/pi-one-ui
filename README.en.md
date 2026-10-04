@@ -167,7 +167,7 @@ To keep the configuration section clean and focused, in-depth options, template 
 | [pi-zentui](https://github.com/lmilojevicc/pi-zentui)           | Starship-style Footer, Editor layouts, and shell interaction capabilities                  | v0.21.0, commit `5341b38` |
 | [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code-style Transcript renderer, Tool/Diff rendering, Context Inspector, and references | v0.8.67, commit `dba37e5` |
 
-Production code lives in `extensions/`. `pi-one-ui` has unified the composition entry point, configuration storage, lifecycle management, layout ownership, overlay orchestration, and input routing. The project now evolves independently and no longer tracks upstream changes directly.
+Production code lives in `extensions/`. `pi-one-ui` has unified the composition entry point, configuration storage, lifecycle management, layout ownership, overlay orchestration, and input routing. The project now evolves independently and no longer tracks upstream changes directly. Copyright notices and the full MIT license texts for the two upstream projects and for the diff renderer source are collected in [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed module boundaries, event flow, and ownership conventions.
 
@@ -297,4 +297,4 @@ GitHub issues and contributions are welcome. When submitting changes:
 
 ## License
 
-This project is released under the [MIT License](./LICENSE).
+This project is released under the [MIT License](./LICENSE). Copyright notices and full license texts for the incorporated third-party code are in [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).

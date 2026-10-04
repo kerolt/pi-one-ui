@@ -169,7 +169,7 @@ pi update npm:pi-one-ui
 | [pi-zentui](https://github.com/lmilojevicc/pi-zentui)           | Starship 风格 Footer、Editor 基础布局与 Shell 交互能力                      | v0.21.0，commit `5341b38` |
 | [pi-cc-extensions](https://github.com/minuque/pi-cc-extensions) | Claude Code 风格 Transcript 渲染器、Tool/Diff 视图、Context Inspector 与会话引用 | v0.8.67，commit `dba37e5` |
 
-融合后的生产代码位于 `extensions/`。`pi-one-ui` 在原始实现之上完成了入口统一、配置存储规范化、生命周期治理、Layout Ownership 收敛、Overlay 统一调度与输入路由解耦，并持续独立演进。当前实现已完全独立于上游，不依赖也不自动同步上游分支。
+融合后的生产代码位于 `extensions/`。`pi-one-ui` 在原始实现之上完成了入口统一、配置存储规范化、生命周期治理、Layout Ownership 收敛、Overlay 统一调度与输入路由解耦，并持续独立演进。当前实现已完全独立于上游，不依赖也不自动同步上游分支。两个上游项目以及 Diff 渲染器来源的版权与 MIT 许可全文收录在 [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md)。
 
 更详细的模块边界、事件流与 Ownership 约定参见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
 
@@ -299,4 +299,4 @@ git push origin main --follow-tags
 
 ## 许可证
 
-本项目基于 [MIT License](./LICENSE) 发布。
+本项目基于 [MIT License](./LICENSE) 发布。整合进来的上游代码的版权与许可全文见 [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md)。

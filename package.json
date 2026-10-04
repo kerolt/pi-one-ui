@@ -25,7 +25,8 @@
     "README.md",
     "README.en.md",
     "CHANGELOG.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.md"
   ],
   "scripts": {
     "format": "biome format --write extensions tests package.json tsconfig.json vitest.config.ts biome.json",
