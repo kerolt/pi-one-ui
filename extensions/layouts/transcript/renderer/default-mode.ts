@@ -5,7 +5,12 @@
  * 生命周期对齐 compact-mode：installDefaultMode → hooks.shutdown。
  */
 import { ToolExecutionComponent } from "@earendil-works/pi-coding-agent";
-import { Text, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import {
+  Text,
+  truncateToWidth,
+  visibleWidth,
+  wrapTextWithAnsi,
+} from "@earendil-works/pi-tui";
 import {
   type CompactStyleMode,
   config,
@@ -271,10 +276,18 @@ function createPolishedTool(
         visualState === "success"
           ? `${BRIGHT_GREEN}${rawIcon}${ANSI_FG_RESET}`
           : theme.fg(toolIconColor(context), rawIcon);
+      const summaryTitle =
+        label === toolName ? humanizeToolLabel(label) : label;
       const summary = toolCallSummary(toolName, args, {
-        title: label === toolName ? humanizeToolLabel(label) : label,
+        title: summaryTitle,
         variant: "default",
       });
+      const expanded = Boolean(context?.expanded);
+      // 展开且仍在执行的卡展示完整命令；折叠卡与已结束的卡继续用截断摘要。
+      const fullCallText =
+        expanded && isPending
+          ? `${toolCallSummary(toolName, args, { title: summaryTitle, variant: "default", fullInput: true }).main}${summary.detail}`
+          : "";
       let writeStatsText = "";
       let writeStatsStyled = "";
       if (toolName === "write" && visualState === "success") {
@@ -293,23 +306,40 @@ function createPolishedTool(
       const extraStyled = writeStatsStyled || theme.fg("dim", summary.detail);
       let cachedWidth: number | undefined;
       let cachedLine: string | undefined;
-      const expanded = Boolean(context?.expanded);
+      let cachedLines: string[] | undefined;
       return {
         render(width: number) {
-          if (cachedLine !== undefined && cachedWidth === width)
-            return [cachedLine];
+          if (cachedLines !== undefined && cachedWidth === width)
+            return cachedLines;
           const viewportWidth = toolViewportWidth(width);
           // 展开态贴左（外层 Box 已 pad 1）；折叠 self-shell 保留 1 格前导空格
           const lead = expanded ? "" : " ";
+          cachedWidth = width;
+          if (fullCallText) {
+            // 完整文本按换行与视口宽度折行，续行对齐命令起始列
+            const prefix = `${lead}${icon} `;
+            const indent = " ".repeat(visibleWidth(prefix));
+            cachedLines = wrapTextWithAnsi(
+              fullCallText,
+              Math.max(1, viewportWidth - visibleWidth(prefix)),
+            ).map((line, index) =>
+              truncateToWidth(
+                `${index === 0 ? prefix : indent}${theme.fg("toolTitle", line)}`,
+                viewportWidth,
+                "",
+              ),
+            );
+            return cachedLines;
+          }
           const callWidth = Math.max(
             0,
             viewportWidth - visibleWidth(icon) - 1 - (expanded ? 0 : 1),
           );
           const mainWidth = Math.max(0, callWidth - visibleWidth(extraText));
-          cachedWidth = width;
           // 纯文本先截断再着色（省略号不带 ANSI）；从头截断，与多 tool 一致
           cachedLine = `${lead}${icon} ${theme.fg("toolTitle", headTruncateToWidth(summary.main, mainWidth))}${extraStyled}`;
-          return [truncateToWidth(cachedLine, viewportWidth, "")];
+          cachedLines = [truncateToWidth(cachedLine, viewportWidth, "")];
+          return cachedLines;
         },
         invalidate() {},
       };

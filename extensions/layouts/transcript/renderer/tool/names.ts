@@ -1,8 +1,21 @@
 import { config } from "../../../../app/config/renderer.ts";
 import { oneLine } from "../../../../tools/format.ts";
+import { sanitizeToolResultText } from "../../../../tools/tool-result-sanitize.ts";
 
-function clip(value: unknown): string {
-  return oneLine(value, config.toolInputNameLength);
+/** 展开输入与 `formatToolInputArgs` 共用同一个字符数上限。 */
+const MAX_FULL_INPUT_CHARS = 8_000;
+
+/**
+ * 输入摘要的文本处理。折叠摘要压成一行并按 toolInputNameLength 截断；
+ * fullInput 保留完整内容与换行，供展开卡展示完整命令使用。
+ */
+function clipSummaryInput(value: unknown, fullInput: boolean): string {
+  if (!fullInput) return oneLine(value, config.toolInputNameLength);
+  const raw = String(value ?? "");
+  const text = sanitizeToolResultText(raw, MAX_FULL_INPUT_CHARS)
+    .replace(/\t/g, "   ")
+    .trim();
+  return raw.length > MAX_FULL_INPUT_CHARS ? `${text}…` : text;
 }
 
 /**
@@ -31,6 +44,8 @@ export type ToolCallSummaryOptions = {
   title?: string;
   /** 文案变体；缺省 "default"。 */
   variant?: ToolCallSummaryVariant;
+  /** true 时返回未截断且保留换行的完整输入；缺省 false。 */
+  fullInput?: boolean;
 };
 
 /**
@@ -46,6 +61,8 @@ export function toolCallSummary(
 ): { main: string; detail: string } {
   const title = opts.title ?? humanizeToolLabel(toolName);
   const variant = opts.variant ?? "default";
+  const clip = (value: unknown) =>
+    clipSummaryInput(value, opts.fullInput === true);
   if (!args || typeof args !== "object") return { main: title, detail: "" };
   const name = toolName.toLowerCase();
   const value = (fallback: string, ...keys: string[]) => {

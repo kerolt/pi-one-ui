@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Rename the `/oneui` settings section from `Context` to `Transcript`. Names that refer to the model context window are unchanged: the `/context` command, the Context Inspector, the Footer `context` segment with `contextStyle` and `contextThresholds`, and the `context*` color keys. No configuration key, command, or stored value changes.
 
+### Fixed
+
+- Show the complete command on an expanded tool card while the tool call is still running. Ctrl+O and mouse expansion now wrap the full input against the viewport width instead of clipping it to `renderer.toolInputNameLength`, so long bash commands stay readable during execution; embedded line breaks in multi-line commands are preserved. Collapsed cards and settled cards keep the truncated title line, and settled cards still list the full input in the expanded `Input` section.
+
 ## [0.9.0] - 2026-10-02
 
 ### Changed
