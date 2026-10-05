@@ -76,9 +76,11 @@ Then open the unified settings panel:
 /oneui
 ```
 
-### Upgrading to 0.9.0
+### Upgrading to 0.9.1
 
-This release removes the `renderer.scrollStepLines` setting: wheel stepping is now controlled by Pi's own `fullscreenWheelScrollLines` setting in `~/.pi/agent/settings.json` (an integer such as `3`, or `"auto"`), and a leftover `scrollStepLines` key in the pi-one-ui config is ignored and preserved on save. The fullscreen "Back to bottom" button and its `Ctrl+End` binding are removed; use the official `End` shortcut and indicator instead. The indicator keeps the pi-one-ui button look (accent color, hover highlight).
+This release fixes truncated commands on expanded tool cards: a pending card now wraps the complete command against the terminal width after Ctrl+O or a mouse click, preserving line breaks in multi-line commands, while collapsed cards and settled cards keep the truncated title line and settled cards continue to list the full input in the Input section. The `/oneui` settings section previously labeled `Context` is now `Transcript`; names that refer to the model context window stay unchanged (the `/context` command, the Context Inspector, the Footer `context` segment and `context*` color keys), and no configuration key, command, or stored value changes.
+
+Users upgrading from 0.8.x also need the 0.9.0 migration: `renderer.scrollStepLines` is gone and wheel stepping is controlled by Pi's own `fullscreenWheelScrollLines` setting in `~/.pi/agent/settings.json` (an integer such as `3`, or `"auto"`), a leftover `scrollStepLines` key is ignored and preserved on save, and the fullscreen "Back to bottom" button with its `Ctrl+End` binding is removed in favor of the official `End` shortcut and indicator.
 
 For an unpinned npm installation, run:
 
@@ -86,7 +88,7 @@ For an unpinned npm installation, run:
 pi update npm:pi-one-ui
 ```
 
-If your installation pins a version, run `pi install npm:pi-one-ui@0.9.0` to update the pin. Fully exit and restart Pi after updating the package.
+If your installation pins a version, run `pi install npm:pi-one-ui@0.9.1` to update the pin. Fully exit and restart Pi after updating the package.
 
 ## Configuration
 

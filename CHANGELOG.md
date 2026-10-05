@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-05
+
 ### Changed
 
 - Rename the `/oneui` settings section from `Context` to `Transcript`. Names that refer to the model context window are unchanged: the `/context` command, the Context Inspector, the Footer `context` segment with `contextStyle` and `contextThresholds`, and the `context*` color keys. No configuration key, command, or stored value changes.
@@ -13,6 +15,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Show the complete command on an expanded tool card while the tool call is still running. Ctrl+O and mouse expansion now wrap the full input against the viewport width instead of clipping it to `renderer.toolInputNameLength`, so long bash commands stay readable during execution; embedded line breaks in multi-line commands are preserved. Collapsed cards and settled cards keep the truncated title line, and settled cards still list the full input in the expanded `Input` section.
+
+### Migration
+
+- No configuration migration is required. Existing canonical v1 files and command names remain supported.
+- The `/oneui` settings section previously labeled `Context` is now `Transcript`; the `/context` command and the Context Inspector keep their names. No configuration key or stored value changes.
+- For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.9.1`. Fully exit and restart Pi after updating the package.
 
 ## [0.9.0] - 2026-10-02
 
@@ -237,7 +245,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reduced rendering lag when expanding settled tool groups by reusing cached child output.
 
-[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/kerolt/pi-one-ui/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/kerolt/pi-one-ui/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/kerolt/pi-one-ui/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/kerolt/pi-one-ui/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/kerolt/pi-one-ui/compare/v0.7.1...v0.7.2

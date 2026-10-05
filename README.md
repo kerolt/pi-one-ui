@@ -76,9 +76,11 @@ pi install git:github.com/kerolt/pi-one-ui
 /oneui
 ```
 
-### 升级到 0.9.0
+### 升级到 0.9.1
 
-本次移除了 `renderer.scrollStepLines` 配置项，滚轮步进改由 Pi 官方设置 `fullscreenWheelScrollLines` 控制（`~/.pi/agent/settings.json` 中写入整数如 `3`，或 `"auto"`），配置文件里遗留的 `scrollStepLines` 键会被忽略并保留。fullscreen 的回到底部按钮与 `Ctrl+End` 绑定一并移除，请使用官方 `End` 快捷键与指示条；指示条外观已替换为 pi-one-ui 样式（accent 色、悬停变色）。
+本次修复了展开工具卡后命令仍被截断的问题：正在执行（pending）的工具卡在 Ctrl+O 或鼠标点击展开后，会按终端宽度折行展示完整命令，多行命令的内嵌换行会被保留；折叠态与已结束的卡继续使用截断标题，已结束的卡仍在 Input 段展示完整输入。`/oneui` 设置面板的 `Context` 分区更名为 `Transcript`，与模型上下文占用有关的名称保持不变（`/context` 命令、Context Inspector、Footer 的 `context` 段与 `context*` 颜色键），配置键、命令与已存数据都没有变化。
+
+从 0.8.x 升级的用户还需要执行 0.9.0 的迁移：`renderer.scrollStepLines` 已移除，滚轮步进改由 Pi 官方设置 `fullscreenWheelScrollLines` 控制（`~/.pi/agent/settings.json` 中写入整数如 `3`，或 `"auto"`），配置文件里遗留的 `scrollStepLines` 键会被忽略并保留；fullscreen 的回到底部按钮与 `Ctrl+End` 绑定已移除，请使用官方 `End` 快捷键与指示条。
 
 未固定版本的 npm 安装可执行：
 
@@ -86,7 +88,7 @@ pi install git:github.com/kerolt/pi-one-ui
 pi update npm:pi-one-ui
 ```
 
-若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.9.0` 更新版本指定。更新安装包后，完整退出并重启 Pi。
+若安装时固定了版本，执行 `pi install npm:pi-one-ui@0.9.1` 更新版本指定。更新安装包后，完整退出并重启 Pi。
 
 ## 配置
 
