@@ -22,6 +22,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The `/oneui` settings section previously labeled `Context` is now `Transcript`; the `/context` command and the Context Inspector keep their names. No configuration key or stored value changes.
 - For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.9.1`. Fully exit and restart Pi after updating the package.
 
+### Release verification
+
+- Release source: [`85d237f`](https://github.com/kerolt/pi-one-ui/commit/85d237ff9d34d05f4b701a394db0fc714cc12058). [CI](https://github.com/kerolt/pi-one-ui/actions/runs/37261402476) and [Publish](https://github.com/kerolt/pi-one-ui/actions/runs/37261402474) completed successfully; local `npm run verify` passed 1,196 tests across 70 files, and `npm run pack:check` confirmed 125 package files.
+- npm `latest` resolves to `0.9.1`, published `2026-10-05T04:00:02.807Z` with `gitHead` `85d237ff9d34d05f4b701a394db0fc714cc12058`, package SHA-1 `dd0030ec63e9153c23255ae8e1f91cec54de81bf`, integrity `sha512-yyJvP0V9V1T7nsR8vkPxfufd6p8dTve24xG4mgPEiRAsf8+yIiiD3l6vL2hFyuPImQS0q6hiHIN86y7epsbToQ==`, and a published provenance statement (SLSA v1, Sigstore log index [3081457148](https://search.sigstore.dev/?logIndex=3081457148)).
+- Regular and fullscreen Pi TUI verification passed for the expanded pending command rendering, covering Ctrl+O expansion, mouse expansion, multi-line commands, collapsed cards, settled cards, and expanded tool groups.
+
 ## [0.9.0] - 2026-10-02
 
 ### Changed
