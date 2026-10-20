@@ -193,7 +193,10 @@ export default function agentAutocompleteExtension(pi: ExtensionAPI): void {
     if (agents.length === 0) return;
 
     const mentions: string[] = [];
-    for (const m of event.prompt.matchAll(AGENT_PROMPT_PATTERN)) {
+    // Runs started by an extension message (pi >= 1.2) carry no prompt.
+    const prompt =
+      "prompt" in event && typeof event.prompt === "string" ? event.prompt : "";
+    for (const m of prompt.matchAll(AGENT_PROMPT_PATTERN)) {
       const name = m[1]!;
       if (agents.some((a) => a.name === name) && !mentions.includes(name)) {
         mentions.push(name);

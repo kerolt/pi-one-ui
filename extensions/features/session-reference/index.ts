@@ -531,7 +531,10 @@ export default function sessionReferenceExtension(pi: ExtensionAPI): void {
   });
 
   pi.on("before_agent_start", async (event, ctx) => {
-    const referenceIds = extractSessionReferenceIds(event.prompt);
+    // Runs started by an extension message (pi >= 1.2) carry no prompt.
+    const prompt =
+      "prompt" in event && typeof event.prompt === "string" ? event.prompt : "";
+    const referenceIds = extractSessionReferenceIds(prompt);
     if (referenceIds.length === 0) return;
 
     const currentSessionId = ctx.sessionManager.getSessionId();
