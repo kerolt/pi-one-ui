@@ -17,6 +17,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - No configuration migration is required. Subagent mentions and session references keep working for user prompts, and runs started by extension messages are ignored by both handlers.
 - For an unpinned npm installation, run `pi update npm:pi-one-ui`; for an existing version pin, run `pi install npm:pi-one-ui@0.9.2`. Fully exit and restart Pi after updating the package.
 
+### Release verification
+
+- Release source: [`87a62bc`](https://github.com/kerolt/pi-one-ui/commit/87a62bca25ac75aee7c3f332a490ca5b6b3ba29b). [CI](https://github.com/kerolt/pi-one-ui/actions/runs/39779988716) and [Publish](https://github.com/kerolt/pi-one-ui/actions/runs/39780157164) completed successfully; local `npm run verify` passed 1,198 tests across 71 files, and `npm run pack:check` confirmed 125 package files.
+- npm `latest` resolves to `0.9.2`, published `2026-10-22T12:44:41.396Z` with `gitHead` `87a62bca25ac75aee7c3f332a490ca5b6b3ba29b`, package SHA-1 `feded0f53db552d38f1bd67c773c6ba19944413a`, integrity `sha512-vIHy6cFLT9bSjrmX1vUIFjJI3+02zPbaj8KYskMThR3yM2uE03xH9ri1ilsDwkwc0P/Bnf1rOSPzTEaYkrIL4Q==`, and a published provenance statement (SLSA v1, Sigstore log index [3388018414](https://search.sigstore.dev/?logIndex=3388018414)).
+- The regression is covered by `tests/transcript/before-agent-start-custom.test.ts`, which drives both handlers with a prompt-less custom event. A real Pi run started by an extension message, such as a subagent completion or a background wake, was not exercised in this environment and still needs manual confirmation.
+
 ## [0.9.1] - 2026-10-05
 
 ### Changed
