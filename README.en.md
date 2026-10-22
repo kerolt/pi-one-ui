@@ -76,11 +76,11 @@ Then open the unified settings panel:
 /oneui
 ```
 
-### Upgrading to 0.9.1
+### Upgrading to 0.9.2
 
-This release fixes truncated commands on expanded tool cards: a pending card now wraps the complete command against the terminal width after Ctrl+O or a mouse click, preserving line breaks in multi-line commands, while collapsed cards and settled cards keep the truncated title line and settled cards continue to list the full input in the Input section. The `/oneui` settings section previously labeled `Context` is now `Transcript`; names that refer to the model context window stay unchanged (the `/context` command, the Context Inspector, the Footer `context` segment and `context*` color keys), and no configuration key, command, or stored value changes.
+This release fixes extension errors on Pi 1.2 and later: Pi also fires `before_agent_start` for runs started by `pi.sendMessage(..., { triggerTurn: true })`, and those events carry no `prompt`; the subagent mention handler and the session reference handler no longer throw a `TypeError`, and user-submitted prompts keep their existing behavior. No configuration change is required.
 
-Users upgrading from 0.8.x also need the 0.9.0 migration: `renderer.scrollStepLines` is gone and wheel stepping is controlled by Pi's own `fullscreenWheelScrollLines` setting in `~/.pi/agent/settings.json` (an integer such as `3`, or `"auto"`), a leftover `scrollStepLines` key is ignored and preserved on save, and the fullscreen "Back to bottom" button with its `Ctrl+End` binding is removed in favor of the official `End` shortcut and indicator.
+When upgrading from 0.9.1 or earlier, the 0.9.1 rename of the `Context` settings section to `Transcript` applies; users upgrading from 0.8.x also need the 0.9.0 migration: `renderer.scrollStepLines` is gone and wheel stepping is controlled by Pi's own `fullscreenWheelScrollLines` setting in `~/.pi/agent/settings.json` (an integer such as `3`, or `"auto"`), a leftover `scrollStepLines` key is ignored and preserved on save, and the fullscreen "Back to bottom" button with its `Ctrl+End` binding is removed in favor of the official `End` shortcut and indicator.
 
 For an unpinned npm installation, run:
 
@@ -88,7 +88,7 @@ For an unpinned npm installation, run:
 pi update npm:pi-one-ui
 ```
 
-If your installation pins a version, run `pi install npm:pi-one-ui@0.9.1` to update the pin. Fully exit and restart Pi after updating the package.
+If your installation pins a version, run `pi install npm:pi-one-ui@0.9.2` to update the pin. Fully exit and restart Pi after updating the package.
 
 ## Configuration
 
